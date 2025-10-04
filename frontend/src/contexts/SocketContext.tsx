@@ -39,7 +39,7 @@ export interface ServerEvents {
   room_not_found: () => void;
   room_full: () => void;
   game_started: (gameState: GameState) => void;
-  rotation_update: (rotation: number ) => void;
+  rotation_update: (gameState: GameState, rotation: number) => void;
   turn_ended: (gameState: GameState) => void;
   your_turn: (data: { turnNumber: number; remainingTurns: number }) => void;
   game_ended: (gameState: GameState) => void;

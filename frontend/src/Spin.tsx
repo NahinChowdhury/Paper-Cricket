@@ -86,7 +86,6 @@ const SpinPie: React.FC = () => {
 		if (!ctx) return;
 
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
-		console.log("Drawing pie with rotation (radians):", rotation);
 		drawPie(ctx, canvas.width / 2, canvas.height / 2, SPINNER_RADIUS, rotation);
 	}, [rotation]);
 
@@ -102,6 +101,7 @@ const SpinPie: React.FC = () => {
 		// Event handler functions (defined outside useEffect for dependencies)
 		const handlePlayerJoined = (gameState: GameState, player: Player) => {
 			console.log('Player joined room:', player);
+			console.log('Game state on player joined:', gameState.players);
 			setCurrentPlayer(player); // Set the current player information
 			setGameState(prev => ({
 				...prev,
@@ -129,7 +129,11 @@ const SpinPie: React.FC = () => {
 			}));
 		};
 
-		const handleRotationUpdate = (rotation: number) => {
+		const handleRotationUpdate = (gameState: GameState, rotation: number) => {
+			// Get gamestate too and prevent handling if not opponent's turn
+			if (gameState.currentPlayerId === playerId) {
+				return;
+			}
 			// rotation is in radians
 			console.log('Rotation update received:', rotation);
 			// We need to ensure we don't send our own rotation back to us in socket 
@@ -296,6 +300,7 @@ const SpinPie: React.FC = () => {
 		const isMyTurn = gameState.currentPlayerId === playerId;
 
 		if (socket && roomId && currentPlayer && isMyTurn) {
+			console.log('Emitting rotation change (radians):', newRotation);
 			socket.emit('rotate_pie', {
 				roomId,
 				playerId: currentPlayer.id,

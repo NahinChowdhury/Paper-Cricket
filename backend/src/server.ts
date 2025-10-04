@@ -68,7 +68,9 @@ io.on('connection', (socket: any) => {
         if (!gameState) {
           throw new Error('No game state found for room');
         }
+        console.log(`Player ${playerId} re-joined room: ${roomId}. gameState:`, gameState);
         io.to(socket.id).emit('player_joined', gameState, existingPlayer);
+        return;
       }
 
       if (room.players.length >= 2) {
@@ -83,12 +85,14 @@ io.on('connection', (socket: any) => {
       if (!gameState) {
         // Create a game state if it doesn't exist (shouldn't happen normally)
         gameState = gameStateManager.createInitialGameState(playerId, roomId);
+      } else {
+        gameState = gameStateManager.addPlayerToGameState(playerId, roomId);
       }
       
+      console.log(`Player ${playerId} joined room: ${roomId}. gameState:`, gameState);
       // Return the current game state to the joining player
       io.to(socket.id).emit('player_joined', gameState, player);
 
-      console.log(`Player ${playerId} joined room: ${roomId}`);
     } catch (error) {
       console.error('Error joining room:', error);
       socket.emit('room_not_found');
@@ -121,6 +125,7 @@ io.on('connection', (socket: any) => {
 
         // Add the player to the room
         const addedPlayer: Player = roomManager.addPlayerToRoom(player.id, player.roomId);
+        gameStateManager.addPlayerToGameState(player.id, player.roomId);
         console.log(`Player ${addedPlayer.id} added to room ${addedPlayer.roomId}`);
       }
 
@@ -148,8 +153,15 @@ io.on('connection', (socket: any) => {
   // Basic rotation handling (placeholder - no turn validation yet)
   socket.on('rotate_pie', (data: { roomId: string; playerId: string; rotation: number }) => {
     try {
+
+      // get game state
+      const gameState = gameStateManager.getGameState(data.roomId);
+      if (!gameState) {
+        throw new Error('No game state found for room');
+      }
+
       // For now, just broadcast the rotation to other players in the room
-      socket.to(data.roomId).emit('rotation_update', data.rotation );
+      socket.to(data.roomId).emit('rotation_update', gameState, data.rotation );
 
       console.log(`Player ${data.playerId} rotated in room ${data.roomId}: ${data.rotation}`);
     } catch (error) {

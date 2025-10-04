@@ -21,6 +21,32 @@ export class GameStateManager {
       return initialState;
   }
 
+  // Add player to a room
+  addPlayerToGameState(playerId: string, roomId: string): GameState {
+    const gameState: GameState | undefined = this.gameStates.get(roomId);
+    if (!gameState) {
+      throw new Error('No game state found for room');
+    }
+    
+    // look for duplicates
+    if (gameState.players.includes(playerId)) {
+      throw new Error('Player already in game');
+    }
+
+    // Ensure only 2 players
+    if (gameState.players.length >= 2) {
+      throw new Error('Game already has maximum players');
+    }
+
+
+
+    gameState.players.push(playerId);
+    this.gameStates.set(roomId, gameState);
+
+    return gameState;
+  }
+
+
   // Get current game state for a room
   getGameState(roomId: string): GameState | undefined {
     return this.gameStates.get(roomId);
@@ -88,9 +114,9 @@ export class GameStateManager {
       // Advance to next turn
       gameState.currentTurn++;
       // Switch current player (assuming 2 players for simplicity)
-      const currentIndex = gameState.players.indexOf(gameState.currentPlayerId);
+      const currentIndex = Array.from(gameState.players).indexOf(gameState.currentPlayerId);
       const nextIndex = (currentIndex + 1) % gameState.players.length;
-      gameState.currentPlayerId = gameState.players[nextIndex];
+      gameState.currentPlayerId = Array.from(gameState.players)[nextIndex];
       gameState.gamePhase = 'playing';
     }
 

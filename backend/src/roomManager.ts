@@ -44,7 +44,6 @@ export class RoomManager {
     // get player from socketId if already exists
     const existingPlayer: Player | undefined = room.players.find(p => p.id === playerId);
 
-
     if(existingPlayer) {
       return existingPlayer;
     }
