@@ -1,17 +1,22 @@
 import React from 'react';
 import './App.css';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import SpinPie from './Spin';
+import RoomLobby from './RoomLobby';
+import { SocketProvider } from './contexts/SocketContext';
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>Paper Cricket</h1>
-        <div style={{ display: "flex", justifyContent: "center", marginTop: "50px" }}>
-          <SpinPie />
+    <SocketProvider>
+      <Router>
+        <div className="App">
+          <Routes>
+            <Route path="/" element={<RoomLobby />} />
+            <Route path="/game/:roomId" element={<SpinPie />} />
+          </Routes>
         </div>
-      </header>
-    </div>
+      </Router>
+    </SocketProvider>
   );
 }
 
