@@ -215,7 +215,7 @@ const SpinPie: React.FC = () => {
 
 	const handleMouseMoveCursor = (e: React.MouseEvent<HTMLCanvasElement>) => {
 		const canvas = canvasRef.current;
-		const isMyTurn = gameState.currentPlayerId === playerId;
+		const isMyTurn = gameState.currentPlayerId === playerId; // change to gameState.playerBowling
 
 		if (!canvas) return;
 
@@ -233,7 +233,7 @@ const SpinPie: React.FC = () => {
 			canvas.style.cursor = "default";
 		}
 
-		if (isDragging && isMyTurn && gameState.gamePhase === 'playing') {
+		if (isDragging && isMyTurn && gameState.gamePhase === 'playing') { // gamePhase === 'setting field'
 			// Continue rotation while dragging (only during player's turn)
 			const angle = Math.atan2(dy, dx);
 			const newRotation = angle - startAngle;
@@ -297,7 +297,7 @@ const SpinPie: React.FC = () => {
 
 	// Emit rotation changes to server (only during player's turn)
 	const emitRotationChange = useCallback((newRotation: number) => {
-		const isMyTurn = gameState.currentPlayerId === playerId;
+		const isMyTurn = gameState.currentPlayerId === playerId; // change to gameState.playerBowling
 
 		if (socket && roomId && currentPlayer && isMyTurn) {
 			console.log('Emitting rotation change (radians):', newRotation);
@@ -311,10 +311,10 @@ const SpinPie: React.FC = () => {
 
 	// End current player's turn
 	const endTurn = useCallback(() => {
-		const isMyTurn = gameState.currentPlayerId === playerId;
+		const isMyTurn = gameState.currentPlayerId === playerId; // change to gameState.playerBowling
 
-		if (socket && isMyTurn) {
-			socket.emit('end_turn', roomId!, rotation);
+		if (socket && isMyTurn) { // Need to update logic to switch between bowler and batsman
+			socket.emit('end_turn', roomId!, rotation); // send 
 		}
 	}, [socket, gameState.currentPlayerId]);
 

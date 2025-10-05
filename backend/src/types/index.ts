@@ -14,14 +14,6 @@ export interface GameRoom {
   isActive: boolean;
 }
 
-export interface TurnState {
-  currentPlayerId: string;
-  turnNumber: number;
-  totalTurns: number;
-  isPlayer1Turn: boolean;
-  gamePhase: 'waiting' | 'playing' | 'finished';
-}
-
 export interface GameState {
   players: string[];
 	currentTurn: number;

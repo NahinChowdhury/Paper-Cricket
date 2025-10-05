@@ -10,7 +10,7 @@ GameState {
 	currentPlayerId: string,
 	totalTurns: number,
 	gamePhase: 'waiting' | 'playing' | 'finished',
-	turnHistory: linkedlist of TurnRecord
+	turnHistory: list of TurnRecord
 }
 ```
 

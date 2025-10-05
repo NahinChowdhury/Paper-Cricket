@@ -178,6 +178,11 @@ io.on('connection', (socket: any) => {
       const gameState = gameStateManager.recordMove(roomId, rotation);
       if (gameState.gamePhase === 'finished') {
         io.to(roomId).emit('game_ended', gameState);
+
+        // delete the room and game state
+        roomManager.deleteRoom(roomId);
+        gameStateManager.cleanupGameState(roomId);
+        
         console.log(`Game ended in room ${roomId}`);
         return;
       }
@@ -193,6 +198,7 @@ io.on('connection', (socket: any) => {
   // Handle disconnection
   socket.on('disconnect', (playerId: string) => {
     roomManager.removePlayerFromRoom(playerId);
+    // maybe keep the player in the game state for reconnection?
     console.log(`Client disconnected: ${playerId}`);
   });
 });

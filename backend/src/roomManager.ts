@@ -105,6 +105,18 @@ export class RoomManager {
     this.playerRooms.delete(playerId);
   }
 
+  // Delete a room and all its players
+  deleteRoom(roomId: string): void {
+    const room = this.rooms.get(roomId);
+    if (room) {
+      room.players.forEach(player => {
+        this.playerRooms.delete(player.id);
+      });
+      this.rooms.delete(roomId);
+    }
+  }
+
+
   // Get all active rooms (for debugging)
   getAllRooms(): GameRoom[] {
     return Array.from(this.rooms.values());

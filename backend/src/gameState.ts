@@ -1,10 +1,8 @@
-import { GameState, TurnState, TurnRecord } from './types';
+import { GameState, TurnRecord } from './types';
 import { RoomManager } from './roomManager';
 
 export class GameStateManager {
   private gameStates: Map<string, GameState> = new Map();
-  private turnStates: Map<string, TurnState> = new Map();
-
 
   // Create initial game state for a room
   createInitialGameState(playerId: string, roomId: string): GameState {
@@ -38,10 +36,7 @@ export class GameStateManager {
       throw new Error('Game already has maximum players');
     }
 
-
-
     gameState.players.push(playerId);
-    this.gameStates.set(roomId, gameState);
 
     return gameState;
   }
@@ -62,21 +57,10 @@ export class GameStateManager {
     }
 
     gameState.gamePhase = 'playing';
-    this.gameStates.set(roomId, gameState);
 
     console.log(`Game started in room ${roomId}`);
 
     return gameState;
-  }
-
-  // Validate if it's a player's turn
-  validateTurn(playerId: string, roomId: string): boolean {
-    const turnState = this.turnStates.get(roomId);
-    if (!turnState || turnState.gamePhase !== 'playing') {
-      return false;
-    }
-
-    return turnState.currentPlayerId === playerId;
   }
 
   // Record a move and return turn record
@@ -128,14 +112,8 @@ export class GameStateManager {
     return this.gameStates.get(roomId);
   }
 
-  // Get turn state for a room
-  getTurnState(roomId: string): TurnState | undefined {
-    return this.turnStates.get(roomId);
-  }
-
   // Clean up game state when room is destroyed
-  cleanupRoom(roomId: string): void {
+  cleanupGameState(roomId: string): void {
     this.gameStates.delete(roomId);
-    this.turnStates.delete(roomId);
   }
 }
