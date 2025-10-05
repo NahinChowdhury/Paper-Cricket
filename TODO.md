@@ -8,3 +8,7 @@ Then same logic as before. new current player bowls for 5 turns and we keep log 
 
 We can then look to keep log of total score, wickets and what not
 
+
+5th October, 2025
+Look at cricketGameLogic.md and update server.ts to handle all server receiving logic.
+First update index.ts to match the new object types. Then update the object types in SocketContext.tsx

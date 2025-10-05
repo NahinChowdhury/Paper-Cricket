@@ -99,6 +99,47 @@ export interface BallRecord {
 }
 ```
 
+New Socket events:
+```ts
+// Events that clients send TO the server
+export interface ClientEvents {
+  // Room management
+  create_room: (playerId: string) => void;
+  join_room: (roomId: string, playerId: string) => void;
+  leave_room: (roomId: string, playerId: string) => void;
+
+  // Gameplay
+  set_field: (data: { roomId: string; playerId: string; rotation: number }) => void; 
+  play_shot: (data: { roomId: string; playerId: string; choice: number }) => void; // batter’s move
+  end_innings: (roomId: string, playerId: string) => void; // not used for now // optional explicit request if needed
+}
+
+// Events that the server sends TO clients
+export interface ServerEvents {
+  // Room / player lifecycle
+  room_created: (roomId: string) => void;
+  room_not_found: () => void;
+  room_full: () => void;
+  player_joined: (gameState: GameState, player: Player) => void;
+  player_left: (playerId: string) => void; // not used for now
+
+  // Game lifecycle
+  game_started: (gameState: GameState) => void;
+  game_ended: (gameState: GameState) => void;
+
+  // Turn / phase updates
+  field_set: (gameState: GameState, rotation: number) => void; 
+  shot_played: (gameState: GameState, choice: number) => void; 
+  turn_completed: (gameState: GameState) => void; // not used for now // one full ball resolved
+
+  // Role / innings updates
+  your_turn: (data: { phase: "setting_field" | "batting"; turnNumber: number; remainingBalls: number }) => void; // not used for now
+  innings_switched: (gameState: GameState) => void; // when roles swap // not used for now
+}
+
+```
+
+
 gamePhases explained:
  - 'waiting': When one player has joined the game and we are waiting for the other player to join the game/room
  - 'setting field': When the bowler is choosing the field rotation. 
@@ -133,90 +174,131 @@ I need to keep track of:
 
 # Game State Simluation
 
-Client to Server (C2S):
-socket.emit(create_room)
+### Client to Server (C2S):
+**socket.emit(create_room)**
 
 
-Server to Client (S2C):
-socket.on(create_room) // Room is created along with gameState and player 1 is added to both room and gameState
-socket.emit(room_created)
+### Server to Client (S2C):
 
+**socket.on(create_room)**
 
-Player 2 gets the link:
-C2S:
-socket.emit(join_room)
+Room is created along with gameState and player 1 is added to both room and gameState
 
+**socket.emit(room_created)**
 
-S2C:
-socket.on(join_room)
+### Player 2 gets the link:
+### C2S:
+
+**socket.emit(join_room)**
+
+### S2C:
+**socket.on(join_room)**
+
 creates player profile and adds player to room and gameState
-io.to(socket.id).emit(player_joined)
+
+**io.to(socket.id).emit(player_joined)**
 
 
-C2S:
-socket.on(player_joined)
+### C2S:
+**socket.on(player_joined)**
+
 Updates gamestate and player info
-socket.emit(player_joined)
+
+**socket.emit(player_joined)**
 
 
-S2C:
-socket.on(player_joined)
+### S2C:
+**socket.on(player_joined)**
+
 Updates gamePhase to 'setting field'
-io.to(player.roomId).emit('game_started', gameState);
+
+**io.to(player.roomId).emit('game_started', gameState);**
 
 
-C2S:
-socket.on(game_started)
+### C2S:
+**socket.on(game_started)**
+
 Updates the gamestate and frontend logic ensures each player knows who is bowling and who is batting
+
 Since gamePhase is 'setting field', next action is sent from the bowler
+
 Sends rotation to the server
-socket.emit(field_set)
+
+**socket.emit(field_set)**
 
 
-S2C:
-socket.on(field_set)
+### S2C:
+**socket.on(field_set)**
+
 Updates game state and changes gamephase to 'batting'
-io.to(player.roomId).emit('play_shot', gameState);
+
+**io.to(player.roomId).emit('play_shot', gameState);**
 
 
-C2S:
-socket.on(play_shot)
+### C2S:
+**socket.on(play_shot)**
+
 Takes the rotation passed by the bowler and updates the wheel rotation for the batter.
+
 Updates the game phase to 'batting'. This makes the bowler unable to make a move or drag the wheel.
+
 Batter then makes a choice on the wheel and ends turn.
-socket.emit(shot_played)
+
+**socket.emit(shot_played)**
 
 
-S2C:
-socket.on(shot_played)
+### S2C:
+**socket.on(shot_played)**
+
 Updates game state and adds current rotation and shot to the turnHistory.
+
 Checks the current ball.
+```
 If current ball == totalBalls and innings == 2,
+
 	then game over.
+
 	Set gamePhase == 'finished'.
+
 	io.to(player.roomId).emit(game_ended)
+
 	return
+
 Else If current ball == totalBalls:
+
 	Then innings is over.
+
 	Set innings to 2
+
 	Reset currentBall to 1
+
 	Set playerBowling to the other player
+
 Else:
+
 	Increment the current ball
 
 Run these anyways:
+
 	Reset currentBallroatation to undefined
+
 	Reset currentBallBatsmanChoice to undefined
+
 	Set gamePhase to 'setting field'
-io.to(player.roomId).emit(set_field)
+```
+**io.to(player.roomId).emit(set_field)**
 
 
-C2S:
-socket.on(game_started)
+### C2S:
+**socket.on(game_started)**
+
 Updates the gamestate and updates the scorecard hopefully.
+
 Since gamePhase is 'setting field', next action is sent from the bowler
+
 Sends rotation to the server
-socket.emit(field_set)
+
+**socket.emit(field_set)**
 
 
 Rinse and repeat...

@@ -140,24 +140,6 @@ const SpinPie: React.FC = () => {
 			handleSetRotation(rotation); // Update display with opponent's rotation
 		};
 
-		const handleTurnEnded = (gameState: GameState) => {
-			console.log('Turn ended, new game state:', gameState);
-			setGameState(prev => ({
-				...prev,
-				...gameState
-			}));
-		};
-
-		// redundant?
-		const handleYourTurn = (data: { turnNumber: number; remainingTurns: number }) => {
-			setGameState(prev => ({
-				...prev,
-				isMyTurn: true,
-				currentTurn: data.turnNumber,
-				totalTurns: data.remainingTurns + data.turnNumber - 1
-			}));
-		};
-
 		const handleGameEnded = (gameState: GameState) => {
 			console.log('Game ended, final state:', gameState);
 			setGameState(prev => ({
@@ -172,8 +154,6 @@ const SpinPie: React.FC = () => {
 		socket.on('room_full', handleRoomFull);
 		socket.on('game_started', handleGameStarted);
 		socket.on('rotation_update', handleRotationUpdate);
-		socket.on('turn_ended', handleTurnEnded);
-		socket.on('your_turn', handleYourTurn);
 		socket.on('game_ended', handleGameEnded);
 
 		return () => {
@@ -182,8 +162,6 @@ const SpinPie: React.FC = () => {
 			socket.off('room_full', handleRoomFull);
 			socket.off('game_started', handleGameStarted);
 			socket.off('rotation_update', handleRotationUpdate);
-			socket.off('turn_ended', handleTurnEnded);
-			socket.off('your_turn', handleYourTurn);
 			socket.off('game_ended', handleGameEnded);
 		};
 	}, [socket, roomId, currentPlayer]);

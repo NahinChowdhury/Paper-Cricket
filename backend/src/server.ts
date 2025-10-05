@@ -29,7 +29,7 @@ const roomManager = new RoomManager();
 const gameStateManager = new GameStateManager();
 
 // Basic Socket.IO connection handling
-io.on('connection', (socket: any) => {
+io.on('connection', (socket: Socket<ClientEvents, ServerEvents>) => {
   console.log(`Client connected: ${socket.id}`);
 
   // Handle room creation - creates a room and returns room ID
@@ -166,7 +166,7 @@ io.on('connection', (socket: any) => {
       console.log(`Player ${data.playerId} rotated in room ${data.roomId}: ${data.rotation}`);
     } catch (error) {
       console.error('Error handling rotation:', error);
-      socket.emit('invalid_move', 'Failed to process rotation');
+      // socket.emit('invalid_move', 'Failed to process rotation');
     }
   });
 
@@ -177,12 +177,12 @@ io.on('connection', (socket: any) => {
       // record the move and get the gamestate
       const gameState = gameStateManager.recordMove(roomId, rotation);
       if (gameState.gamePhase === 'finished') {
-        io.to(roomId).emit('game_ended', gameState);
-
+        
         // delete the room and game state
         roomManager.deleteRoom(roomId);
         gameStateManager.cleanupGameState(roomId);
         
+        io.to(roomId).emit('game_ended', gameState);
         console.log(`Game ended in room ${roomId}`);
         return;
       }

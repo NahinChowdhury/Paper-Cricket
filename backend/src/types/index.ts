@@ -31,14 +31,17 @@ export interface TurnRecord {
   timestamp: Date;
 }
 
+
 // Events that clients send TO the server
 export interface ClientEvents {
   create_room: (playerId: string) => void;
   join_room: (roomId: string, playerId: string) => void;
   player_joined: (player: Player) => void;
-  rotate_pie: (data: { roomId: string; playerId: string; rotation: number }) => void;
-  end_turn: (playerId: string) => void;
+  rotate_pie: (data: { roomId: string; playerId: string; rotation: number }) => void; // will be redundant soon
+  field_set: (roomId: string, rotation: number) => void;
+  shot_played: (roomId: string, choice: string) => void;
 }
+
 
 // Events that the server sends TO clients
 export interface ServerEvents {
@@ -46,10 +49,10 @@ export interface ServerEvents {
   room_not_found: () => void;
   room_full: () => void;
   game_started: (gameState: GameState) => void;
-  rotation_update: (rotation: number ) => void;
-  turn_ended: (gameState: GameState) => void;
-  your_turn: (data: { turnNumber: number; remainingTurns: number }) => void;
+  rotation_update: (gameState: GameState, rotation: number) => void;
   game_ended: (gameState: GameState) => void;
-  player_left: (playerId: string) => void;
+  player_left: (playerId: string) => void; // players cant willingliy leave yet
   room_created: (roomId: string) => void;
+  play_shot: (gameState: GameState) => void;
+  set_field: (gameState: GameState) => void;
 }
