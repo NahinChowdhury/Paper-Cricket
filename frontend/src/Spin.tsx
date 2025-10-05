@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback } from "react";
-import { useParams } from 'react-router-dom';
-import { useSocket, Player, GameState } from './contexts/SocketContext';
-import { usePlayerId } from './hooks/usePlayerId';
+import { useParams } from "react-router-dom";
+import { useSocket, Player, GameState } from "./contexts/SocketContext";
+import { usePlayerId } from "./hooks/usePlayerId";
 
 interface Slice {
 	label: string;
@@ -17,7 +17,6 @@ const slices: Slice[] = [
 	{ label: "W", color: "#577590" },
 	{ label: "NB", color: "#501111ff" },
 ];
-
 
 const SpinPie: React.FC = () => {
 	// Get room ID from URL params
@@ -40,9 +39,9 @@ const SpinPie: React.FC = () => {
 	const [gameState, setGameState] = useState<GameState>({
 		players: [],
 		currentTurn: 1,
-		currentPlayerId: '',
+		currentPlayerId: "",
 		totalTurns: 6,
-		gamePhase: 'waiting',
+		gamePhase: "waiting",
 	});
 
 	const SPINNER_RADIUS = 150; // Static radius for the spinner
@@ -52,30 +51,30 @@ const SpinPie: React.FC = () => {
 		centerX: number,
 		centerY: number,
 		radius: number,
-		rotationAngle: number
+		rotationAngle: number,
 	) => {
 		const sliceAngle = (2 * Math.PI) / slices.length;
 
 		slices.forEach((slice, i) => {
-		const start = i * sliceAngle + rotationAngle;
-		const end = start + sliceAngle;
+			const start = i * sliceAngle + rotationAngle;
+			const end = start + sliceAngle;
 
-		ctx.beginPath();
-		ctx.moveTo(centerX, centerY);
-		ctx.arc(centerX, centerY, radius, start, end);
-		ctx.closePath();
-		ctx.fillStyle = slice.color;
-		ctx.fill();
+			ctx.beginPath();
+			ctx.moveTo(centerX, centerY);
+			ctx.arc(centerX, centerY, radius, start, end);
+			ctx.closePath();
+			ctx.fillStyle = slice.color;
+			ctx.fill();
 
-		// Label
-		ctx.save();
-		ctx.translate(centerX, centerY);
-		ctx.rotate(start + sliceAngle / 2);
-		ctx.textAlign = "right";
-		ctx.fillStyle = "white";
-		ctx.font = "16px sans-serif";
-		ctx.fillText(slice.label, radius - 10, 5);
-		ctx.restore();
+			// Label
+			ctx.save();
+			ctx.translate(centerX, centerY);
+			ctx.rotate(start + sliceAngle / 2);
+			ctx.textAlign = "right";
+			ctx.fillStyle = "white";
+			ctx.font = "16px sans-serif";
+			ctx.fillText(slice.label, radius - 10, 5);
+			ctx.restore();
 		});
 	};
 
@@ -86,7 +85,13 @@ const SpinPie: React.FC = () => {
 		if (!ctx) return;
 
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
-		drawPie(ctx, canvas.width / 2, canvas.height / 2, SPINNER_RADIUS, rotation);
+		drawPie(
+			ctx,
+			canvas.width / 2,
+			canvas.height / 2,
+			SPINNER_RADIUS,
+			rotation,
+		);
 	}, [rotation]);
 
 	// Socket event handlers for turn-based gameplay
@@ -95,74 +100,77 @@ const SpinPie: React.FC = () => {
 
 		// First, join the room (this adds the player to the room)
 		if (!currentPlayer?.connected) {
-			console.log('Joining room:', roomId, 'as player:', playerId);
-			socket.emit('join_room', roomId, playerId!);
+			console.log("Joining room:", roomId, "as player:", playerId);
+			socket.emit("join_room", roomId, playerId!);
 		}
 		// Event handler functions (defined outside useEffect for dependencies)
 		const handlePlayerJoined = (gameState: GameState, player: Player) => {
-			console.log('Player joined room:', player);
-			console.log('Game state on player joined:', gameState.players);
+			console.log("Player joined room:", player);
+			console.log("Game state on player joined:", gameState.players);
 			setCurrentPlayer(player); // Set the current player information
-			setGameState(prev => ({
+			setGameState((prev) => ({
 				...prev,
-				...gameState
+				...gameState,
 			}));
 
-			socket.emit('player_joined', player);
+			socket.emit("player_joined", player);
 		};
 
 		const handleRoomNotFound = () => {
-			console.error('Room not found');
-			alert('Room not found! Please check the room ID and try again.');
+			console.error("Room not found");
+			alert("Room not found! Please check the room ID and try again.");
 		};
 
 		const handleRoomFull = () => {
-			console.error('Room is full');
-			alert('Room is full! Maximum 2 players allowed.');
+			console.error("Room is full");
+			alert("Room is full! Maximum 2 players allowed.");
 		};
 
 		const handleGameStarted = (gameState: GameState) => {
-			console.log('Game started received:', gameState);
-			setGameState(prev => ({
+			console.log("Game started received:", gameState);
+			setGameState((prev) => ({
 				...prev,
-				...gameState
+				...gameState,
 			}));
 		};
 
-		const handleRotationUpdate = (gameState: GameState, rotation: number) => {
+		const handleRotationUpdate = (
+			gameState: GameState,
+			rotation: number,
+		) => {
 			// Get gamestate too and prevent handling if not opponent's turn
 			if (gameState.currentPlayerId === playerId) {
 				return;
 			}
 			// rotation is in radians
-			console.log('Rotation update received:', rotation);
-			// We need to ensure we don't send our own rotation back to us in socket 
+			console.log("Rotation update received:", rotation);
+			// We need to ensure we don't send our own rotation back to us in socket
 			handleSetRotation(rotation); // Update display with opponent's rotation
 		};
 
 		const handleGameEnded = (gameState: GameState) => {
-			console.log('Game ended, final state:', gameState);
-			setGameState(prev => ({
+			console.log("Game ended, final state:", gameState);
+			setGameState((prev) => ({
 				...prev,
-				...gameState
+				...gameState,
 			}));
 		};
 
 		// Register event listeners
-		socket.on('player_joined', handlePlayerJoined);
-		socket.on('room_not_found', handleRoomNotFound);
-		socket.on('room_full', handleRoomFull);
-		socket.on('game_started', handleGameStarted);
-		socket.on('rotation_update', handleRotationUpdate);
-		socket.on('game_ended', handleGameEnded);
+		socket.on("player_joined", handlePlayerJoined);
+		socket.on("room_not_found", handleRoomNotFound);
+		socket.on("room_full", handleRoomFull);
+		socket.on("game_started", handleGameStarted);
+		socket.on("rotation_update", handleRotationUpdate);
+		socket.on("game_ended", handleGameEnded);
 
 		return () => {
-			socket.off('player_joined', handlePlayerJoined);
-			socket.off('room_not_found', handleRoomNotFound);
-			socket.off('room_full', handleRoomFull);
-			socket.off('game_started', handleGameStarted);
-			socket.off('rotation_update', handleRotationUpdate);
-			socket.off('game_ended', handleGameEnded);
+			socket.off("player_joined", handlePlayerJoined);
+			socket.off("room_not_found", handleRoomNotFound);
+			socket.off("room_full", handleRoomFull);
+			socket.off("game_started", handleGameStarted);
+			socket.off("rotation_update", handleRotationUpdate);
+			socket.off("game_ended", handleGameEnded);
 		};
 	}, [socket, roomId, currentPlayer]);
 
@@ -171,7 +179,6 @@ const SpinPie: React.FC = () => {
 		const centerY = rect.top + rect.height / 2;
 		return Math.atan2(y - centerY, x - centerX);
 	};
-
 
 	const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
 		const rect = canvasRef.current!.getBoundingClientRect();
@@ -211,17 +218,18 @@ const SpinPie: React.FC = () => {
 			canvas.style.cursor = "default";
 		}
 
-		if (isDragging && isMyTurn && gameState.gamePhase === 'playing') { // gamePhase === 'setting field'
+		if (isDragging && isMyTurn && gameState.gamePhase === "playing") {
+			// gamePhase === 'setting field'
 			// Continue rotation while dragging (only during player's turn)
 			const angle = Math.atan2(dy, dx);
 			const newRotation = angle - startAngle;
-			console.log('Dragging, new rotation (radians):', newRotation);
+			console.log("Dragging, new rotation (radians):", newRotation);
 			setRotation(newRotation);
 
 			// Update game state with new rotation
-			setGameState(prev => ({
+			setGameState((prev) => ({
 				...prev,
-				myRotation: newRotation
+				myRotation: newRotation,
 			}));
 
 			// Send rotation to server for opponent to see
@@ -255,18 +263,17 @@ const SpinPie: React.FC = () => {
 		const degrees = ((rotation * 180) / Math.PI) % 360;
 
 		setMessage(
-			`You clicked: ${slices[sliceIndex].label} | Rotation: ${degrees.toFixed(1)}°`
+			`You clicked: ${slices[sliceIndex].label} | Rotation: ${degrees.toFixed(1)}°`,
 		);
 	};
-
 
 	// should handle parameter in degrees
 	const handleSetRotation = (radians: number) => {
 		if (!isNaN(radians)) {
 			setRotation(radians);
-			setGameState(prev => ({
+			setGameState((prev) => ({
 				...prev,
-				myRotation: radians
+				myRotation: radians,
 			}));
 			// Send manual rotation to server for opponent to see
 			emitRotationChange(radians);
@@ -274,25 +281,29 @@ const SpinPie: React.FC = () => {
 	};
 
 	// Emit rotation changes to server (only during player's turn)
-	const emitRotationChange = useCallback((newRotation: number) => {
-		const isMyTurn = gameState.currentPlayerId === playerId; // change to gameState.playerBowling
+	const emitRotationChange = useCallback(
+		(newRotation: number) => {
+			const isMyTurn = gameState.currentPlayerId === playerId; // change to gameState.playerBowling
 
-		if (socket && roomId && currentPlayer && isMyTurn) {
-			console.log('Emitting rotation change (radians):', newRotation);
-			socket.emit('rotate_pie', {
-				roomId,
-				playerId: currentPlayer.id,
-				rotation: newRotation
-			});
-		}
-	}, [socket, roomId, currentPlayer, gameState.currentPlayerId]);
+			if (socket && roomId && currentPlayer && isMyTurn) {
+				console.log("Emitting rotation change (radians):", newRotation);
+				socket.emit("rotate_pie", {
+					roomId,
+					playerId: currentPlayer.id,
+					rotation: newRotation,
+				});
+			}
+		},
+		[socket, roomId, currentPlayer, gameState.currentPlayerId],
+	);
 
 	// End current player's turn
 	const endTurn = useCallback(() => {
 		const isMyTurn = gameState.currentPlayerId === playerId; // change to gameState.playerBowling
 
-		if (socket && isMyTurn) { // Need to update logic to switch between bowler and batsman
-			socket.emit('end_turn', roomId!, rotation); // send 
+		if (socket && isMyTurn) {
+			// Need to update logic to switch between bowler and batsman
+			socket.emit("end_turn", roomId!, rotation); // send
 		}
 	}, [socket, gameState.currentPlayerId]);
 
@@ -300,12 +311,16 @@ const SpinPie: React.FC = () => {
 		<div style={{ textAlign: "center" }}>
 			{/* Turn indicator */}
 			<div style={{ marginBottom: "20px" }}>
-				{gameState.gamePhase === 'finished' ? (
+				{gameState.gamePhase === "finished" ? (
 					<h2 style={{ color: "#4CAF50" }}>Game Finished!</h2>
 				) : gameState.currentPlayerId === playerId ? (
-					<h2 style={{ color: "#2196F3" }}>Your Turn (Turn {gameState.currentTurn}/6)</h2>
+					<h2 style={{ color: "#2196F3" }}>
+						Your Turn (Turn {gameState.currentTurn}/6)
+					</h2>
 				) : (
-					<h2 style={{ color: "#FF9800" }}>Opponent's Turn (Turn {gameState.currentTurn}/6)</h2>
+					<h2 style={{ color: "#FF9800" }}>
+						Opponent's Turn (Turn {gameState.currentTurn}/6)
+					</h2>
 				)}
 			</div>
 
@@ -318,66 +333,111 @@ const SpinPie: React.FC = () => {
 					style={{
 						border: "2px solid #ddd",
 						borderRadius: "50%",
-						cursor: gameState.currentPlayerId === playerId && gameState.gamePhase === 'playing' ? "grab" : "not-allowed",
+						cursor:
+							gameState.currentPlayerId === playerId &&
+							gameState.gamePhase === "playing"
+								? "grab"
+								: "not-allowed",
 						touchAction: "none",
-						opacity: gameState.currentPlayerId === playerId && gameState.gamePhase === 'playing' ? 1 : 0.7
+						opacity:
+							gameState.currentPlayerId === playerId &&
+							gameState.gamePhase === "playing"
+								? 1
+								: 0.7,
 					}}
-					onMouseDown={gameState.currentPlayerId === playerId && gameState.gamePhase === 'playing' ? handleMouseDown : undefined}
-					onMouseMove={gameState.currentPlayerId === playerId && gameState.gamePhase === 'playing' ? handleMouseMoveCursor : undefined}
-					onMouseUp={gameState.currentPlayerId === playerId && gameState.gamePhase === 'playing' ? handleMouseUp : undefined}
+					onMouseDown={
+						gameState.currentPlayerId === playerId &&
+						gameState.gamePhase === "playing"
+							? handleMouseDown
+							: undefined
+					}
+					onMouseMove={
+						gameState.currentPlayerId === playerId &&
+						gameState.gamePhase === "playing"
+							? handleMouseMoveCursor
+							: undefined
+					}
+					onMouseUp={
+						gameState.currentPlayerId === playerId &&
+						gameState.gamePhase === "playing"
+							? handleMouseUp
+							: undefined
+					}
 					onMouseLeave={handleMouseUp}
 					onClick={handleClick}
-					onTouchStart={gameState.currentPlayerId === playerId && gameState.gamePhase === 'playing' ?
-						(e) => handleMouseDown(e.touches[0] as any) : undefined}
-					onTouchMove={gameState.currentPlayerId === playerId && gameState.gamePhase === 'playing' ?
-						(e) => handleMouseMoveCursor(e.touches[0] as any) : undefined}
+					onTouchStart={
+						gameState.currentPlayerId === playerId &&
+						gameState.gamePhase === "playing"
+							? (e) => handleMouseDown(e.touches[0] as any)
+							: undefined
+					}
+					onTouchMove={
+						gameState.currentPlayerId === playerId &&
+						gameState.gamePhase === "playing"
+							? (e) => handleMouseMoveCursor(e.touches[0] as any)
+							: undefined
+					}
 					onTouchEnd={handleMouseUp}
 				/>
 
 				{/* Overlay message when not player's turn */}
-				{(gameState.currentPlayerId !== playerId || gameState.gamePhase !== 'playing') && (
-					<div style={{
-						position: "absolute",
-						top: 0,
-						left: 0,
-						right: 0,
-						bottom: 0,
-						display: "flex",
-						alignItems: "center",
-						justifyContent: "center",
-						backgroundColor: "rgba(255, 255, 255, 0.8)",
-						borderRadius: "50%",
-						fontSize: "18px",
-						fontWeight: "bold",
-						color: "#666"
-					}}>
-						{gameState.gamePhase === 'finished' ? 'Game Complete!' : 'Waiting for opponent...'}
+				{(gameState.currentPlayerId !== playerId ||
+					gameState.gamePhase !== "playing") && (
+					<div
+						style={{
+							position: "absolute",
+							top: 0,
+							left: 0,
+							right: 0,
+							bottom: 0,
+							display: "flex",
+							alignItems: "center",
+							justifyContent: "center",
+							backgroundColor: "rgba(255, 255, 255, 0.8)",
+							borderRadius: "50%",
+							fontSize: "18px",
+							fontWeight: "bold",
+							color: "#666",
+						}}
+					>
+						{gameState.gamePhase === "finished"
+							? "Game Complete!"
+							: "Waiting for opponent..."}
 					</div>
 				)}
 			</div>
 
 			{/* Game message */}
-			<p style={{ fontSize: "20px", fontWeight: "bold", margin: "20px 0" }}>{message}</p>
+			<p
+				style={{
+					fontSize: "20px",
+					fontWeight: "bold",
+					margin: "20px 0",
+				}}
+			>
+				{message}
+			</p>
 
 			{/* End turn button - only show during player's turn */}
-			{gameState.currentPlayerId === playerId && gameState.gamePhase === 'playing' && (
-				<div style={{ margin: "20px 0" }}>
-					<button
-						onClick={endTurn}
-						style={{
-							padding: "12px 24px",
-							fontSize: "16px",
-							backgroundColor: "#FF5722",
-							color: "white",
-							border: "none",
-							borderRadius: "5px",
-							cursor: "pointer"
-						}}
-					>
-						End Turn ({gameState.currentTurn}/6)
-					</button>
-				</div>
-			)}
+			{gameState.currentPlayerId === playerId &&
+				gameState.gamePhase === "playing" && (
+					<div style={{ margin: "20px 0" }}>
+						<button
+							onClick={endTurn}
+							style={{
+								padding: "12px 24px",
+								fontSize: "16px",
+								backgroundColor: "#FF5722",
+								color: "white",
+								border: "none",
+								borderRadius: "5px",
+								cursor: "pointer",
+							}}
+						>
+							End Turn ({gameState.currentTurn}/6)
+						</button>
+					</div>
+				)}
 
 			{/* Manual rotation input (for testing)
 			<div style={{ marginTop: "20px" }}>
@@ -415,17 +475,24 @@ const SpinPie: React.FC = () => {
 			</div> */}
 
 			{/* Game history (when finished) */}
-			{gameState.gamePhase === 'finished' && (
-				<div style={{
-					marginTop: "30px",
-					padding: "20px",
-					backgroundColor: "#f5f5f5",
-					borderRadius: "5px",
-					maxWidth: "400px",
-					margin: "30px auto"
-				}}>
+			{gameState.gamePhase === "finished" && (
+				<div
+					style={{
+						marginTop: "30px",
+						padding: "20px",
+						backgroundColor: "#f5f5f5",
+						borderRadius: "5px",
+						maxWidth: "400px",
+						margin: "30px auto",
+					}}
+				>
 					<h3>Game Complete!</h3>
-					<p>Total moves played: {gameState.gamePhase === 'finished' ? gameState.currentTurn : gameState.currentTurn - 1}</p>
+					<p>
+						Total moves played:{" "}
+						{gameState.gamePhase === "finished"
+							? gameState.currentTurn
+							: gameState.currentTurn - 1}
+					</p>
 					<p>Thanks for playing!</p>
 				</div>
 			)}

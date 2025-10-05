@@ -1,11 +1,11 @@
 {
-  "watch": ["src"],
-  "ext": "ts",
-  "ignore": ["src/**/*.spec.ts"],
-  "exec": "ts-node src/server.ts",
-  "env": {
-    "NODE_ENV": "development",
-    "FRONTEND_URL": "http://localhost:3000",
-    "PORT": 3001
-  }
+	"watch": ["src"],
+	"ext": "ts",
+	"ignore": ["src/**/*.spec.ts"],
+	"exec": "ts-node src/server.ts",
+	"env": {
+		"NODE_ENV": "development",
+		"FRONTEND_URL": "http://localhost:3000",
+		"PORT": 3001
+	}
 }

@@ -71,7 +71,7 @@ export interface GameRoom {
 	maxPlayers: number; // 2
 	created: Date; // creation time
 	isActive: boolean; // probably pointless?
-	roomCreator: // ID of the room creator
+	roomCreator: string// ID of the room creator
 }
 ```
 
