@@ -85,11 +85,11 @@ export interface GameState {
 	totalBalls: number; // Fixed to 6 right now
 	gamePhase: 'waiting' | 'setting field' |  'batting' | 'finished'; // game state
 	innings: 1 // Can be 2 max
-	deliveryHistory: BallRecord[]; // list of turn records
+	deliveryHistory: DeliveryRecord[]; // list of turn records
 }	
 
 
-export interface BallRecord {
+export interface DeliveryRecord {
 	ballNumber: number;
 	innings: number;
 	rotation: number;
@@ -375,7 +375,7 @@ export interface GameState {
 	innings: 1 // Can be 2 max
 	deliveryHistory: [
 		{
-			BallRecord
+			DeliveryRecord
     			innings: 1
 				ballNumber: 1
 				rotation: 24
@@ -399,7 +399,7 @@ export interface GameState {
 	innings: 1 // Can be 2 max
 	deliveryHistory: [
 		{
-			BallRecord
+			DeliveryRecord
     			innings: 1
 				ballNumber: 1
 				rotation: 24
@@ -423,7 +423,7 @@ export interface GameState {
 	innings: 1 // Can be 2 max
 	deliveryHistory: [
 		{
-			BallRecord
+			DeliveryRecord
     			innings: 1
 				ballNumber: 1
 				rotation: 24
@@ -447,7 +447,7 @@ export interface GameState {
 	innings: 1 // Can be 2 max
 	deliveryHistory: [
 		{
-			BallRecord
+			DeliveryRecord
     			innings: 1
 				ballNumber: 1
 				rotation: 24
@@ -471,7 +471,7 @@ export interface GameState {
 	innings: 2 // Can be 2 max
 	deliveryHistory: [
 		{
-			BallRecord
+			DeliveryRecord
 				innings: 1
 				ballNumber: 1
 				rotation: 24
@@ -479,7 +479,7 @@ export interface GameState {
 				timestamp: now
 		},
 		{
-			BallRecord
+			DeliveryRecord
     			innings: 1
 				ballNumber: 2
 				rotation: 95
@@ -507,7 +507,7 @@ export interface GameState {
 	innings: 2 // Can be 2 max
 	deliveryHistory: [
 		{
-			BallRecord
+			DeliveryRecord
 				innings: 1
 				ballNumber: 1
 				rotation: 24
@@ -515,7 +515,7 @@ export interface GameState {
 				timestamp: now
 		},
 		{
-			BallRecord
+			DeliveryRecord
     			innings: 1
 				ballNumber: 2
 				rotation: 95
@@ -539,7 +539,7 @@ export interface GameState {
 	innings: 2 // Can be 2 max
 	deliveryHistory: [
 		{
-			BallRecord
+			DeliveryRecord
 				innings: 1
 				ballNumber: 1
 				rotation: 24
@@ -547,7 +547,7 @@ export interface GameState {
 				timestamp: now
 		},
 		{
-			BallRecord
+			DeliveryRecord
     			innings: 1
 				ballNumber: 2
 				rotation: 95
@@ -570,7 +570,7 @@ export interface GameState {
 	innings: 2 // Can be 2 max
 	deliveryHistory: [
 		{
-			BallRecord
+			DeliveryRecord
 				innings: 1
 				ballNumber: 1
 				rotation: 24
@@ -578,7 +578,7 @@ export interface GameState {
 				timestamp: now
 		},
 		{
-			BallRecord
+			DeliveryRecord
     			innings: 1
 				ballNumber: 2
 				rotation: 95
@@ -602,7 +602,7 @@ export interface GameState {
 	innings: 2 // Can be 2 max
 	deliveryHistory: [
 		{
-			BallRecord
+			DeliveryRecord
 				innings: 1
 				ballNumber: 1
 				rotation: 24
@@ -610,7 +610,7 @@ export interface GameState {
 				timestamp: now
 		},
 		{
-			BallRecord
+			DeliveryRecord
     			innings: 1
 				ballNumber: 2
 				rotation: 95
@@ -634,7 +634,7 @@ export interface GameState {
 	innings: 2 // Can be 2 max
 	deliveryHistory: [
 		{
-			BallRecord
+			DeliveryRecord
 				innings: 1
 				ballNumber: 1
 				rotation: 24
@@ -642,7 +642,7 @@ export interface GameState {
 				timestamp: now
 		},
 		{
-			BallRecord
+			DeliveryRecord
     			innings: 1
 				ballNumber: 2
 				rotation: 95
@@ -650,7 +650,7 @@ export interface GameState {
 				timestamp: now
 		},
 		{
-			BallRecord
+			DeliveryRecord
     			innings: 2
 				ballNumber: 1
 				rotation: 51
@@ -673,7 +673,7 @@ export interface GameState {
 	innings: 2 // Can be 2 max
 	deliveryHistory: [
 		{
-			BallRecord
+			DeliveryRecord
 				innings: 1
 				ballNumber: 1
 				rotation: 24
@@ -681,7 +681,7 @@ export interface GameState {
 				timestamp: now
 		},
 		{
-			BallRecord
+			DeliveryRecord
     			innings: 1
 				ballNumber: 2
 				rotation: 95
@@ -689,7 +689,7 @@ export interface GameState {
 				timestamp: now
 		},
 		{
-			BallRecord
+			DeliveryRecord
     			innings: 2
 				ballNumber: 1
 				rotation: 51
@@ -713,7 +713,7 @@ export interface GameState {
 	innings: 2 // Can be 2 max
 	deliveryHistory: [
 		{
-			BallRecord
+			DeliveryRecord
 				innings: 1
 				ballNumber: 1
 				rotation: 24
@@ -721,7 +721,7 @@ export interface GameState {
 				timestamp: now
 		},
 		{
-			BallRecord
+			DeliveryRecord
     			innings: 1
 				ballNumber: 2
 				rotation: 95
@@ -729,7 +729,7 @@ export interface GameState {
 				timestamp: now
 		},
 		{
-			BallRecord
+			DeliveryRecord
     			innings: 2
 				ballNumber: 1
 				rotation: 51
@@ -753,7 +753,7 @@ export interface GameState {
 	innings: 2 // Can be 2 max
 	deliveryHistory: [
 		{
-			BallRecord
+			DeliveryRecord
 				innings: 1
 				ballNumber: 1
 				rotation: 24
@@ -761,7 +761,7 @@ export interface GameState {
 				timestamp: now
 		},
 		{
-			BallRecord
+			DeliveryRecord
     			innings: 1
 				ballNumber: 2
 				rotation: 95
@@ -769,7 +769,7 @@ export interface GameState {
 				timestamp: now
 		},
 		{
-			BallRecord
+			DeliveryRecord
     			innings: 2
 				ballNumber: 1
 				rotation: 51
@@ -793,7 +793,7 @@ export interface GameState {
 	innings: 2 // Can be 2 max
 	deliveryHistory: [
 		{
-			BallRecord
+			DeliveryRecord
 				innings: 1
 				ballNumber: 1
 				rotation: 24
@@ -801,7 +801,7 @@ export interface GameState {
 				timestamp: now
 		},
 		{
-			BallRecord
+			DeliveryRecord
     			innings: 1
 				ballNumber: 2
 				rotation: 95
@@ -809,7 +809,7 @@ export interface GameState {
 				timestamp: now
 		},
 		{
-			BallRecord
+			DeliveryRecord
     			innings: 2
 				ballNumber: 1
 				rotation: 51
@@ -817,7 +817,7 @@ export interface GameState {
 				timestamp: now
 		},
 		{
-			BallRecord
+			DeliveryRecord
     			innings: 2
 				ballNumber: 2
 				rotation: 275

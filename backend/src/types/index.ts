@@ -22,11 +22,11 @@ export interface GameState {
 	playerBowling: string; // player ID of who is bowling
 	totalBalls: number; // Fixed to 6 right now
 	gamePhase: "waiting" | "setting field" | "batting" | "finished"; // game state
-	innings: 1; // Can be 2 max
-	deliveryHistory: BallRecord[]; // list of turn records
+	innings: number; // Can be 2 max
+	deliveryHistory: DeliveryRecord[]; // list of turn records
 }
 
-export interface BallRecord {
+export interface DeliveryRecord {
 	ballNumber: number;
 	innings: number;
 	rotation: number;
@@ -44,8 +44,8 @@ export interface ClientEvents {
 		playerId: string;
 		rotation: number;
 	}) => void; // will be redundant soon
-	field_set: (roomId: string, rotation: number) => void;
-	shot_played: (roomId: string, choice: string) => void;
+	field_set: (playerId: string, roomId: string, rotation: number) => void;
+	shot_played: (playerId: string, roomId: string, choice: string) => void;
 }
 
 // Events that the server sends TO clients

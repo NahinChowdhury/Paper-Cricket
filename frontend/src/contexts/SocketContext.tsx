@@ -41,8 +41,8 @@ export interface ClientEvents {
 		playerId: string;
 		rotation: number;
 	}) => void; // will be redundant soon
-	field_set: (roomId: string, rotation: number) => void;
-	shot_played: (roomId: string, choice: string) => void;
+	field_set: (playerId: string, roomId: string, rotation: number) => void;
+	shot_played: (playerId: string, roomId: string, choice: string) => void;
 }
 
 // Events that the server sends TO clients

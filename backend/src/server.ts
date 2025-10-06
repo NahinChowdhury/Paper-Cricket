@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from "uuid";
 import { RoomManager } from "./roomManager";
 import { GameStateManager } from "./gameState";
 // Import types from local types file
-import { ClientEvents, Player, ServerEvents } from "./types";
+import { ClientEvents, GameRoom, Player, ServerEvents } from "./types";
 
 const app = express();
 const server = createServer(app);
@@ -91,13 +91,12 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 
 			let gameState = gameStateManager.getGameState(roomId);
 			if (!gameState) {
-				// Create a game state if it doesn't exist (shouldn't happen normally)
-				gameState = gameStateManager.createInitialGameState(
-					playerId,
-					roomId,
-				);
+				// We should never reach this situation
+				// Because this means that room creator != game creator
+				// This can lead to many UI bugs
+				throw new Error("A room exists but no game was created for it. Create a new room and try again.");
 			} else {
-				gameState = gameStateManager.addPlayerToGameState(
+				gameState = gameStateManager.addPlayerToGame(
 					playerId,
 					roomId,
 				);
@@ -144,14 +143,14 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 					player.id,
 					player.roomId,
 				);
-				gameStateManager.addPlayerToGameState(player.id, player.roomId);
+				gameStateManager.addPlayerToGame(player.id, player.roomId);
 				console.log(
 					`Player ${addedPlayer.id} added to room ${addedPlayer.roomId}`,
 				);
 			}
 
 			// Check if both players are now connected and start game
-			const updatedRoom = roomManager.getRoom(player.roomId);
+			const updatedRoom: GameRoom | undefined = roomManager.getRoom(player.roomId);
 			if (updatedRoom && updatedRoom.players.length === 2) {
 				console.log(
 					"Both players connected, starting game in room:",
@@ -159,13 +158,11 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 				);
 
 				// Find the room creator (first player)
-				const roomCreator = updatedRoom.players.find(
-					(p) => p.isRoomCreator,
-				);
+				const roomCreator: string = updatedRoom.roomCreator;
 				if (roomCreator) {
 					const gameState = gameStateManager.startGame(player.roomId);
 					console.log(
-						`Game started by room creator: ${roomCreator.id}`,
+						`Game started by room creator: ${roomCreator}`,
 					);
 
 					// Notify all players that game has started
@@ -204,28 +201,40 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 		},
 	);
 
-	// Basic turn ending (placeholder)
-	socket.on("end_turn", (roomId: string, rotation: number) => {
+	// Bowler sends their desired field rotation
+	socket.on("field_set", (playerId: string, roomId: string, rotation: number) => {
 		try {
-			// record the move and get the gamestate
-			const gameState = gameStateManager.recordMove(roomId, rotation);
-			if (gameState.gamePhase === "finished") {
-				// delete the room and game state
-				roomManager.deleteRoom(roomId);
-				gameStateManager.cleanupGameState(roomId);
+			// Updates game state and changes gamephase to 'batting'
+			const gameState = gameStateManager.updateFieldSetup(playerId, roomId, rotation);
+			
+			// Notify all players about turn end and next turn
+			io.to(roomId).emit("play_shot", gameState);
+			console.log(
+				`Field setup done for ball: ${gameState.currentBall}. Batting now!`,
+			);
+		} catch (error) {
+			console.error("Error setting the field:", error);
+		}
+	});
 
+	// Bowler sends their desired field rotation
+	socket.on("shot_played", (playerId: string, roomId: string, choice: string) => {
+		try {
+			// Updates game state and changes gamephase to 'batting'
+			const gameState = gameStateManager.updateShotPlayed(playerId, roomId, choice);
+
+			if(gameState.gamePhase === 'finished') {
 				io.to(roomId).emit("game_ended", gameState);
 				console.log(`Game ended in room ${roomId}`);
 				return;
 			}
 
-			// Notify all players about turn end and next turn
-			io.to(roomId).emit("turn_ended", gameState);
+			io.to(roomId).emit("set_field", gameState);
 			console.log(
-				`Turn ended in room ${roomId}, next turn: ${gameState.currentTurn}`,
+				`Delivery completed for ball: ${gameState.currentBall}. Batting now!`,
 			);
 		} catch (error) {
-			console.error("Error ending turn:", error);
+			console.error("Error setting the field:", error);
 		}
 	});
 

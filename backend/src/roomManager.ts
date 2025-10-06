@@ -3,7 +3,7 @@ import { Player, GameRoom } from "./types";
 
 export class RoomManager {
 	private rooms: Map<string, GameRoom> = new Map();
-	private playerRooms: Map<string, string> = new Map(); // playerId -> roomId
+	private playerRooms: Map<string, string> = new Map(); // playerId -> roomId // ensures one player can be playing one game at a time
 
 	// Create a new room
 	createRoom(playerId: string, roomId?: string): Player {
@@ -37,10 +37,6 @@ export class RoomManager {
 			throw new Error("Room not found");
 		}
 
-		if (room.players.length >= room.maxPlayers) {
-			throw new Error("Room is full");
-		}
-
 		// get player from socketId if already exists
 		const existingPlayer: Player | undefined = room.players.find(
 			(p) => p.id === playerId,
@@ -48,6 +44,10 @@ export class RoomManager {
 
 		if (existingPlayer) {
 			return existingPlayer;
+		}
+
+		if (room.players.length >= room.maxPlayers) {
+			throw new Error("Room is full");
 		}
 
 		// otherwise create new player
@@ -77,17 +77,6 @@ export class RoomManager {
 		const room = this.rooms.get(roomId);
 		return room?.players.find((p) => p.id === playerId);
 	}
-
-	// Get player's socket ID (for notifications)
-	// getPlayerSocketId(playerId: string): string | undefined {
-	//   // This is a simple implementation - in a real scenario you might need a reverse map
-	//   for (const [socketId, roomId] of this.playerRooms) {
-	//     const room = this.rooms.get(roomId);
-	//     const player = room?.players.find(p => p.id === playerId);
-	//     if (player) return socketId;
-	//   }
-	//   return undefined;
-	// }
 
 	// Remove player from room
 	removePlayerFromRoom(playerId: string): void {
