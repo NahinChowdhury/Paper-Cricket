@@ -11,7 +11,7 @@ export class GameStateManager {
 			currentBallRotation: undefined,
 			currentBallBatsmanChoice: undefined,
 			playerBowling: playerId, // Initially the game creator bowls
-			totalBalls: 6,
+			totalBalls: 2, // TODO: Set to 6 later
 			gamePhase: "waiting",
 			innings: 1,
 			deliveryHistory: [],
@@ -63,8 +63,12 @@ export class GameStateManager {
 		return gameState;
 	}
 
-	// Record field setting sent by bowler	
-	updateFieldSetup(playerId: string, roomId: string, rotation: number): GameState {
+	// Record field setting sent by bowler
+	updateFieldSetup(
+		playerId: string,
+		roomId: string,
+		rotation: number,
+	): GameState {
 		let gameState = this.gameStates.get(roomId);
 		if (!gameState) {
 			throw new Error("No game state found for room");
@@ -72,16 +76,22 @@ export class GameStateManager {
 
 		// Ensure we take input from the bowler only
 		if (gameState.playerBowling !== playerId) {
-			throw new Error("Only bowlers are allowed to set the field during 'setting field' game phase!")
+			throw new Error(
+				"Only bowlers are allowed to set the field during 'setting field' game phase!",
+			);
 		}
 		gameState.currentBallRotation = rotation;
-		gameState.gamePhase = 'batting';
+		gameState.gamePhase = "batting";
 
 		return gameState;
 	}
 
 	// Record field setting sent by bowler
-	updateShotPlayed(playerId: string, roomId: string, choice: string): GameState {
+	updateShotPlayed(
+		playerId: string,
+		roomId: string,
+		choice: string,
+	): GameState {
 		let gameState = this.gameStates.get(roomId);
 		if (!gameState) {
 			throw new Error("No game state found for room");
@@ -89,13 +99,20 @@ export class GameStateManager {
 
 		// Ensure we take input from the batsman only
 		if (gameState.playerBowling === playerId) {
-			throw new Error("Only batsmen are allowed to choose a shot during 'batting' game phase!")
+			throw new Error(
+				"Only batsmen are allowed to choose a shot during 'batting' game phase!",
+			);
 		}
 		gameState.currentBallBatsmanChoice = choice;
-		gameState.gamePhase = 'batting';
+		gameState.gamePhase = "batting";
 
-		if(!gameState.currentBallRotation || gameState.currentBallBatsmanChoice.trim() === '') {
-			throw new Error("Both field rotation and batsman choice must be set before recording the delivery!");
+		if (
+			gameState.currentBallRotation === undefined ||
+			gameState.currentBallBatsmanChoice.trim() === ""
+		) {
+			throw new Error(
+				"Both field rotation and batsman choice must be set before recording the delivery!",
+			);
 		}
 
 		// Record the delivery
@@ -104,25 +121,31 @@ export class GameStateManager {
 			innings: gameState.innings,
 			rotation: gameState.currentBallRotation,
 			batsmanChoice: gameState.currentBallBatsmanChoice,
-			timestamp: new Date()
-		}
+			timestamp: new Date(),
+		};
 
 		gameState.deliveryHistory.push(delivery);
 
-		if(gameState.currentBall === gameState.totalBalls && gameState.innings === 2) {
-			gameState.gamePhase = 'finished';
+		if (
+			gameState.currentBall === gameState.totalBalls &&
+			gameState.innings === 2
+		) {
+			gameState.gamePhase = "finished";
 			return gameState;
-		} else if(gameState.currentBall === gameState.totalBalls) {
+		} else if (gameState.currentBall === gameState.totalBalls) {
 			// Start second innings
 			gameState.innings = 2;
 			gameState.currentBall = 1;
+			gameState.playerBowling = gameState.players.find(
+				(p) => p !== gameState?.playerBowling,
+			)!;
 		} else {
 			gameState.currentBall++;
 		}
 
 		gameState.currentBallRotation = undefined;
 		gameState.currentBallBatsmanChoice = undefined;
-		gameState.gamePhase = 'setting field';
+		gameState.gamePhase = "setting field";
 
 		return gameState;
 	}

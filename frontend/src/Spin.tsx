@@ -33,15 +33,21 @@ const SpinPie: React.FC = () => {
 	const [isDragging, setIsDragging] = useState<boolean>(false);
 	const [startAngle, setStartAngle] = useState<number>(0);
 	const [message, setMessage] = useState<string>("");
-	const [inputDeg, setInputDeg] = useState<string>("");
+	const [shotSelected, setShotSelected] = useState<string | undefined>(
+		undefined,
+	);
 
 	// Turn-based game state
 	const [gameState, setGameState] = useState<GameState>({
 		players: [],
-		currentTurn: 1,
-		currentPlayerId: "",
-		totalTurns: 6,
+		currentBall: 1,
+		currentBallRotation: undefined,
+		currentBallBatsmanChoice: undefined,
+		playerBowling: "",
+		totalBalls: 6,
 		gamePhase: "waiting",
+		innings: 0,
+		deliveryHistory: [],
 	});
 
 	const SPINNER_RADIUS = 150; // Static radius for the spinner
@@ -132,6 +138,11 @@ const SpinPie: React.FC = () => {
 				...prev,
 				...gameState,
 			}));
+
+			// Update the rotation too
+			if (gameState.currentBallRotation !== undefined) {
+				setRotation(gameState.currentBallRotation);
+			}
 		};
 
 		const handleRotationUpdate = (
@@ -139,17 +150,33 @@ const SpinPie: React.FC = () => {
 			rotation: number,
 		) => {
 			// Get gamestate too and prevent handling if not opponent's turn
-			if (gameState.currentPlayerId === playerId) {
+			if (gameState.playerBowling === playerId) {
 				return;
 			}
 			// rotation is in radians
-			console.log("Rotation update received:", rotation);
+			// console.log("Rotation update received:", rotation);
 			// We need to ensure we don't send our own rotation back to us in socket
 			handleSetRotation(rotation); // Update display with opponent's rotation
 		};
 
 		const handleGameEnded = (gameState: GameState) => {
 			console.log("Game ended, final state:", gameState);
+			setGameState((prev) => ({
+				...prev,
+				...gameState,
+			}));
+		};
+
+		const handlePlayShot = (gameState: GameState) => {
+			console.log("Play shot event received:", gameState);
+			setGameState((prev) => ({
+				...prev,
+				...gameState,
+			}));
+		};
+
+		const handleSetField = (gameState: GameState) => {
+			console.log("Set field event received:", gameState);
 			setGameState((prev) => ({
 				...prev,
 				...gameState,
@@ -163,6 +190,8 @@ const SpinPie: React.FC = () => {
 		socket.on("game_started", handleGameStarted);
 		socket.on("rotation_update", handleRotationUpdate);
 		socket.on("game_ended", handleGameEnded);
+		socket.on("play_shot", handlePlayShot);
+		socket.on("set_field", handleSetField);
 
 		return () => {
 			socket.off("player_joined", handlePlayerJoined);
@@ -171,6 +200,8 @@ const SpinPie: React.FC = () => {
 			socket.off("game_started", handleGameStarted);
 			socket.off("rotation_update", handleRotationUpdate);
 			socket.off("game_ended", handleGameEnded);
+			socket.off("play_shot", handlePlayShot);
+			socket.off("set_field", handleSetField);
 		};
 	}, [socket, roomId, currentPlayer]);
 
@@ -200,7 +231,6 @@ const SpinPie: React.FC = () => {
 
 	const handleMouseMoveCursor = (e: React.MouseEvent<HTMLCanvasElement>) => {
 		const canvas = canvasRef.current;
-		const isMyTurn = gameState.currentPlayerId === playerId; // change to gameState.playerBowling
 
 		if (!canvas) return;
 
@@ -213,17 +243,17 @@ const SpinPie: React.FC = () => {
 		const distance = Math.sqrt(dx * dx + dy * dy);
 
 		if (distance <= SPINNER_RADIUS) {
-			canvas.style.cursor = isDragging ? "grabbing" : "grab";
+			canvas.style.cursor = getCursorStyle();
 		} else {
 			canvas.style.cursor = "default";
 		}
 
-		if (isDragging && isMyTurn && gameState.gamePhase === "playing") {
+		if (isDragging && gameState.playerBowling === playerId && gameState.gamePhase === "setting field") {
 			// gamePhase === 'setting field'
 			// Continue rotation while dragging (only during player's turn)
 			const angle = Math.atan2(dy, dx);
 			const newRotation = angle - startAngle;
-			console.log("Dragging, new rotation (radians):", newRotation);
+			// console.log("Dragging, new rotation (radians):", newRotation);
 			setRotation(newRotation);
 
 			// Update game state with new rotation
@@ -262,9 +292,17 @@ const SpinPie: React.FC = () => {
 
 		const degrees = ((rotation * 180) / Math.PI) % 360;
 
-		setMessage(
-			`You clicked: ${slices[sliceIndex].label} | Rotation: ${degrees.toFixed(1)}°`,
-		);
+		// Update selected shot
+		setShotSelected(slices[sliceIndex].label);
+		if(gameState.playerBowling === playerId && gameState.gamePhase === "setting field") {
+			setMessage(
+				`Rotation: ${degrees.toFixed(1)}°`,
+			);
+		} else if (gameState.playerBowling !== playerId && gameState.gamePhase === "batting") {
+			setMessage(
+				`Shot selected: ${slices[sliceIndex].label}`,
+			);
+		}
 	};
 
 	// should handle parameter in degrees
@@ -280,13 +318,19 @@ const SpinPie: React.FC = () => {
 		}
 	};
 
-	// Emit rotation changes to server (only during player's turn)
+	const resetForNextBall = () => {
+		setRotation(0);
+		setShotSelected(undefined);
+		setMessage("");
+	};
+
+	// // Emit rotation changes to server (only during player's turn)
 	const emitRotationChange = useCallback(
 		(newRotation: number) => {
-			const isMyTurn = gameState.currentPlayerId === playerId; // change to gameState.playerBowling
+			const isMyTurn = gameState.playerBowling === playerId; // change to gameState.playerBowling
 
 			if (socket && roomId && currentPlayer && isMyTurn) {
-				console.log("Emitting rotation change (radians):", newRotation);
+				// console.log("Emitting rotation change (radians):", newRotation);
 				socket.emit("rotate_pie", {
 					roomId,
 					playerId: currentPlayer.id,
@@ -294,18 +338,53 @@ const SpinPie: React.FC = () => {
 				});
 			}
 		},
-		[socket, roomId, currentPlayer, gameState.currentPlayerId],
+		[socket, roomId, currentPlayer, gameState.playerBowling],
 	);
 
 	// End current player's turn
-	const endTurn = useCallback(() => {
-		const isMyTurn = gameState.currentPlayerId === playerId; // change to gameState.playerBowling
+	// TODO: update logic for batter and bowler turns
+	const endTurn = () => {
+		const bowling = gameState.playerBowling === playerId; // change to gameState.playerBowling
 
-		if (socket && isMyTurn) {
-			// Need to update logic to switch between bowler and batsman
-			socket.emit("end_turn", roomId!, rotation); // send
+		if (socket) {
+			if (bowling) {
+				console.log("Bowler setting field with rotation:", rotation);
+				// Bowler sets the field
+				socket.emit("field_set", currentPlayer!.id, roomId!, rotation);
+			} else {
+				if (!shotSelected) {
+					alert(
+						"Please select a shot by clicking on the pie before submitting.",
+					);
+					return;
+				}
+				// Batter shoots the ball
+				socket.emit(
+					"shot_played",
+					currentPlayer!.id,
+					roomId!,
+					shotSelected!,
+				);
+			}
+			resetForNextBall();
 		}
-	}, [socket, gameState.currentPlayerId]);
+	};
+
+	// helper function
+	const getCursorStyle = (): string => {
+		if (gameState.playerBowling === playerId && gameState.gamePhase === "setting field") {
+			if (isDragging) {
+				return "grabbing";
+			} else {
+				return "grab";
+			}
+		} else if (gameState.playerBowling !== playerId && gameState.gamePhase === "batting") {
+			return "default";
+		} else {
+			return "not-allowed";
+		}
+	}
+
 
 	return (
 		<div style={{ textAlign: "center" }}>
@@ -323,14 +402,25 @@ const SpinPie: React.FC = () => {
 					>
 						Game Finished!
 					</h2>
-				) : gameState.currentPlayerId === playerId ? (
+				) : (gameState.playerBowling === playerId &&
+					gameState.gamePhase === "setting field") ? (
 					<h2
 						style={{
 							color: "#2196F3",
 						}}
 					>
-						Your Turn (Turn {gameState.currentTurn}
-						/6)
+						Your turn to set the field(Ball {gameState.currentBall}
+						/{gameState.totalBalls})
+					</h2>
+				) : (gameState.playerBowling !== playerId &&
+					gameState.gamePhase === "batting") ? (
+					<h2
+						style={{
+							color: "#36aa12ff",
+						}}
+					>
+						Your turn to choose a shot(Ball {gameState.currentBall}
+						/{gameState.totalBalls})
 					</h2>
 				) : (
 					<h2
@@ -338,8 +428,8 @@ const SpinPie: React.FC = () => {
 							color: "#FF9800",
 						}}
 					>
-						Opponent's Turn (Turn {gameState.currentTurn}
-						/6)
+						Opponent is batting now (Ball {gameState.currentBall}
+						/{gameState.totalBalls})
 					</h2>
 				)}
 			</div>
@@ -358,47 +448,47 @@ const SpinPie: React.FC = () => {
 					style={{
 						border: "2px solid #ddd",
 						borderRadius: "50%",
-						cursor:
-							gameState.currentPlayerId === playerId &&
-							gameState.gamePhase === "playing"
-								? "grab"
-								: "not-allowed",
+						cursor: getCursorStyle(),
 						touchAction: "none",
 						opacity:
-							gameState.currentPlayerId === playerId &&
-							gameState.gamePhase === "playing"
+							( (gameState.playerBowling === playerId &&
+							gameState.gamePhase === "setting field") ||
+							(gameState.playerBowling !== playerId &&
+							gameState.gamePhase === "batting") )
 								? 1
 								: 0.7,
 					}}
 					onMouseDown={
-						gameState.currentPlayerId === playerId &&
-						gameState.gamePhase === "playing"
+						gameState.playerBowling === playerId &&
+						gameState.gamePhase === "setting field"
 							? handleMouseDown
 							: undefined
 					}
 					onMouseMove={
-						gameState.currentPlayerId === playerId &&
-						gameState.gamePhase === "playing"
+						( (gameState.playerBowling === playerId &&
+							gameState.gamePhase === "setting field") ||
+							(gameState.playerBowling !== playerId &&
+							gameState.gamePhase === "batting") )
 							? handleMouseMoveCursor
 							: undefined
 					}
 					onMouseUp={
-						gameState.currentPlayerId === playerId &&
-						gameState.gamePhase === "playing"
+						gameState.playerBowling === playerId &&
+						gameState.gamePhase === "setting field"
 							? handleMouseUp
 							: undefined
 					}
 					onMouseLeave={handleMouseUp}
 					onClick={handleClick}
 					onTouchStart={
-						gameState.currentPlayerId === playerId &&
-						gameState.gamePhase === "playing"
+						gameState.playerBowling === playerId &&
+						gameState.gamePhase === "setting field"
 							? (e) => handleMouseDown(e.touches[0] as any)
 							: undefined
 					}
 					onTouchMove={
-						gameState.currentPlayerId === playerId &&
-						gameState.gamePhase === "playing"
+						gameState.playerBowling === playerId &&
+						gameState.gamePhase === "setting field"
 							? (e) => handleMouseMoveCursor(e.touches[0] as any)
 							: undefined
 					}
@@ -406,8 +496,11 @@ const SpinPie: React.FC = () => {
 				/>
 
 				{/* Overlay message when not player's turn */}
-				{(gameState.currentPlayerId !== playerId ||
-					gameState.gamePhase !== "playing") && (
+				{(
+					(gameState.gamePhase === "setting field" && gameState.playerBowling !== playerId) ||
+					(gameState.gamePhase === "batting" && gameState.playerBowling === playerId) ||
+					gameState.gamePhase === "finished"
+				) && (
 					<div
 						style={{
 							position: "absolute",
@@ -444,30 +537,33 @@ const SpinPie: React.FC = () => {
 			</p>
 
 			{/* End turn button - only show during player's turn */}
-			{gameState.currentPlayerId === playerId &&
-				gameState.gamePhase === "playing" && (
-					<div
+			{(
+				(gameState.gamePhase === "setting field" && gameState.playerBowling === playerId) ||
+				(gameState.gamePhase === "batting" && gameState.playerBowling !== playerId)
+			) && (
+				<div
+					style={{
+						margin: "20px 0",
+					}}
+				>
+					<button
+						onClick={endTurn}
 						style={{
-							margin: "20px 0",
+							padding: "12px 24px",
+							fontSize: "16px",
+							backgroundColor: "#FF5722",
+							color: "white",
+							border: "none",
+							borderRadius: "5px",
+							cursor: "pointer",
 						}}
 					>
-						<button
-							onClick={endTurn}
-							style={{
-								padding: "12px 24px",
-								fontSize: "16px",
-								backgroundColor: "#FF5722",
-								color: "white",
-								border: "none",
-								borderRadius: "5px",
-								cursor: "pointer",
-							}}
-						>
-							End Turn ({gameState.currentTurn}
-							/6)
-						</button>
-					</div>
-				)}
+						{gameState.gamePhase === "setting field"
+							? "Submit Field Setup"
+							: "Submit Shot"}
+					</button>
+				</div>
+			)}
 
 			{/* Manual rotation input (for testing)
 			<div style={{ marginTop: "20px" }}>
@@ -517,12 +613,7 @@ const SpinPie: React.FC = () => {
 					}}
 				>
 					<h3>Game Complete!</h3>
-					<p>
-						Total moves played:{" "}
-						{gameState.gamePhase === "finished"
-							? gameState.currentTurn
-							: gameState.currentTurn - 1}
-					</p>
+					<p>Total moves played: {gameState.currentBall}</p>
 					<p>Thanks for playing!</p>
 				</div>
 			)}

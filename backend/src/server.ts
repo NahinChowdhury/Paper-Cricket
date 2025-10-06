@@ -94,12 +94,11 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 				// We should never reach this situation
 				// Because this means that room creator != game creator
 				// This can lead to many UI bugs
-				throw new Error("A room exists but no game was created for it. Create a new room and try again.");
-			} else {
-				gameState = gameStateManager.addPlayerToGame(
-					playerId,
-					roomId,
+				throw new Error(
+					"A room exists but no game was created for it. Create a new room and try again.",
 				);
+			} else {
+				gameState = gameStateManager.addPlayerToGame(playerId, roomId);
 			}
 
 			console.log(
@@ -150,23 +149,40 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 			}
 
 			// Check if both players are now connected and start game
-			const updatedRoom: GameRoom | undefined = roomManager.getRoom(player.roomId);
+			const updatedRoom: GameRoom | undefined = roomManager.getRoom(
+				player.roomId,
+			);
 			if (updatedRoom && updatedRoom.players.length === 2) {
-				console.log(
-					"Both players connected, starting game in room:",
-					player.roomId,
-				);
 
-				// Find the room creator (first player)
-				const roomCreator: string = updatedRoom.roomCreator;
-				if (roomCreator) {
-					const gameState = gameStateManager.startGame(player.roomId);
+
+				// Get the game state
+				// if the game state is waiting, then start the game
+				// otherwise, send the game start to that socket only
+				const gameState = gameStateManager.getGameState(player.roomId);
+				if (!gameState) {
+					throw new Error("No game state found for room");
+				}
+
+				if (gameState.gamePhase === "waiting") {
 					console.log(
-						`Game started by room creator: ${roomCreator}`,
+						"Both players connected, starting game in room:",
+						player.roomId,
 					);
 
-					// Notify all players that game has started
-					io.to(player.roomId).emit("game_started", gameState);
+					// Find the room creator (first player)
+					const roomCreator: string = updatedRoom.roomCreator;
+					if (roomCreator) {
+						const gameState = gameStateManager.startGame(player.roomId);
+						console.log(`Game started by room creator: ${roomCreator}`);
+
+						// Notify all players that game has started
+						io.to(player.roomId).emit("game_started", gameState);
+						return;
+					}
+				} else {
+					// Game already started, just send the current state to the joining player
+					io.to(socket.id).emit("game_started", gameState);
+					return;
 				}
 			}
 		} catch (error) {
@@ -202,41 +218,58 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 	);
 
 	// Bowler sends their desired field rotation
-	socket.on("field_set", (playerId: string, roomId: string, rotation: number) => {
-		try {
-			// Updates game state and changes gamephase to 'batting'
-			const gameState = gameStateManager.updateFieldSetup(playerId, roomId, rotation);
-			
-			// Notify all players about turn end and next turn
-			io.to(roomId).emit("play_shot", gameState);
-			console.log(
-				`Field setup done for ball: ${gameState.currentBall}. Batting now!`,
-			);
-		} catch (error) {
-			console.error("Error setting the field:", error);
-		}
-	});
+	socket.on(
+		"field_set",
+		(playerId: string, roomId: string, rotation: number) => {
+			try {
+				console.log(
+					`Field set received from player ${playerId} in room ${roomId}: ${rotation}`,
+				);
+				// Updates game state and changes gamephase to 'batting'
+				const gameState = gameStateManager.updateFieldSetup(
+					playerId,
+					roomId,
+					rotation,
+				);
+
+				// Notify all players about turn end and next turn
+				io.to(roomId).emit("play_shot", gameState);
+				console.log(
+					`Field setup done for ball: ${gameState.currentBall}. Batting now!`,
+				);
+			} catch (error) {
+				console.error("Error setting the field:", error);
+			}
+		},
+	);
 
 	// Bowler sends their desired field rotation
-	socket.on("shot_played", (playerId: string, roomId: string, choice: string) => {
-		try {
-			// Updates game state and changes gamephase to 'batting'
-			const gameState = gameStateManager.updateShotPlayed(playerId, roomId, choice);
+	socket.on(
+		"shot_played",
+		(playerId: string, roomId: string, choice: string) => {
+			try {
+				// Updates game state and changes gamephase to 'batting'
+				const gameState = gameStateManager.updateShotPlayed(
+					playerId,
+					roomId,
+					choice,
+				);
 
-			if(gameState.gamePhase === 'finished') {
-				io.to(roomId).emit("game_ended", gameState);
-				console.log(`Game ended in room ${roomId}`);
-				return;
+				if (gameState.gamePhase === "finished") {
+					io.to(roomId).emit("game_ended", gameState);
+					console.log(`Game ended in room ${roomId}`);
+					return;
+				}
+
+				io.to(roomId).emit("set_field", gameState);
+				console.log(
+					`Delivery completed for ball: ${gameState.currentBall}. Batting now!`,
+				);
+			} catch (error) {
+				console.error("Error setting the field:", error);
 			}
-
-			io.to(roomId).emit("set_field", gameState);
-			console.log(
-				`Delivery completed for ball: ${gameState.currentBall}. Batting now!`,
-			);
-		} catch (error) {
-			console.error("Error setting the field:", error);
-		}
-	});
+		},
+	);
 
 	// Handle disconnection
 	socket.on("disconnect", (playerId: string) => {

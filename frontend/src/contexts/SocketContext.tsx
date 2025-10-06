@@ -16,19 +16,24 @@ export interface Player {
 	isRoomCreator: boolean;
 }
 
-export interface TurnRecord {
-	turnNumber: number;
-	playerId: string;
+export interface DeliveryRecord {
+	ballNumber: number;
+	innings: number;
 	rotation: number;
+	batsmanChoice: string;
 	timestamp: Date;
 }
 
 export interface GameState {
-	players: string[];
-	currentTurn: number;
-	currentPlayerId: string;
-	totalTurns: number;
-	gamePhase: "waiting" | "playing" | "finished";
+	players: string[]; // list of player IDs. Max 2
+	currentBall: number; // current turn number
+	currentBallRotation: number | undefined; // current ball rotation
+	currentBallBatsmanChoice: string | undefined; // current ball batsman choice
+	playerBowling: string; // player ID of who is bowling
+	totalBalls: number; // Fixed to 6 right now
+	gamePhase: "waiting" | "setting field" | "batting" | "finished"; // game state
+	innings: number; // Can be 2 max
+	deliveryHistory: DeliveryRecord[]; // list of turn records
 }
 
 // Events that clients send TO the server
