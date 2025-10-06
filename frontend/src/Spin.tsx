@@ -310,22 +310,47 @@ const SpinPie: React.FC = () => {
 	return (
 		<div style={{ textAlign: "center" }}>
 			{/* Turn indicator */}
-			<div style={{ marginBottom: "20px" }}>
+			<div
+				style={{
+					marginBottom: "20px",
+				}}
+			>
 				{gameState.gamePhase === "finished" ? (
-					<h2 style={{ color: "#4CAF50" }}>Game Finished!</h2>
+					<h2
+						style={{
+							color: "#4CAF50",
+						}}
+					>
+						Game Finished!
+					</h2>
 				) : gameState.currentPlayerId === playerId ? (
-					<h2 style={{ color: "#2196F3" }}>
-						Your Turn (Turn {gameState.currentTurn}/6)
+					<h2
+						style={{
+							color: "#2196F3",
+						}}
+					>
+						Your Turn (Turn {gameState.currentTurn}
+						/6)
 					</h2>
 				) : (
-					<h2 style={{ color: "#FF9800" }}>
-						Opponent's Turn (Turn {gameState.currentTurn}/6)
+					<h2
+						style={{
+							color: "#FF9800",
+						}}
+					>
+						Opponent's Turn (Turn {gameState.currentTurn}
+						/6)
 					</h2>
 				)}
 			</div>
 
 			{/* Main game canvas */}
-			<div style={{ position: "relative", display: "inline-block" }}>
+			<div
+				style={{
+					position: "relative",
+					display: "inline-block",
+				}}
+			>
 				<canvas
 					ref={canvasRef}
 					width={400}
@@ -421,7 +446,11 @@ const SpinPie: React.FC = () => {
 			{/* End turn button - only show during player's turn */}
 			{gameState.currentPlayerId === playerId &&
 				gameState.gamePhase === "playing" && (
-					<div style={{ margin: "20px 0" }}>
+					<div
+						style={{
+							margin: "20px 0",
+						}}
+					>
 						<button
 							onClick={endTurn}
 							style={{
@@ -434,7 +463,8 @@ const SpinPie: React.FC = () => {
 								cursor: "pointer",
 							}}
 						>
-							End Turn ({gameState.currentTurn}/6)
+							End Turn ({gameState.currentTurn}
+							/6)
 						</button>
 					</div>
 				)}

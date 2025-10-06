@@ -70,7 +70,6 @@ export interface GameRoom {
 	players: Player[]; // players who joined the room so far. Max 2
 	maxPlayers: number; // 2
 	created: Date; // creation time
-	isActive: boolean; // probably pointless?
 	roomCreator: string// ID of the room creator
 }
 ```
@@ -86,7 +85,7 @@ export interface GameState {
 	totalBalls: number; // Fixed to 6 right now
 	gamePhase: 'waiting' | 'setting field' |  'batting' | 'finished'; // game state
 	innings: 1 // Can be 2 max
-	turnHistory: BallRecord[]; // list of turn records
+	deliveryHistory: BallRecord[]; // list of turn records
 }	
 
 
@@ -250,7 +249,7 @@ Batter then makes a choice on the wheel and ends turn.
 ### S2C:
 **socket.on(shot_played)**
 
-Updates game state and adds current rotation and shot to the turnHistory.
+Updates game state and adds current rotation and shot to the deliveryHistory.
 
 Checks the current ball.
 ```
@@ -315,7 +314,7 @@ export interface GameState {
 	totalBalls: 2; // Fixed to 6 right now. Using 2 for example
 	gamePhase: 'setting field'; // game state
 	innings: 1 // Can be 2 max
-	turnHistory: []; // list of turn records
+	deliveryHistory: []; // list of turn records
 }
 ```
 
@@ -330,7 +329,7 @@ export interface GameState {
 	totalBalls: 2; // Fixed to 6 right now. Using 2 for example
 	gamePhase: 'setting field'; // game state
 	innings: 1 // Can be 2 max
-	turnHistory: []; // list of turn records
+	deliveryHistory: []; // list of turn records
 }
 ```
 GameState updated by the server right before sending it back to client:
@@ -344,7 +343,7 @@ export interface GameState {
 	totalBalls: 2; // Fixed to 6 right now. Using 2 for example
 	gamePhase: 'batting'; // game state
 	innings: 1 // Can be 2 max
-	turnHistory: []; // list of turn records
+	deliveryHistory: []; // list of turn records
 }
 ```
 
@@ -359,7 +358,7 @@ export interface GameState {
 	totalBalls: 2; // Fixed to 6 right now. Using 2 for example
 	gamePhase: 'batting'; // game state
 	innings: 1 // Can be 2 max
-	turnHistory: []; // list of turn records
+	deliveryHistory: []; // list of turn records
 }
 ```
 
@@ -374,7 +373,7 @@ export interface GameState {
 	totalBalls: 2; // Fixed to 6 right now. Using 2 for example
 	gamePhase: 'setting field'; // game state
 	innings: 1 // Can be 2 max
-	turnHistory: [
+	deliveryHistory: [
 		{
 			BallRecord
     			innings: 1
@@ -398,7 +397,7 @@ export interface GameState {
 	totalBalls: 2; // Fixed to 6 right now. Using 2 for example
 	gamePhase: 'setting field'; // game state
 	innings: 1 // Can be 2 max
-	turnHistory: [
+	deliveryHistory: [
 		{
 			BallRecord
     			innings: 1
@@ -422,7 +421,7 @@ export interface GameState {
 	totalBalls: 2; // Fixed to 6 right now. Using 2 for example
 	gamePhase: 'batting'; // game state
 	innings: 1 // Can be 2 max
-	turnHistory: [
+	deliveryHistory: [
 		{
 			BallRecord
     			innings: 1
@@ -446,7 +445,7 @@ export interface GameState {
 	totalBalls: 2; // Fixed to 6 right now. Using 2 for example
 	gamePhase: 'batting'; // game state
 	innings: 1 // Can be 2 max
-	turnHistory: [
+	deliveryHistory: [
 		{
 			BallRecord
     			innings: 1
@@ -470,7 +469,7 @@ export interface GameState {
 	totalBalls: 2; // Fixed to 6 right now. Using 2 for example
 	gamePhase: 'setting field'; // game state
 	innings: 2 // Can be 2 max
-	turnHistory: [
+	deliveryHistory: [
 		{
 			BallRecord
 				innings: 1
@@ -506,7 +505,7 @@ export interface GameState {
 	totalBalls: 2; // Fixed to 6 right now. Using 2 for example
 	gamePhase: 'setting field'; // game state
 	innings: 2 // Can be 2 max
-	turnHistory: [
+	deliveryHistory: [
 		{
 			BallRecord
 				innings: 1
@@ -538,7 +537,7 @@ export interface GameState {
 	totalBalls: 2; // Fixed to 6 right now. Using 2 for example
 	gamePhase: 'setting field'; // game state
 	innings: 2 // Can be 2 max
-	turnHistory: [
+	deliveryHistory: [
 		{
 			BallRecord
 				innings: 1
@@ -569,7 +568,7 @@ export interface GameState {
 	totalBalls: 2; // Fixed to 6 right now. Using 2 for example
 	gamePhase: 'batting'; // game state
 	innings: 2 // Can be 2 max
-	turnHistory: [
+	deliveryHistory: [
 		{
 			BallRecord
 				innings: 1
@@ -601,7 +600,7 @@ export interface GameState {
 	totalBalls: 2; // Fixed to 6 right now. Using 2 for example
 	gamePhase: 'batting'; // game state
 	innings: 2 // Can be 2 max
-	turnHistory: [
+	deliveryHistory: [
 		{
 			BallRecord
 				innings: 1
@@ -633,7 +632,7 @@ export interface GameState {
 	totalBalls: 2; // Fixed to 6 right now. Using 2 for example
 	gamePhase: 'setting field'; // game state
 	innings: 2 // Can be 2 max
-	turnHistory: [
+	deliveryHistory: [
 		{
 			BallRecord
 				innings: 1
@@ -672,7 +671,7 @@ export interface GameState {
 	totalBalls: 2; // Fixed to 6 right now. Using 2 for example
 	gamePhase: 'setting field'; // game state
 	innings: 2 // Can be 2 max
-	turnHistory: [
+	deliveryHistory: [
 		{
 			BallRecord
 				innings: 1
@@ -712,7 +711,7 @@ export interface GameState {
 	totalBalls: 2; // Fixed to 6 right now. Using 2 for example
 	gamePhase: 'batting'; // game state
 	innings: 2 // Can be 2 max
-	turnHistory: [
+	deliveryHistory: [
 		{
 			BallRecord
 				innings: 1
@@ -752,7 +751,7 @@ export interface GameState {
 	totalBalls: 2; // Fixed to 6 right now. Using 2 for example
 	gamePhase: 'batting'; // game state
 	innings: 2 // Can be 2 max
-	turnHistory: [
+	deliveryHistory: [
 		{
 			BallRecord
 				innings: 1
@@ -792,7 +791,7 @@ export interface GameState {
 	totalBalls: 2; // Fixed to 6 right now. Using 2 for example
 	gamePhase: 'finished'; // game state
 	innings: 2 // Can be 2 max
-	turnHistory: [
+	deliveryHistory: [
 		{
 			BallRecord
 				innings: 1

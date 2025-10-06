@@ -21,7 +21,7 @@ export class RoomManager {
 			players: [player],
 			maxPlayers: 2,
 			created: new Date(),
-			isActive: false,
+			roomCreator: playerId,
 		};
 
 		this.rooms.set(finalRoomId, room);

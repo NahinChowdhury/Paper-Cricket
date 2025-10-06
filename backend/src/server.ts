@@ -38,8 +38,8 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 	socket.on("create_room", (playerId: string) => {
 		try {
 			const roomId = uuidv4();
-			const player = roomManager.createRoom(playerId, roomId);
-			socket.join(roomId); // redundant?
+			roomManager.createRoom(playerId, roomId);
+			socket.join(roomId);
 
 			// Create a game state for the new room
 			gameStateManager.createInitialGameState(playerId, roomId);

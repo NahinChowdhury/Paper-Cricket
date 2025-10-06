@@ -79,7 +79,11 @@ export const SocketProvider: React.FC<{ children: ReactNode }> = ({
 	if (!socketRef.current) {
 		socketRef.current = io("http://localhost:3001", {
 			transports: ["websocket", "polling"],
-			query: playerId ? { playerId } : undefined, // Send persistent player ID to server
+			query: playerId
+				? {
+						playerId,
+					}
+				: undefined, // Send persistent player ID to server
 		});
 	}
 
@@ -107,7 +111,10 @@ export const SocketProvider: React.FC<{ children: ReactNode }> = ({
 
 	return (
 		<SocketContext.Provider
-			value={{ socket: socketRef.current, isConnected }}
+			value={{
+				socket: socketRef.current,
+				isConnected,
+			}}
 		>
 			{children}
 		</SocketContext.Provider>

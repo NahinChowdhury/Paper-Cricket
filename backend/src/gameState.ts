@@ -1,4 +1,4 @@
-import { GameState, TurnRecord } from "./types";
+import { GameState, BallRecord } from "./types";
 import { RoomManager } from "./roomManager";
 
 export class GameStateManager {
@@ -8,11 +8,14 @@ export class GameStateManager {
 	createInitialGameState(playerId: string, roomId: string): GameState {
 		const initialState: GameState = {
 			players: [playerId],
-			currentTurn: 1,
-			currentPlayerId: playerId,
-			totalTurns: 6,
+			currentBall: 1,
+			currentBallRotation: undefined,
+			currentBallBatsmanChoice: undefined,
+			playerBowling: playerId, // Initially the room creator bowls
+			totalBalls: 6,
 			gamePhase: "waiting",
-			turnHistory: [],
+			innings: 1,
+			deliveryHistory: [],
 		};
 
 		this.gameStates.set(roomId, initialState);
@@ -82,13 +85,13 @@ export class GameStateManager {
 	// End current turn and return next turn info
 	endTurn(gameState: GameState, turnRecord: TurnRecord): GameState {
 		// Update game state with turn record
-		gameState.turnHistory.push(turnRecord);
+		gameState.deliveryHistory.push(turnRecord);
 
 		// Update game state
 		gameState.currentTurn;
 
 		// Check if game should end
-		if (gameState.turnHistory.length >= gameState.totalTurns) {
+		if (gameState.deliveryHistory.length >= gameState.totalTurns) {
 			gameState.gamePhase = "finished";
 			return gameState;
 		} else {

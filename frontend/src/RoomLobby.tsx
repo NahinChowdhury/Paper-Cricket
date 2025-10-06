@@ -14,10 +14,19 @@ const RoomLobby: React.FC = () => {
 	};
 
 	return (
-		<div style={{ textAlign: "center", padding: "50px" }}>
+		<div
+			style={{
+				textAlign: "center",
+				padding: "50px",
+			}}
+		>
 			<h1>Paper Cricket - Multiplayer</h1>
 
-			<div style={{ margin: "30px 0" }}>
+			<div
+				style={{
+					margin: "30px 0",
+				}}
+			>
 				<button
 					onClick={createRoom}
 					disabled={isCreatingRoom}
@@ -36,7 +45,11 @@ const RoomLobby: React.FC = () => {
 				</button>
 			</div>
 
-			<div style={{ margin: "30px 0" }}>
+			<div
+				style={{
+					margin: "30px 0",
+				}}
+			>
 				<h3>Or join an existing room:</h3>
 				<div
 					style={{
@@ -79,7 +92,13 @@ const RoomLobby: React.FC = () => {
 				</div>
 			</div>
 
-			<div style={{ marginTop: "40px", color: "#666", fontSize: "14px" }}>
+			<div
+				style={{
+					marginTop: "40px",
+					color: "#666",
+					fontSize: "14px",
+				}}
+			>
 				<p>Share the room URL with a friend to start playing!</p>
 				<p>Room creator always takes the first turn.</p>
 			</div>

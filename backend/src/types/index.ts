@@ -11,7 +11,6 @@ export interface GameRoom {
 	players: Player[]; // players who joined the room so far. Max 2
 	maxPlayers: number; // 2
 	created: Date; // creation time
-	isActive: boolean; // probably pointless?
 	roomCreator: string; // ID of the room creator
 }
 
@@ -24,7 +23,7 @@ export interface GameState {
 	totalBalls: number; // Fixed to 6 right now
 	gamePhase: "waiting" | "setting field" | "batting" | "finished"; // game state
 	innings: 1; // Can be 2 max
-	turnHistory: BallRecord[]; // list of turn records
+	deliveryHistory: BallRecord[]; // list of turn records
 }
 
 export interface BallRecord {
