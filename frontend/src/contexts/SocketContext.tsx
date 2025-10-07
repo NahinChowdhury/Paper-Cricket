@@ -16,14 +16,6 @@ export interface Player {
 	isRoomCreator: boolean;
 }
 
-export interface DeliveryRecord {
-	ballNumber: number;
-	innings: number;
-	rotation: number;
-	batsmanChoice: string;
-	timestamp: Date;
-}
-
 export interface GameState {
 	players: string[]; // list of player IDs. Max 2
 	currentBall: number; // current turn number
@@ -33,10 +25,22 @@ export interface GameState {
 	originalTotalBalls: number; // Will not change during the game
 	totalBalls: number; // Fixed to 6 right now. Can change if Wide or No Ball is bowled
 	totalWickets: number; // Fixed to 2 right now
-	currentWicketCount: number; // wickets fallen so far
+	inningsOneRuns: number; // runs scored in innings one
+	inningsTwoRuns: number; // runs scored in innings two
+	inningsOneWicketCurrentCount: number; // wickets fallen so far in innings one
+	inningsTwoWicketCurrentCount: number; // wickets fallen so far in innings two
 	gamePhase: "waiting" | "setting field" | "batting" | "finished"; // game state
 	innings: number; // Can be 2 max
 	deliveryHistory: DeliveryRecord[]; // list of turn records
+}
+
+export interface DeliveryRecord {
+	ballNumber: number;
+	innings: number;
+	rotation: number;
+	batsmanChoice: string; // batsman choice is the run for that ball
+	timestamp: Date;
+	runsSoFar: number; // runs scored in current innings so far
 }
 
 // Events that clients send TO the server

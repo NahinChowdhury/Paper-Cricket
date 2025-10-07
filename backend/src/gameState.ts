@@ -14,7 +14,10 @@ export class GameStateManager {
 			originalTotalBalls: 2, // TODO: Set to 6 later
 			totalBalls: 2, // TODO: Set to 6 later
 			totalWickets: 2, // TODO: Set to 10 later
-			currentWicketCount: 0,
+			inningsOneRuns: 0,
+			inningsTwoRuns: 0,
+			inningsOneWicketCurrentCount: 0,
+			inningsTwoWicketCurrentCount: 0,
 			gamePhase: "waiting",
 			innings: 1,
 			deliveryHistory: [],
@@ -106,8 +109,8 @@ export class GameStateManager {
 				"Only batsmen are allowed to choose a shot during 'batting' game phase!",
 			);
 		}
+
 		gameState.currentBallBatsmanChoice = choice;
-		gameState.gamePhase = "batting";
 
 		if (
 			gameState.currentBallRotation === undefined ||
@@ -125,6 +128,7 @@ export class GameStateManager {
 			rotation: gameState.currentBallRotation,
 			batsmanChoice: gameState.currentBallBatsmanChoice,
 			timestamp: new Date(),
+			runsSoFar: gameState.innings === 1 ? gameState.inningsOneRuns : gameState.inningsTwoRuns,
 		};
 
 		gameState.deliveryHistory.push(delivery);
@@ -132,36 +136,48 @@ export class GameStateManager {
 		// Determine outcome (wicket or runs)
 		switch (choice) {
 			case "W": // Wicket
-				gameState.currentWicketCount += 1;
+				gameState.innings === 1 ? gameState.inningsOneWicketCurrentCount += 1 : gameState.inningsTwoWicketCurrentCount += 1;
 				break;
 			case "WD": // Wide
 			case "NB": // No Ball
+				// For now, No Ball and Wide do the same thing
 				// Increase runs by 1 but do not count ball
-				// gameState.totalRuns += 1;
+				gameState.innings === 1 ? gameState.inningsOneRuns += 1 : gameState.inningsTwoRuns += 1;
 				gameState.totalBalls += 1; // Extra ball for wide/no-ball
 				break;
 			case "0":
-				break;
-			default:
+			case "1":
+			case "2":
+			case "3":
+			case "4":
+			case "5":
+			case "6":
 				const runs = parseInt(choice, 10);
 				if (!isNaN(runs) && runs >= 0 && runs <= 6) {
-					// gameState.totalRuns += runs;
+					gameState.innings === 1 ? gameState.inningsOneRuns += runs : gameState.inningsTwoRuns += runs;
 				} else {
 					throw new Error("Invalid batsman choice");
 				}
-		}
-		if (choice === "W") {
-		}
-
-		// Check for game end conditions
-		if (gameState.currentWicketCount >= gameState.totalWickets) {
-			gameState.gamePhase = "finished";
-			return gameState;
+				break;
+			default:
+				throw new Error("Invalid batsman choice");
 		}
 
+		// Checks if total runs exceed opponent's score in 2nd innings
+		if (gameState.innings === 2) {
+			const opponentRuns = gameState.inningsOneRuns;
+			const currentRuns = gameState.inningsTwoRuns;
+			if (currentRuns > opponentRuns) {
+				gameState.gamePhase = "finished";
+				return gameState;
+			}
+		}
+
+		// Check for end of innings or game
+		// If currentBall exceeds totalBalls OR all wickets are down
 		const inningsOver =
 			gameState.currentBall === gameState.totalBalls ||
-			gameState.currentWicketCount >= gameState.totalWickets;
+			(gameState.innings === 1 ? gameState.inningsOneWicketCurrentCount >= gameState.totalWickets : gameState.inningsTwoWicketCurrentCount >= gameState.totalWickets);
 
 		// If all balls are bowled or all wickets are down, end or switch innings
 		if (inningsOver && gameState.innings === 2) {
@@ -174,8 +190,8 @@ export class GameStateManager {
 			gameState.playerBowling = gameState.players.find(
 				(p) => p !== gameState?.playerBowling,
 			)!;
-			gameState.currentWicketCount = 0;
 			gameState.totalBalls = gameState.originalTotalBalls;
+			// No need to reset runs and wickets because we have separate variables for both innings
 		} else {
 			gameState.currentBall++;
 		}

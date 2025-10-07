@@ -16,6 +16,7 @@ const slices: Slice[] = [
 	{ label: "6", color: "#43aa8b" },
 	{ label: "W", color: "#577590" },
 	{ label: "NB", color: "#501111ff" },
+	{ label: "WD", color: "#9b9b9bff" },
 ];
 
 const SpinPie: React.FC = () => {
@@ -47,7 +48,10 @@ const SpinPie: React.FC = () => {
 		originalTotalBalls: 6,
 		totalBalls: 6,
 		totalWickets: 1,
-		currentWicketCount: 0,
+		inningsOneRuns: 0,
+		inningsTwoRuns: 0,
+		inningsOneWicketCurrentCount: 0,
+		inningsTwoWicketCurrentCount: 0,
 		gamePhase: "waiting",
 		innings: 0,
 		deliveryHistory: [],
@@ -616,6 +620,94 @@ const SpinPie: React.FC = () => {
 
 			{/* Game history (when finished) */}
 			{gameState.gamePhase === "finished" && (
+			<div
+				style={{
+				marginTop: "30px",
+				padding: "20px",
+				backgroundColor: "#f5f5f5",
+				borderRadius: "10px",
+				maxWidth: "450px",
+				margin: "30px auto",
+				textAlign: "center",
+				}}
+			>
+				<h3>Game Over!</h3>
+				<h3>Final Scores</h3>
+				<p>Innings 1 Runs: {gameState.inningsOneRuns}</p>
+				<p>Innings 2 Runs: {gameState.inningsTwoRuns}</p>
+				{gameState.inningsOneRuns > gameState.inningsTwoRuns ? (
+				<p style={{ color: "green" }}>Innings 1 Wins!</p>
+				) : gameState.inningsTwoRuns > gameState.inningsOneRuns ? (
+				<p style={{ color: "green" }}>Innings 2 Wins!</p>
+				) : (
+				<p style={{ color: "orange" }}>It's a Tie!</p>
+				)}
+
+				{/* New scoreboard-style delivery history */}
+				<div style={{ marginTop: "20px" }}>
+				<h3>Delivery Summary</h3>
+
+				{[1, 2].map((innings) => {
+					const deliveries = gameState.deliveryHistory.filter(
+					(d) => d.innings === innings
+					);
+
+					return (
+					<div key={innings} style={{ marginBottom: "15px" }}>
+						<div
+						style={{
+							display: "flex",
+							alignItems: "center",
+							justifyContent: "flex-start",
+							marginBottom: "8px",
+						}}
+						>
+						<strong style={{ width: "100px", textAlign: "right" }}>
+							Innings {innings}
+						</strong>
+						<div
+							style={{
+							display: "flex",
+							flexWrap: "wrap",
+							gap: "8px",
+							marginLeft: "10px",
+							}}
+						>
+							{deliveries.map((delivery, i) => {
+							const color =
+								slices.find((s) => s.label === delivery.batsmanChoice)
+								?.color || "#ccc";
+
+							return (
+								<div
+								key={i}
+								style={{
+									width: "30px",
+									height: "30px",
+									borderRadius: "50%",
+									backgroundColor: color,
+									color: "#fff",
+									display: "flex",
+									alignItems: "center",
+									justifyContent: "center",
+									fontWeight: "bold",
+								}}
+								>
+								{delivery.batsmanChoice}
+								</div>
+							);
+							})}
+						</div>
+						</div>
+					</div>
+					);
+				})}
+				</div>
+			</div>
+			)}
+
+
+			{gameState.gamePhase !== "finished" && (
 				<div
 					style={{
 						marginTop: "30px",
@@ -626,9 +718,35 @@ const SpinPie: React.FC = () => {
 						margin: "30px auto",
 					}}
 				>
-					<h3>Game Complete!</h3>
-					<p>Total moves played: {gameState.currentBall}</p>
-					<p>Thanks for playing!</p>
+					<h3>Game Info</h3>
+					<h3>Innings: 1</h3>
+					{
+						gameState.innings === 1 && (
+							<>
+								<p style={{color: 'red'}}>First Innings in Progress</p>
+								<p>
+									Balls Bowled: {gameState.currentBall - 1} / {gameState.totalBalls}
+								</p>
+							</>
+						)
+					}
+					<p>Wickets Fallen: {gameState.inningsOneWicketCurrentCount} / {gameState.totalWickets}</p>
+					<p>Runs: {gameState.inningsOneRuns}</p>
+
+					<h3>Innings: 2</h3>
+					{
+						gameState.innings === 2 && (
+							<>
+								<p style={{color: 'red'}}>Second Innings in Progress</p>
+								<p>
+									Balls Bowled: {gameState.currentBall - 1} / {gameState.totalBalls}
+								</p>
+							</>
+						)
+					}
+					<p>Wickets Fallen: {gameState.inningsTwoWicketCurrentCount} / {gameState.totalWickets}</p>
+					<p>Runs: {gameState.inningsTwoRuns}</p>
+					
 				</div>
 			)}
 		</div>
