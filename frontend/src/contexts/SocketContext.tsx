@@ -30,7 +30,8 @@ export interface GameState {
 	currentBallRotation: number | undefined; // current ball rotation
 	currentBallBatsmanChoice: string | undefined; // current ball batsman choice
 	playerBowling: string; // player ID of who is bowling
-	totalBalls: number; // Fixed to 6 right now
+	originalTotalBalls: number; // Will not change during the game
+	totalBalls: number; // Fixed to 6 right now. Can change if Wide or No Ball is bowled
 	totalWickets: number; // Fixed to 2 right now
 	currentWicketCount: number; // wickets fallen so far
 	gamePhase: "waiting" | "setting field" | "batting" | "finished"; // game state

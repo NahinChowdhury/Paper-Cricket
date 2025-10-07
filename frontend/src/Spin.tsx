@@ -44,6 +44,7 @@ const SpinPie: React.FC = () => {
 		currentBallRotation: undefined,
 		currentBallBatsmanChoice: undefined,
 		playerBowling: "",
+		originalTotalBalls: 6,
 		totalBalls: 6,
 		totalWickets: 1,
 		currentWicketCount: 0,

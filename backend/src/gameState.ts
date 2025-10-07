@@ -11,7 +11,8 @@ export class GameStateManager {
 			currentBallRotation: undefined,
 			currentBallBatsmanChoice: undefined,
 			playerBowling: playerId, // Initially the game creator bowls
-			totalBalls: 3, // TODO: Set to 6 later
+			originalTotalBalls: 2, // TODO: Set to 6 later
+			totalBalls: 2, // TODO: Set to 6 later
 			totalWickets: 2, // TODO: Set to 10 later
 			currentWicketCount: 0,
 			gamePhase: "waiting",
@@ -129,8 +130,27 @@ export class GameStateManager {
 		gameState.deliveryHistory.push(delivery);
 
 		// Determine outcome (wicket or runs)
+		switch (choice) {
+			case "W": // Wicket
+				gameState.currentWicketCount += 1;
+				break;
+			case "WD": // Wide
+			case "NB": // No Ball
+				// Increase runs by 1 but do not count ball
+				// gameState.totalRuns += 1;
+				gameState.totalBalls += 1; // Extra ball for wide/no-ball
+				break;
+			case "0":
+				break;
+			default:
+				const runs = parseInt(choice, 10);
+				if (!isNaN(runs) && runs >= 0 && runs <= 6) {
+					// gameState.totalRuns += runs;
+				} else {
+					throw new Error("Invalid batsman choice");
+				}
+		}
 		if (choice === "W") {
-			gameState.currentWicketCount += 1;
 		}
 
 		// Check for game end conditions
@@ -155,6 +175,7 @@ export class GameStateManager {
 				(p) => p !== gameState?.playerBowling,
 			)!;
 			gameState.currentWicketCount = 0;
+			gameState.totalBalls = gameState.originalTotalBalls;
 		} else {
 			gameState.currentBall++;
 		}
