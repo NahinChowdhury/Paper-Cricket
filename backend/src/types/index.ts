@@ -21,6 +21,8 @@ export interface GameState {
 	currentBallBatsmanChoice: string | undefined; // current ball batsman choice
 	playerBowling: string; // player ID of who is bowling
 	totalBalls: number; // Fixed to 6 right now
+	totalWickets: number; // Fixed to 2 right now
+	currentWicketCount: number; // wickets fallen so far
 	gamePhase: "waiting" | "setting field" | "batting" | "finished"; // game state
 	innings: number; // Can be 2 max
 	deliveryHistory: DeliveryRecord[]; // list of turn records

@@ -11,7 +11,9 @@ export class GameStateManager {
 			currentBallRotation: undefined,
 			currentBallBatsmanChoice: undefined,
 			playerBowling: playerId, // Initially the game creator bowls
-			totalBalls: 2, // TODO: Set to 6 later
+			totalBalls: 3, // TODO: Set to 6 later
+			totalWickets: 2, // TODO: Set to 10 later
+			currentWicketCount: 0,
 			gamePhase: "waiting",
 			innings: 1,
 			deliveryHistory: [],
@@ -126,19 +128,33 @@ export class GameStateManager {
 
 		gameState.deliveryHistory.push(delivery);
 
-		if (
-			gameState.currentBall === gameState.totalBalls &&
-			gameState.innings === 2
-		) {
+		// Determine outcome (wicket or runs)
+		if (choice === "W") {
+			gameState.currentWicketCount += 1;
+		}
+
+		// Check for game end conditions
+		if (gameState.currentWicketCount >= gameState.totalWickets) {
 			gameState.gamePhase = "finished";
 			return gameState;
-		} else if (gameState.currentBall === gameState.totalBalls) {
+		}
+
+		const inningsOver =
+			gameState.currentBall === gameState.totalBalls ||
+			gameState.currentWicketCount >= gameState.totalWickets;
+
+		// If all balls are bowled or all wickets are down, end or switch innings
+		if (inningsOver && gameState.innings === 2) {
+			gameState.gamePhase = "finished";
+			return gameState;
+		} else if (inningsOver) {
 			// Start second innings
 			gameState.innings = 2;
 			gameState.currentBall = 1;
 			gameState.playerBowling = gameState.players.find(
 				(p) => p !== gameState?.playerBowling,
 			)!;
+			gameState.currentWicketCount = 0;
 		} else {
 			gameState.currentBall++;
 		}

@@ -153,8 +153,6 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 				player.roomId,
 			);
 			if (updatedRoom && updatedRoom.players.length === 2) {
-
-
 				// Get the game state
 				// if the game state is waiting, then start the game
 				// otherwise, send the game start to that socket only
@@ -172,8 +170,12 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 					// Find the room creator (first player)
 					const roomCreator: string = updatedRoom.roomCreator;
 					if (roomCreator) {
-						const gameState = gameStateManager.startGame(player.roomId);
-						console.log(`Game started by room creator: ${roomCreator}`);
+						const gameState = gameStateManager.startGame(
+							player.roomId,
+						);
+						console.log(
+							`Game started by room creator: ${roomCreator}`,
+						);
 
 						// Notify all players that game has started
 						io.to(player.roomId).emit("game_started", gameState);

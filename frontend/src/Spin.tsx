@@ -45,6 +45,8 @@ const SpinPie: React.FC = () => {
 		currentBallBatsmanChoice: undefined,
 		playerBowling: "",
 		totalBalls: 6,
+		totalWickets: 1,
+		currentWicketCount: 0,
 		gamePhase: "waiting",
 		innings: 0,
 		deliveryHistory: [],
@@ -248,7 +250,11 @@ const SpinPie: React.FC = () => {
 			canvas.style.cursor = "default";
 		}
 
-		if (isDragging && gameState.playerBowling === playerId && gameState.gamePhase === "setting field") {
+		if (
+			isDragging &&
+			gameState.playerBowling === playerId &&
+			gameState.gamePhase === "setting field"
+		) {
 			// gamePhase === 'setting field'
 			// Continue rotation while dragging (only during player's turn)
 			const angle = Math.atan2(dy, dx);
@@ -294,14 +300,16 @@ const SpinPie: React.FC = () => {
 
 		// Update selected shot
 		setShotSelected(slices[sliceIndex].label);
-		if(gameState.playerBowling === playerId && gameState.gamePhase === "setting field") {
-			setMessage(
-				`Rotation: ${degrees.toFixed(1)}°`,
-			);
-		} else if (gameState.playerBowling !== playerId && gameState.gamePhase === "batting") {
-			setMessage(
-				`Shot selected: ${slices[sliceIndex].label}`,
-			);
+		if (
+			gameState.playerBowling === playerId &&
+			gameState.gamePhase === "setting field"
+		) {
+			setMessage(`Rotation: ${degrees.toFixed(1)}°`);
+		} else if (
+			gameState.playerBowling !== playerId &&
+			gameState.gamePhase === "batting"
+		) {
+			setMessage(`Shot selected: ${slices[sliceIndex].label}`);
 		}
 	};
 
@@ -372,19 +380,24 @@ const SpinPie: React.FC = () => {
 
 	// helper function
 	const getCursorStyle = (): string => {
-		if (gameState.playerBowling === playerId && gameState.gamePhase === "setting field") {
+		if (
+			gameState.playerBowling === playerId &&
+			gameState.gamePhase === "setting field"
+		) {
 			if (isDragging) {
 				return "grabbing";
 			} else {
 				return "grab";
 			}
-		} else if (gameState.playerBowling !== playerId && gameState.gamePhase === "batting") {
+		} else if (
+			gameState.playerBowling !== playerId &&
+			gameState.gamePhase === "batting"
+		) {
 			return "default";
 		} else {
 			return "not-allowed";
 		}
-	}
-
+	};
 
 	return (
 		<div style={{ textAlign: "center" }}>
@@ -402,25 +415,25 @@ const SpinPie: React.FC = () => {
 					>
 						Game Finished!
 					</h2>
-				) : (gameState.playerBowling === playerId &&
-					gameState.gamePhase === "setting field") ? (
+				) : gameState.playerBowling === playerId &&
+				  gameState.gamePhase === "setting field" ? (
 					<h2
 						style={{
 							color: "#2196F3",
 						}}
 					>
-						Your turn to set the field(Ball {gameState.currentBall}
-						/{gameState.totalBalls})
+						Your turn to set the field(Ball {gameState.currentBall}/
+						{gameState.totalBalls})
 					</h2>
-				) : (gameState.playerBowling !== playerId &&
-					gameState.gamePhase === "batting") ? (
+				) : gameState.playerBowling !== playerId &&
+				  gameState.gamePhase === "batting" ? (
 					<h2
 						style={{
 							color: "#36aa12ff",
 						}}
 					>
-						Your turn to choose a shot(Ball {gameState.currentBall}
-						/{gameState.totalBalls})
+						Your turn to choose a shot(Ball {gameState.currentBall}/
+						{gameState.totalBalls})
 					</h2>
 				) : (
 					<h2
@@ -428,8 +441,8 @@ const SpinPie: React.FC = () => {
 							color: "#FF9800",
 						}}
 					>
-						Opponent is batting now (Ball {gameState.currentBall}
-						/{gameState.totalBalls})
+						Opponent is batting now (Ball {gameState.currentBall}/
+						{gameState.totalBalls})
 					</h2>
 				)}
 			</div>
@@ -451,10 +464,10 @@ const SpinPie: React.FC = () => {
 						cursor: getCursorStyle(),
 						touchAction: "none",
 						opacity:
-							( (gameState.playerBowling === playerId &&
-							gameState.gamePhase === "setting field") ||
+							(gameState.playerBowling === playerId &&
+								gameState.gamePhase === "setting field") ||
 							(gameState.playerBowling !== playerId &&
-							gameState.gamePhase === "batting") )
+								gameState.gamePhase === "batting")
 								? 1
 								: 0.7,
 					}}
@@ -465,10 +478,10 @@ const SpinPie: React.FC = () => {
 							: undefined
 					}
 					onMouseMove={
-						( (gameState.playerBowling === playerId &&
+						(gameState.playerBowling === playerId &&
 							gameState.gamePhase === "setting field") ||
-							(gameState.playerBowling !== playerId &&
-							gameState.gamePhase === "batting") )
+						(gameState.playerBowling !== playerId &&
+							gameState.gamePhase === "batting")
 							? handleMouseMoveCursor
 							: undefined
 					}
@@ -496,11 +509,11 @@ const SpinPie: React.FC = () => {
 				/>
 
 				{/* Overlay message when not player's turn */}
-				{(
-					(gameState.gamePhase === "setting field" && gameState.playerBowling !== playerId) ||
-					(gameState.gamePhase === "batting" && gameState.playerBowling === playerId) ||
-					gameState.gamePhase === "finished"
-				) && (
+				{((gameState.gamePhase === "setting field" &&
+					gameState.playerBowling !== playerId) ||
+					(gameState.gamePhase === "batting" &&
+						gameState.playerBowling === playerId) ||
+					gameState.gamePhase === "finished") && (
 					<div
 						style={{
 							position: "absolute",
@@ -537,10 +550,10 @@ const SpinPie: React.FC = () => {
 			</p>
 
 			{/* End turn button - only show during player's turn */}
-			{(
-				(gameState.gamePhase === "setting field" && gameState.playerBowling === playerId) ||
-				(gameState.gamePhase === "batting" && gameState.playerBowling !== playerId)
-			) && (
+			{((gameState.gamePhase === "setting field" &&
+				gameState.playerBowling === playerId) ||
+				(gameState.gamePhase === "batting" &&
+					gameState.playerBowling !== playerId)) && (
 				<div
 					style={{
 						margin: "20px 0",
