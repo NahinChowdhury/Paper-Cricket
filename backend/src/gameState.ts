@@ -128,7 +128,10 @@ export class GameStateManager {
 			rotation: gameState.currentBallRotation,
 			batsmanChoice: gameState.currentBallBatsmanChoice,
 			timestamp: new Date(),
-			runsSoFar: gameState.innings === 1 ? gameState.inningsOneRuns : gameState.inningsTwoRuns,
+			runsSoFar:
+				gameState.innings === 1
+					? gameState.inningsOneRuns
+					: gameState.inningsTwoRuns,
 		};
 
 		gameState.deliveryHistory.push(delivery);
@@ -136,13 +139,17 @@ export class GameStateManager {
 		// Determine outcome (wicket or runs)
 		switch (choice) {
 			case "W": // Wicket
-				gameState.innings === 1 ? gameState.inningsOneWicketCurrentCount += 1 : gameState.inningsTwoWicketCurrentCount += 1;
+				gameState.innings === 1
+					? (gameState.inningsOneWicketCurrentCount += 1)
+					: (gameState.inningsTwoWicketCurrentCount += 1);
 				break;
 			case "WD": // Wide
 			case "NB": // No Ball
 				// For now, No Ball and Wide do the same thing
 				// Increase runs by 1 but do not count ball
-				gameState.innings === 1 ? gameState.inningsOneRuns += 1 : gameState.inningsTwoRuns += 1;
+				gameState.innings === 1
+					? (gameState.inningsOneRuns += 1)
+					: (gameState.inningsTwoRuns += 1);
 				gameState.totalBalls += 1; // Extra ball for wide/no-ball
 				break;
 			case "0":
@@ -154,7 +161,9 @@ export class GameStateManager {
 			case "6":
 				const runs = parseInt(choice, 10);
 				if (!isNaN(runs) && runs >= 0 && runs <= 6) {
-					gameState.innings === 1 ? gameState.inningsOneRuns += runs : gameState.inningsTwoRuns += runs;
+					gameState.innings === 1
+						? (gameState.inningsOneRuns += runs)
+						: (gameState.inningsTwoRuns += runs);
 				} else {
 					throw new Error("Invalid batsman choice");
 				}
@@ -177,7 +186,11 @@ export class GameStateManager {
 		// If currentBall exceeds totalBalls OR all wickets are down
 		const inningsOver =
 			gameState.currentBall === gameState.totalBalls ||
-			(gameState.innings === 1 ? gameState.inningsOneWicketCurrentCount >= gameState.totalWickets : gameState.inningsTwoWicketCurrentCount >= gameState.totalWickets);
+			(gameState.innings === 1
+				? gameState.inningsOneWicketCurrentCount >=
+					gameState.totalWickets
+				: gameState.inningsTwoWicketCurrentCount >=
+					gameState.totalWickets);
 
 		// If all balls are bowled or all wickets are down, end or switch innings
 		if (inningsOver && gameState.innings === 2) {
