@@ -780,6 +780,9 @@ const SpinPie: React.FC = () => {
 								<span style={{ marginLeft: "10px", fontWeight: "bold", color: "red" }}>
 									Runs: {totalRuns}
 								</span>
+								<span style={{ marginLeft: "10px", fontWeight: "bold", color: "#c14a5f" }}>
+									Wickets left: {gameState.totalWickets - (innings === 1 ? gameState.inningsOneWicketCurrentCount : gameState.inningsTwoWicketCurrentCount)}
+								</span>
 								</div>
 
 								<div

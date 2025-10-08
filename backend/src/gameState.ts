@@ -11,9 +11,9 @@ export class GameStateManager {
 			currentBallRotation: undefined,
 			currentBallBatsmanChoice: undefined,
 			playerBowling: playerId, // Initially the game creator bowls
-			originalTotalBalls: 2, // TODO: Set to 6 later
-			totalBalls: 2, // TODO: Set to 6 later
-			totalWickets: 2, // TODO: Set to 10 later
+			originalTotalBalls: 6, // TODO: Set to 6 later
+			totalBalls: 6, // TODO: Set to 6 later
+			totalWickets: 3, // TODO: Set to 10 later
 			inningsOneRuns: 0,
 			inningsTwoRuns: 0,
 			inningsOneWicketCurrentCount: 0,
