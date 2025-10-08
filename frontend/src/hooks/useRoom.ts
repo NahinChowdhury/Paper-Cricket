@@ -4,20 +4,8 @@ import { Socket } from "socket.io-client";
 import { ClientEvents, ServerEvents } from "../contexts/SocketContext";
 import { usePlayerId } from "./usePlayerId";
 
-// Import types from backend (we'll create a shared types file later)
-interface Player {
-	id: string;
-	roomId: string;
-	connected: boolean;
-	isRoomCreator: boolean;
-}
-
 export const useRoom = (socket: Socket<ServerEvents, ClientEvents> | null) => {
 	const navigate = useNavigate();
-	const { roomId } = useParams<{ roomId: string }>();
-	const [currentRoomId, setCurrentRoomId] = useState<string | null>(
-		roomId || null,
-	);
 	const [isCreatingRoom, setIsCreatingRoom] = useState(false);
 	const { playerId } = usePlayerId();
 
@@ -25,10 +13,11 @@ export const useRoom = (socket: Socket<ServerEvents, ClientEvents> | null) => {
 		if (!socket || isCreatingRoom) return;
 
 		setIsCreatingRoom(true);
+		console.log("Creating room...");
 		socket.emit("create_room", playerId!);
 
 		socket.once("room_created", (newRoomId: string) => {
-			setCurrentRoomId(newRoomId);
+			console.log("Room created:", newRoomId);
 			navigate(`/game/${newRoomId}`);
 			setIsCreatingRoom(false);
 		});
@@ -41,14 +30,12 @@ export const useRoom = (socket: Socket<ServerEvents, ClientEvents> | null) => {
 			if (!socket) return;
 
 			socket.emit("join_room", targetRoomId, playerId!);
-			setCurrentRoomId(targetRoomId);
 			navigate(`/game/${targetRoomId}`);
 		},
 		[socket, navigate],
 	);
 
 	return {
-		currentRoomId,
 		createRoom,
 		joinRoom,
 		isCreatingRoom,

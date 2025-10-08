@@ -1,7 +1,9 @@
 import React, { useRef, useEffect, useState, useCallback } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useSocket, Player, GameState } from "./contexts/SocketContext";
 import { usePlayerId } from "./hooks/usePlayerId";
+import { useRoom } from "./hooks/useRoom";
+import { DEFAULT_CANVAS_STATE, DEFAULT_GAME_STATE, DEFAULT_PLAYER } from "./utils/defaults";
 
 interface Slice {
 	label: string;
@@ -23,42 +25,27 @@ const OVERLAY_COLOR = "rgba(0, 0, 0, 1)";
 const SELECTED_SHOT_OVERLAY_COLOR = "rgba(255, 0, 0, 1)";
 
 const SpinPie: React.FC = () => {
+	const navigate = useNavigate();
+
 	// Get room ID from URL params
 	const { roomId } = useParams<{ roomId: string }>();
 	const { socket } = useSocket();
+	const { createRoom, isCreatingRoom } = useRoom(socket);
 	const { playerId } = usePlayerId();
 
 	// Player state management
-	const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
+	const [currentPlayer, setCurrentPlayer] = useState<Player | null>(DEFAULT_PLAYER);
 
 	// Canvas and interaction state
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
-	const [rotation, setRotation] = useState<number>(0); // radians
-	const [isDragging, setIsDragging] = useState<boolean>(false);
-	const [startAngle, setStartAngle] = useState<number>(0);
-	const [message, setMessage] = useState<string>("");
-	const [shotSelected, setShotSelected] = useState<string | undefined>(
-		undefined,
-	);
+	const [rotation, setRotation] = useState<number>(DEFAULT_CANVAS_STATE.rotation); // radians
+	const [isDragging, setIsDragging] = useState<boolean>(DEFAULT_CANVAS_STATE.isDragging);
+	const [startAngle, setStartAngle] = useState<number>(DEFAULT_CANVAS_STATE.startAngle);
+	const [message, setMessage] = useState<string>(DEFAULT_CANVAS_STATE.message);
+	const [shotSelected, setShotSelected] = useState<string | undefined>(DEFAULT_CANVAS_STATE.shotSelected);
 
 	// Turn-based game state
-	const [gameState, setGameState] = useState<GameState>({
-		players: [],
-		currentBall: 1,
-		currentBallRotation: undefined,
-		currentBallBatsmanChoice: undefined,
-		playerBowling: "",
-		originalTotalBalls: 6,
-		totalBalls: 6,
-		totalWickets: 1,
-		inningsOneRuns: 0,
-		inningsTwoRuns: 0,
-		inningsOneWicketCurrentCount: 0,
-		inningsTwoWicketCurrentCount: 0,
-		gamePhase: "waiting",
-		innings: 0,
-		deliveryHistory: [],
-	});
+	const [gameState, setGameState] = useState<GameState>(DEFAULT_GAME_STATE);
 
 	const SPINNER_RADIUS = 150; // Static radius for the spinner
 
@@ -423,8 +410,43 @@ const SpinPie: React.FC = () => {
 		}
 	};
 
+	const resetToDefaults = () => {
+		setCurrentPlayer(DEFAULT_PLAYER);
+		setGameState(DEFAULT_GAME_STATE);
+		setRotation(DEFAULT_CANVAS_STATE.rotation);
+		setIsDragging(DEFAULT_CANVAS_STATE.isDragging);
+		setStartAngle(DEFAULT_CANVAS_STATE.startAngle);
+		setMessage(DEFAULT_CANVAS_STATE.message);
+		setShotSelected(DEFAULT_CANVAS_STATE.shotSelected);
+	};
+
+	const handleCreateNewGame = () => {
+		createRoom();
+		resetToDefaults();
+	};
+
+
 	return (
 		<div style={{ textAlign: "center" }}>
+			<div
+				onClick={() => navigate("/")}
+				style={{
+					position: "absolute",
+					top: 20,
+					left: 20,
+					display: "flex",
+					alignItems: "center",
+					gap: "8px",
+					cursor: "pointer",
+					fontWeight: "bold",
+					fontSize: "18px",
+					color: "#2196F3",
+					userSelect: "none",
+				}}
+				aria-label="Go to Home" // Accessibility label
+			>
+				<span style={{ fontSize: "24px" }}>🏠</span>
+			</div>
 			{/* Turn indicator */}
 			<div
 				style={{
@@ -468,6 +490,34 @@ const SpinPie: React.FC = () => {
 						Opponent is batting now (Ball {gameState.currentBall}/
 						{gameState.totalBalls})
 					</h2>
+				)}
+			</div>
+
+			{/* Game action buttons */}
+			<div
+				style={{
+					marginBottom: "20px",
+					display: "flex",
+					justifyContent: "center",
+					gap: "10px",
+				}}
+			>
+				{gameState.gamePhase === "finished" && (
+					<button
+						onClick={handleCreateNewGame}
+						disabled={isCreatingRoom}
+						style={{
+							padding: "10px 20px",
+							fontSize: "16px",
+							backgroundColor: isCreatingRoom ? "#ccc" : "#4CAF50",
+							color: "white",
+							border: "none",
+							borderRadius: "5px",
+							cursor: isCreatingRoom ? "not-allowed" : "pointer",
+						}}
+					>
+						{isCreatingRoom ? "Creating Game..." : "Create New Game"}
+					</button>
 				)}
 			</div>
 
@@ -699,73 +749,76 @@ const SpinPie: React.FC = () => {
 
 						{/* Delivery history */}
 						<div style={{ marginTop: "20px" }}>
-							<h3>Delivery Summary</h3>
+						<h3>Delivery Summary</h3>
 
-							{[1, 2].map((innings) => {
-								const deliveries = gameState.deliveryHistory.filter(
-									(d) => d.innings === innings,
-								);
+						{[1, 2].map((innings) => {
+							const deliveries = gameState.deliveryHistory.filter(
+							(d) => d.innings === innings,
+							);
 
-								return (
-									<div key={innings} style={{ marginBottom: "15px" }}>
-										<div
-											style={{
-												display: "flex",
-												alignItems: "center",
-												justifyContent: "flex-start",
-												marginBottom: "8px",
-											}}
-										>
-											<strong
-												style={{
-													width: "100px",
-													textAlign: "right",
-												}}
-											>
-												Innings {innings}
-											</strong>
+							// Get total runs for this innings
+							const totalRuns = innings === 1 ? gameState.inningsOneRuns : gameState.inningsTwoRuns;
 
-											<div
-												style={{
-													display: "flex",
-													flexWrap: "wrap",
-													gap: "8px",
-													marginLeft: "10px",
-												}}
-											>
-												{deliveries.map((delivery, i) => {
-													const color =
-														slices.find(
-															(s) =>
-																s.label ===
-																delivery.batsmanChoice,
-														)?.color || "#ccc";
+							return (
+							<div key={innings} style={{ marginBottom: "15px" }}>
+								<div
+								style={{
+									display: "flex",
+									alignItems: "center",
+									justifyContent: "flex-start",
+									marginBottom: "4px",
+								}}
+								>
+								<strong
+									style={{
+									width: "100px",
+									textAlign: "right",
+									}}
+								>
+									Innings {innings}
+								</strong>
+								<span style={{ marginLeft: "10px", fontWeight: "bold", color: "red" }}>
+									Runs: {totalRuns}
+								</span>
+								</div>
 
-													return (
-														<div
-															key={i}
-															style={{
-																width: "30px",
-																height: "30px",
-																borderRadius: "50%",
-																backgroundColor: color,
-																color: "#fff",
-																display: "flex",
-																alignItems: "center",
-																justifyContent: "center",
-																fontWeight: "bold",
-															}}
-														>
-															{delivery.batsmanChoice}
-														</div>
-													);
-												})}
-											</div>
-										</div>
+								<div
+								style={{
+									display: "flex",
+									flexWrap: "wrap",
+									gap: "8px",
+									marginLeft: "110px", // align with balls
+								}}
+								>
+								{deliveries.map((delivery, i) => {
+									const color =
+									slices.find((s) => s.label === delivery.batsmanChoice)?.color || "#ccc";
+
+									return (
+									<div
+										key={i}
+										style={{
+										width: "30px",
+										height: "30px",
+										borderRadius: "50%",
+										backgroundColor: color,
+										color: "#fff",
+										display: "flex",
+										alignItems: "center",
+										justifyContent: "center",
+										fontWeight: "bold",
+										}}
+									>
+										{delivery.batsmanChoice}
 									</div>
-								);
-							})}
+									);
+								})}
+								</div>
+							</div>
+							);
+						})}
 						</div>
+
 					</div>
 			)}
 
@@ -825,3 +878,4 @@ const SpinPie: React.FC = () => {
 };
 
 export default SpinPie;
+

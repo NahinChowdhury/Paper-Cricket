@@ -633,7 +633,7 @@ const RoomLobby: React.FC = () => {
   return (
     <div>
       <button onClick={createRoom} disabled={isCreatingRoom}>
-        {isCreatingRoom ? 'Creating Room...' : 'Create New Room'}
+        {isCreatingRoom ? 'Creating Game...' : 'Create New Game'}
       </button>
 
       <div>

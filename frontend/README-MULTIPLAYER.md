@@ -41,7 +41,7 @@ npm start
 
 #### Option A: Two Browser Tabs
 1. Open http://localhost:3000 in Tab 1
-2. Click "Create New Room"
+2. Click "Create New Game"
 3. Copy the URL (it will be something like http://localhost:3000/game/abc123)
 4. Open the URL in Tab 2
 

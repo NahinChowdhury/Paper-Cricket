@@ -41,7 +41,7 @@ const RoomLobby: React.FC = () => {
 						cursor: isCreatingRoom ? "not-allowed" : "pointer",
 					}}
 				>
-					{isCreatingRoom ? "Creating Room..." : "Create New Room"}
+					{isCreatingRoom ? "Creating Game..." : "Create New Game"}
 				</button>
 			</div>
 
