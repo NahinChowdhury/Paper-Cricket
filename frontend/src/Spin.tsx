@@ -500,6 +500,14 @@ const SpinPie: React.FC = () => {
 						Your turn to choose a shot(Ball {gameState.currentBall}/
 						{gameState.totalBalls})
 					</h2>
+				) : gameState.gamePhase === "waiting" ? (
+					<h2
+						style={{
+							color: "#FF9800",
+						}}
+					>
+						Waiting for opponent to join...
+					</h2>
 				) : (
 					<h2
 						style={{
