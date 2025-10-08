@@ -88,8 +88,9 @@ export const SocketProvider: React.FC<{ children: ReactNode }> = ({
 	const [isConnected, setIsConnected] = useState(false);
 	const { playerId } = usePlayerId();
 
-	const backendURL = process.env.REACT_APP_BACKEND_URL || "http://localhost:3001"; // fallback
-  
+	const backendURL =
+		process.env.REACT_APP_BACKEND_URL || "http://localhost:3001"; // fallback
+
 	if (!socketRef.current) {
 		socketRef.current = io(backendURL, {
 			transports: ["websocket", "polling"],
