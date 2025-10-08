@@ -3,7 +3,11 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useSocket, Player, GameState } from "./contexts/SocketContext";
 import { usePlayerId } from "./hooks/usePlayerId";
 import { useRoom } from "./hooks/useRoom";
-import { DEFAULT_CANVAS_STATE, DEFAULT_GAME_STATE, DEFAULT_PLAYER } from "./utils/defaults";
+import {
+	DEFAULT_CANVAS_STATE,
+	DEFAULT_GAME_STATE,
+	DEFAULT_PLAYER,
+} from "./utils/defaults";
 
 interface Slice {
 	label: string;
@@ -34,15 +38,27 @@ const SpinPie: React.FC = () => {
 	const { playerId } = usePlayerId();
 
 	// Player state management
-	const [currentPlayer, setCurrentPlayer] = useState<Player | null>(DEFAULT_PLAYER);
+	const [currentPlayer, setCurrentPlayer] = useState<Player | null>(
+		DEFAULT_PLAYER,
+	);
 
 	// Canvas and interaction state
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
-	const [rotation, setRotation] = useState<number>(DEFAULT_CANVAS_STATE.rotation); // radians
-	const [isDragging, setIsDragging] = useState<boolean>(DEFAULT_CANVAS_STATE.isDragging);
-	const [startAngle, setStartAngle] = useState<number>(DEFAULT_CANVAS_STATE.startAngle);
-	const [message, setMessage] = useState<string>(DEFAULT_CANVAS_STATE.message);
-	const [shotSelected, setShotSelected] = useState<string | undefined>(DEFAULT_CANVAS_STATE.shotSelected);
+	const [rotation, setRotation] = useState<number>(
+		DEFAULT_CANVAS_STATE.rotation,
+	); // radians
+	const [isDragging, setIsDragging] = useState<boolean>(
+		DEFAULT_CANVAS_STATE.isDragging,
+	);
+	const [startAngle, setStartAngle] = useState<number>(
+		DEFAULT_CANVAS_STATE.startAngle,
+	);
+	const [message, setMessage] = useState<string>(
+		DEFAULT_CANVAS_STATE.message,
+	);
+	const [shotSelected, setShotSelected] = useState<string | undefined>(
+		DEFAULT_CANVAS_STATE.shotSelected,
+	);
 
 	// Turn-based game state
 	const [gameState, setGameState] = useState<GameState>(DEFAULT_GAME_STATE);
@@ -63,7 +79,8 @@ const SpinPie: React.FC = () => {
 			const end = start + sliceAngle;
 
 			// Increase radius if selected
-			const sliceRadius = shotSelected === slice.label ? radius + 10 : radius;
+			const sliceRadius =
+				shotSelected === slice.label ? radius + 10 : radius;
 
 			ctx.beginPath();
 			ctx.moveTo(centerX, centerY);
@@ -307,7 +324,10 @@ const SpinPie: React.FC = () => {
 		const degrees = ((rotation * 180) / Math.PI) % 360;
 
 		// Update selected shot
-		if(gameState.playerBowling !== playerId || gameState.gamePhase === "batting") {
+		if (
+			gameState.playerBowling !== playerId ||
+			gameState.gamePhase === "batting"
+		) {
 			setShotSelected(slices[sliceIndex].label);
 		}
 
@@ -425,7 +445,6 @@ const SpinPie: React.FC = () => {
 		resetToDefaults();
 	};
 
-
 	return (
 		<div style={{ textAlign: "center" }}>
 			<div
@@ -509,14 +528,18 @@ const SpinPie: React.FC = () => {
 						style={{
 							padding: "10px 20px",
 							fontSize: "16px",
-							backgroundColor: isCreatingRoom ? "#ccc" : "#4CAF50",
+							backgroundColor: isCreatingRoom
+								? "#ccc"
+								: "#4CAF50",
 							color: "white",
 							border: "none",
 							borderRadius: "5px",
 							cursor: isCreatingRoom ? "not-allowed" : "pointer",
 						}}
 					>
-						{isCreatingRoom ? "Creating Game..." : "Create New Game"}
+						{isCreatingRoom
+							? "Creating Game..."
+							: "Create New Game"}
 					</button>
 				)}
 			</div>
@@ -582,52 +605,64 @@ const SpinPie: React.FC = () => {
 					onTouchEnd={handleMouseUp}
 				/>
 				{/* Dark overlay to dim the pie when player is batting only */}
-				{(gameState.playerBowling !== playerId && !(gameState.gamePhase === "finished" || gameState.gamePhase === "waiting")) && (
-					<div
-						style={{
-							position: "absolute",
-							top: 50,
-							left: 50,
-							width: SPINNER_RADIUS * 2+2,
-							height: SPINNER_RADIUS * 2+2,
-							backgroundColor: OVERLAY_COLOR, // fully black, can reduce opacity if you want slight transparency
-							borderRadius: "50%",
-							pointerEvents: "none", // allows clicks to go through to canvas
-							overflow: "hidden",
-							transform: `rotate(${rotation}rad)`, // 🔁 rotate with canvas
-							transition: "transform 0.1s linear", // smooth optional
-						}}
-				>
-					{/* Slice division lines drawn on top */}
-					<svg
-						width={SPINNER_RADIUS * 2+2}
-						height={SPINNER_RADIUS * 2+2}
-						style={{
-							position: "absolute",
-							top: 0,
-							left: 0,
-							pointerEvents: "none",
-						}}
-					>
-						{Array.from({ length: slices.length }).map((_, i) => {
-							const angle = (i * 2 * Math.PI) / slices.length - Math.PI / 2; // start from top
-							const x = SPINNER_RADIUS + SPINNER_RADIUS * Math.cos(angle);
-							const y = SPINNER_RADIUS + SPINNER_RADIUS * Math.sin(angle);
-							return (
-								<line
-									key={i}
-									x1={SPINNER_RADIUS}
-									y1={SPINNER_RADIUS}
-									x2={x}
-									y2={y}
-									stroke="white"
-									strokeWidth="2"
-								/>
-							);
-						})}
-					</svg>
-				</div>
-				)}
+				{gameState.playerBowling !== playerId &&
+					!(
+						gameState.gamePhase === "finished" ||
+						gameState.gamePhase === "waiting"
+					) && (
+						<div
+							style={{
+								position: "absolute",
+								top: 50,
+								left: 50,
+								width: SPINNER_RADIUS * 2 + 2,
+								height: SPINNER_RADIUS * 2 + 2,
+								backgroundColor: OVERLAY_COLOR, // fully black, can reduce opacity if you want slight transparency
+								borderRadius: "50%",
+								pointerEvents: "none", // allows clicks to go through to canvas
+								overflow: "hidden",
+								transform: `rotate(${rotation}rad)`, // 🔁 rotate with canvas
+								transition: "transform 0.1s linear", // smooth optional
+							}}
+						>
+							{/* Slice division lines drawn on top */}
+							<svg
+								width={SPINNER_RADIUS * 2 + 2}
+								height={SPINNER_RADIUS * 2 + 2}
+								style={{
+									position: "absolute",
+									top: 0,
+									left: 0,
+									pointerEvents: "none",
+								}}
+							>
+								{Array.from({ length: slices.length }).map(
+									(_, i) => {
+										const angle =
+											(i * 2 * Math.PI) / slices.length -
+											Math.PI / 2; // start from top
+										const x =
+											SPINNER_RADIUS +
+											SPINNER_RADIUS * Math.cos(angle);
+										const y =
+											SPINNER_RADIUS +
+											SPINNER_RADIUS * Math.sin(angle);
+										return (
+											<line
+												key={i}
+												x1={SPINNER_RADIUS}
+												y1={SPINNER_RADIUS}
+												x2={x}
+												y2={y}
+												stroke="white"
+												strokeWidth="2"
+											/>
+										);
+									},
+								)}
+							</svg>
+						</div>
+					)}
 				{/* Overlay message when not player's turn */}
 				{((gameState.gamePhase === "setting field" &&
 					gameState.playerBowling !== playerId) ||
@@ -685,18 +720,23 @@ const SpinPie: React.FC = () => {
 							padding: "12px 24px",
 							fontSize: "16px",
 							backgroundColor:
-								gameState.gamePhase === "batting" && shotSelected === undefined
+								gameState.gamePhase === "batting" &&
+								shotSelected === undefined
 									? "#ccc"
 									: "#4CAF50",
 							color: "white",
 							border: "none",
 							borderRadius: "5px",
 							cursor:
-								gameState.gamePhase === "batting" && shotSelected === undefined
+								gameState.gamePhase === "batting" &&
+								shotSelected === undefined
 									? "not-allowed"
 									: "pointer",
 						}}
-						disabled={gameState.gamePhase === "batting" && shotSelected === undefined}
+						disabled={
+							gameState.gamePhase === "batting" &&
+							shotSelected === undefined
+						}
 					>
 						{gameState.gamePhase === "setting field"
 							? "Submit Field Setup"
@@ -709,122 +749,173 @@ const SpinPie: React.FC = () => {
 			{(gameState.gamePhase === "batting" ||
 				gameState.gamePhase === "setting field" ||
 				gameState.gamePhase === "finished") && (
-					<div
-						style={{
-							marginTop: "30px",
-							padding: "20px",
-							backgroundColor: "#f5f5f5",
-							borderRadius: "10px",
-							maxWidth: "450px",
-							margin: "30px auto",
-							textAlign: "center",
-						}}
-					>
-						{/* Title */}
-						<h3>
-							{gameState.gamePhase === "finished"
-								? "Game Over!"
-								: "Live Match"}
-						</h3>
+				<div
+					style={{
+						marginTop: "30px",
+						padding: "20px",
+						backgroundColor: "#f5f5f5",
+						borderRadius: "10px",
+						maxWidth: "450px",
+						margin: "30px auto",
+						textAlign: "center",
+					}}
+				>
+					{/* Title */}
+					<h3>
+						{gameState.gamePhase === "finished"
+							? "Game Over!"
+							: "Live Match"}
+					</h3>
 
-						<h3>
-							{gameState.gamePhase === "finished"
-								? "Final Scores"
-								: `Current Innings: ${gameState.innings}`}
-						</h3>
+					<h3>
+						{gameState.gamePhase === "finished"
+							? "Final Scores"
+							: `Current Innings: ${gameState.innings}`}
+					</h3>
 
-						{/* Show winner only when finished */}
-						{gameState.gamePhase === "finished" && (
-							<>
-								{/* If Innings 1 scored more than Innings 2, player who bowled first wins */}
-								{gameState.inningsOneRuns > gameState.inningsTwoRuns ? (
-									<p style={{ color: gameState.playerBowling === playerId ? "green" : "red"}}>{gameState.playerBowling === playerId ? "You" : "Your Opponent"} Won!</p>
-								) : gameState.inningsTwoRuns > gameState.inningsOneRuns ? (
-									<p style={{ color: gameState.playerBowling === playerId ? "red" : "green" }}>{gameState.playerBowling === playerId ? "You" : "Your Opponent"} Won!</p>
-								) : (
-									<p style={{ color: "orange" }}>It's a Tie!</p>
-								)}
-							</>
-						)}
+					{/* Show winner only when finished */}
+					{gameState.gamePhase === "finished" && (
+						<>
+							{/* If Innings 1 scored more than Innings 2, player who bowled first wins */}
+							{gameState.inningsOneRuns >
+							gameState.inningsTwoRuns ? (
+								<p
+									style={{
+										color:
+											gameState.playerBowling === playerId
+												? "green"
+												: "red",
+									}}
+								>
+									{gameState.playerBowling === playerId
+										? "You"
+										: "Your Opponent"}{" "}
+									Won!
+								</p>
+							) : gameState.inningsTwoRuns >
+							  gameState.inningsOneRuns ? (
+								<p
+									style={{
+										color:
+											gameState.playerBowling === playerId
+												? "red"
+												: "green",
+									}}
+								>
+									{gameState.playerBowling === playerId
+										? "You"
+										: "Your Opponent"}{" "}
+									Won!
+								</p>
+							) : (
+								<p style={{ color: "orange" }}>It's a Tie!</p>
+							)}
+						</>
+					)}
 
-						{/* Delivery history */}
-						<div style={{ marginTop: "20px" }}>
+					{/* Delivery history */}
+					<div style={{ marginTop: "20px" }}>
 						<h3>Delivery Summary</h3>
 
 						{[1, 2].map((innings) => {
 							const deliveries = gameState.deliveryHistory.filter(
-							(d) => d.innings === innings,
+								(d) => d.innings === innings,
 							);
 
 							// Get total runs for this innings
-							const totalRuns = innings === 1 ? gameState.inningsOneRuns : gameState.inningsTwoRuns;
+							const totalRuns =
+								innings === 1
+									? gameState.inningsOneRuns
+									: gameState.inningsTwoRuns;
 
 							return (
-							<div key={innings} style={{ marginBottom: "15px" }}>
 								<div
-								style={{
-									display: "flex",
-									alignItems: "center",
-									justifyContent: "flex-start",
-									marginBottom: "4px",
-								}}
+									key={innings}
+									style={{ marginBottom: "15px" }}
 								>
-								<strong
-									style={{
-									width: "100px",
-									textAlign: "right",
-									}}
-								>
-									Innings {innings}
-								</strong>
-								<span style={{ marginLeft: "10px", fontWeight: "bold", color: "red" }}>
-									Runs: {totalRuns}
-								</span>
-								<span style={{ marginLeft: "10px", fontWeight: "bold", color: "#c14a5f" }}>
-									Wickets left: {gameState.totalWickets - (innings === 1 ? gameState.inningsOneWicketCurrentCount : gameState.inningsTwoWicketCurrentCount)}
-								</span>
-								</div>
-
-								<div
-								style={{
-									display: "flex",
-									flexWrap: "wrap",
-									gap: "8px",
-									marginLeft: "110px", // align with balls
-								}}
-								>
-								{deliveries.map((delivery, i) => {
-									const color =
-									slices.find((s) => s.label === delivery.batsmanChoice)?.color || "#ccc";
-
-									return (
 									<div
-										key={i}
 										style={{
-										width: "30px",
-										height: "30px",
-										borderRadius: "50%",
-										backgroundColor: color,
-										color: "#fff",
-										display: "flex",
-										alignItems: "center",
-										justifyContent: "center",
-										fontWeight: "bold",
+											display: "flex",
+											alignItems: "center",
+											justifyContent: "flex-start",
+											marginBottom: "4px",
 										}}
 									>
-										{delivery.batsmanChoice}
+										<strong
+											style={{
+												width: "100px",
+												textAlign: "right",
+											}}
+										>
+											Innings {innings}
+										</strong>
+										<span
+											style={{
+												marginLeft: "10px",
+												fontWeight: "bold",
+												color: "red",
+											}}
+										>
+											Runs: {totalRuns}
+										</span>
+										<span
+											style={{
+												marginLeft: "10px",
+												fontWeight: "bold",
+												color: "#c14a5f",
+											}}
+										>
+											Wickets left:{" "}
+											{gameState.totalWickets -
+												(innings === 1
+													? gameState.inningsOneWicketCurrentCount
+													: gameState.inningsTwoWicketCurrentCount)}
+										</span>
 									</div>
-									);
-								})}
+
+									<div
+										style={{
+											display: "flex",
+											flexWrap: "wrap",
+											gap: "8px",
+											marginLeft: "110px", // align with balls
+										}}
+									>
+										{deliveries.map((delivery, i) => {
+											const color =
+												slices.find(
+													(s) =>
+														s.label ===
+														delivery.batsmanChoice,
+												)?.color || "#ccc";
+
+											return (
+												<div
+													key={i}
+													style={{
+														width: "30px",
+														height: "30px",
+														borderRadius: "50%",
+														backgroundColor: color,
+														color: "#fff",
+														display: "flex",
+														alignItems: "center",
+														justifyContent:
+															"center",
+														fontWeight: "bold",
+													}}
+												>
+													{delivery.batsmanChoice}
+												</div>
+											);
+										})}
+									</div>
 								</div>
-							</div>
 							);
 						})}
-						</div>
-
 					</div>
+				</div>
 			)}
-
 
 			{/* Ongoing game stats */}
 			{/* {gameState.gamePhase !== "finished" && (
@@ -881,4 +972,3 @@ const SpinPie: React.FC = () => {
 };
 
 export default SpinPie;
-
