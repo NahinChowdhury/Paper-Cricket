@@ -17,9 +17,9 @@
 		"web-vitals": "^3.0.0"
 	},
 	"scripts": {
-		
 		"format": "prettier --write \"**/*.ts\" \"**/*.tsx\" \"**/*.json\"",
-		"start": "npm run format && PORT=$PORT HOST=0.0.0.0 react-scripts start",
+		"dev": "npm run format && PORT=$PORT HOST=0.0.0.0 react-scripts start",
+		"start": "serve -s build",
 		"build": "npm run format && react-scripts build",
 		"test": "react-scripts test",
 		"eject": "react-scripts eject"
@@ -43,6 +43,7 @@
 		]
 	},
 	"devDependencies": {
-		"prettier": "^3.6.2"
+		"prettier": "^3.6.2",
+		"serve": "^14.2.5"
 	}
 }
