@@ -8,7 +8,7 @@
 		"dev": "npm run format && nodemon --config nodemon.json src/server.ts",
 		"dev:debug": "npm run format && nodemon --config nodemon.json src/server.ts",
 		"debug": "npm run format && nodemon --config nodemon.json src/server.ts",
-		"start": "npm run format && nodemon --config nodemon.json dist/server.js",
+		"start": "node dist/server.js",
 		"start:debug": "npm run format && nodemon --config nodemon.json dist/server.js",
 		"build": "npm run format && tsc",
 		"prod": "npm run build && npm start"

@@ -1,27 +1,33 @@
 import { GameState, DeliveryRecord } from "./types";
 
+export function createStartingGameState(): GameState {
+	return {
+		players: [],
+		currentBall: 1,
+		currentBallRotation: undefined,
+		currentBallBatsmanChoice: undefined,
+		playerBowling: "",
+		originalTotalBalls: 1, // should be 6
+		totalBalls: 1, // should be 6
+		totalWickets: 2,
+		inningsOneRuns: 0,
+		inningsTwoRuns: 0,
+		inningsOneWicketCurrentCount: 0,
+		inningsTwoWicketCurrentCount: 0,
+		gamePhase: "waiting",
+		innings: 1,
+		deliveryHistory: [],
+	};
+}
+
 export class GameStateManager {
 	private gameStates: Map<string, GameState> = new Map();
 
 	// Create initial game state for a room
 	createInitialGameState(playerId: string, roomId: string): GameState {
-		const initialState: GameState = {
-			players: [playerId],
-			currentBall: 1,
-			currentBallRotation: undefined,
-			currentBallBatsmanChoice: undefined,
-			playerBowling: playerId, // Initially the game creator bowls
-			originalTotalBalls: 6, // TODO: Set to 6 later
-			totalBalls: 6, // TODO: Set to 6 later
-			totalWickets: 3, // TODO: Set to 10 later
-			inningsOneRuns: 0,
-			inningsTwoRuns: 0,
-			inningsOneWicketCurrentCount: 0,
-			inningsTwoWicketCurrentCount: 0,
-			gamePhase: "waiting",
-			innings: 1,
-			deliveryHistory: [],
-		};
+		const initialState: GameState = createStartingGameState();
+		initialState.players.push(playerId);
+		initialState.playerBowling = playerId; // First player to join is the bowler
 
 		this.gameStates.set(roomId, initialState);
 		return initialState;
@@ -199,11 +205,11 @@ export class GameStateManager {
 		} else if (inningsOver) {
 			// Start second innings
 			gameState.innings = 2;
-			gameState.currentBall = 1;
+			gameState.currentBall = createStartingGameState().currentBall;
 			gameState.playerBowling = gameState.players.find(
 				(p) => p !== gameState?.playerBowling,
 			)!;
-			gameState.totalBalls = gameState.originalTotalBalls;
+			gameState.totalBalls = createStartingGameState().totalBalls;
 			// No need to reset runs and wickets because we have separate variables for both innings
 		} else {
 			gameState.currentBall++;
