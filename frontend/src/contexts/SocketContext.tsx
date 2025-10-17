@@ -89,7 +89,7 @@ export const SocketProvider: React.FC<{ children: ReactNode }> = ({
 	const { playerId } = usePlayerId();
 
 	const backendURL =
-		process.env.REACT_APP_BACKEND_URL || "http://localhost:3001"; // fallback
+		import.meta.env.VITE_BACKEND_URL || "http://localhost:3001"; // fallback
 
 	if (!socketRef.current) {
 		socketRef.current = io(backendURL, {
