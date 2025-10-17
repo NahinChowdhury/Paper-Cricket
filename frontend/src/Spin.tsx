@@ -28,6 +28,13 @@ const slices: Slice[] = [
 const OVERLAY_COLOR = "rgba(0, 0, 0, 1)";
 const SELECTED_SHOT_OVERLAY_COLOR = "rgba(255, 0, 0, 1)";
 
+const LOSS_COLOR = "red";
+const WIN_COLOR = "green";
+const TIE_COLOR = "orange";
+const WINNER_TEXT = "You Won!";
+const LOSER_TEXT = "You Lost!";
+const TIE_TEXT = "It's a Tie!";
+
 const SpinPie: React.FC = () => {
 	const navigate = useNavigate();
 
@@ -62,6 +69,10 @@ const SpinPie: React.FC = () => {
 
 	// Turn-based game state
 	const [gameState, setGameState] = useState<GameState>(DEFAULT_GAME_STATE);
+
+	const [showAnimation, setShowAnimation] = useState<boolean>(false);
+
+	const [animationData, setAnimationData] = useState<any>(null);
 
 	const SPINNER_RADIUS = 150; // Static radius for the spinner
 
@@ -409,6 +420,21 @@ const SpinPie: React.FC = () => {
 		}
 	};
 
+	const resetToDefaults = () => {
+		setCurrentPlayer(DEFAULT_PLAYER);
+		setGameState(DEFAULT_GAME_STATE);
+		setRotation(DEFAULT_CANVAS_STATE.rotation);
+		setIsDragging(DEFAULT_CANVAS_STATE.isDragging);
+		setStartAngle(DEFAULT_CANVAS_STATE.startAngle);
+		setMessage(DEFAULT_CANVAS_STATE.message);
+		setShotSelected(DEFAULT_CANVAS_STATE.shotSelected);
+	};
+
+	const handleCreateNewGame = () => {
+		createRoom();
+		resetToDefaults();
+	};
+
 	// helper function
 	const getCursorStyle = (): string => {
 		if (
@@ -428,21 +454,6 @@ const SpinPie: React.FC = () => {
 		} else {
 			return "not-allowed";
 		}
-	};
-
-	const resetToDefaults = () => {
-		setCurrentPlayer(DEFAULT_PLAYER);
-		setGameState(DEFAULT_GAME_STATE);
-		setRotation(DEFAULT_CANVAS_STATE.rotation);
-		setIsDragging(DEFAULT_CANVAS_STATE.isDragging);
-		setStartAngle(DEFAULT_CANVAS_STATE.startAngle);
-		setMessage(DEFAULT_CANVAS_STATE.message);
-		setShotSelected(DEFAULT_CANVAS_STATE.shotSelected);
-	};
-
-	const handleCreateNewGame = () => {
-		createRoom();
-		resetToDefaults();
 	};
 
 	return (
@@ -784,39 +795,28 @@ const SpinPie: React.FC = () => {
 					{/* Show winner only when finished */}
 					{gameState.gamePhase === "finished" && (
 						<>
-							{/* If Innings 1 scored more than Innings 2, player who bowled first wins */}
-							{gameState.inningsOneRuns >
-							gameState.inningsTwoRuns ? (
-								<p
-									style={{
-										color:
-											gameState.playerBowling === playerId
-												? "green"
-												: "red",
-									}}
-								>
-									{gameState.playerBowling === playerId
-										? "You"
-										: "Your Opponent"}{" "}
-									Won!
+							{/* The player who is bowling currently is the player who scored the runs for innings 1*/}
+							{/* The player who is batting currently is the player who scored the runs for innings 2*/}
+							{(gameState.inningsTwoRuns >
+								gameState.inningsOneRuns &&
+								gameState.playerBowling !== playerId) ||
+							(gameState.inningsOneRuns >
+								gameState.inningsTwoRuns &&
+								gameState.playerBowling === playerId) ? (
+								<p style={{ color: WIN_COLOR }}>
+									{WINNER_TEXT}
 								</p>
-							) : gameState.inningsTwoRuns >
-							  gameState.inningsOneRuns ? (
-								<p
-									style={{
-										color:
-											gameState.playerBowling === playerId
-												? "red"
-												: "green",
-									}}
-								>
-									{gameState.playerBowling === playerId
-										? "You"
-										: "Your Opponent"}{" "}
-									Won!
+							) : (gameState.inningsOneRuns >
+									gameState.inningsTwoRuns &&
+									gameState.playerBowling !== playerId) ||
+							  (gameState.inningsTwoRuns >
+									gameState.inningsOneRuns &&
+									gameState.playerBowling === playerId) ? (
+								<p style={{ color: LOSS_COLOR }}>
+									{LOSER_TEXT}
 								</p>
 							) : (
-								<p style={{ color: "orange" }}>It's a Tie!</p>
+								<p style={{ color: TIE_COLOR }}>{TIE_TEXT}</p>
 							)}
 						</>
 					)}
@@ -924,57 +924,6 @@ const SpinPie: React.FC = () => {
 					</div>
 				</div>
 			)}
-
-			{/* Ongoing game stats */}
-			{/* {gameState.gamePhase !== "finished" && (
-				<div
-					style={{
-						marginTop: "30px",
-						padding: "20px",
-						backgroundColor: "#f5f5f5",
-						borderRadius: "5px",
-						maxWidth: "400px",
-						margin: "30px auto",
-					}}
-				>
-					<h3>Game Info</h3>
-					<h3>Innings: 1</h3>
-					{gameState.innings === 1 && (
-						<>
-							<p style={{ color: "red" }}>
-								First Innings in Progress
-							</p>
-							<p>
-								Balls Bowled: {gameState.currentBall - 1} /{" "}
-								{gameState.totalBalls}
-							</p>
-						</>
-					)}
-					<p>
-						Wickets Fallen: {gameState.inningsOneWicketCurrentCount}{" "}
-						/ {gameState.totalWickets}
-					</p>
-					<p>Runs: {gameState.inningsOneRuns}</p>
-
-					<h3>Innings: 2</h3>
-					{gameState.innings === 2 && (
-						<>
-							<p style={{ color: "red" }}>
-								Second Innings in Progress
-							</p>
-							<p>
-								Balls Bowled: {gameState.currentBall - 1} /{" "}
-								{gameState.totalBalls}
-							</p>
-						</>
-					)}
-					<p>
-						Wickets Fallen: {gameState.inningsTwoWicketCurrentCount}{" "}
-						/ {gameState.totalWickets}
-					</p>
-					<p>Runs: {gameState.inningsTwoRuns}</p>
-				</div>
-			)} */}
 		</div>
 	);
 };
