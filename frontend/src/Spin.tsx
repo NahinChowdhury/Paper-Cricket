@@ -9,6 +9,11 @@ import {
 	DEFAULT_PLAYER,
 } from "./utils/defaults";
 
+import Lottie from "lottie-react";
+import pikachuAnimation from "./assets/pikachu.json";
+import arrowHighLightAnimation from "./assets/arrow_highlight.json";
+import sixAnimation from "./assets/six_animation.json";
+
 interface Slice {
 	label: string;
 	color: string;
@@ -432,6 +437,37 @@ const SpinPie: React.FC = () => {
 					roomId!,
 					shotSelected!,
 				);
+
+				setShowAnimation(true);
+
+				switch (shotSelected) {
+					case "0":
+						setAnimationData(arrowHighLightAnimation);
+						break;
+					case "1":
+						setAnimationData(pikachuAnimation);
+						break;
+					case "2":
+						setAnimationData(arrowHighLightAnimation);
+						break;
+					case "4":
+						setAnimationData(pikachuAnimation);
+						break;
+					case "6":
+						setAnimationData(sixAnimation);
+						break;
+					case "W":
+						setAnimationData(arrowHighLightAnimation);
+						break;
+					case "NB":
+						setAnimationData(arrowHighLightAnimation);
+						break;
+					case "WD":
+						setAnimationData(arrowHighLightAnimation);
+						break;
+					default:
+						setAnimationData(arrowHighLightAnimation);
+				}
 			}
 			resetForNextBall();
 		}
@@ -450,6 +486,11 @@ const SpinPie: React.FC = () => {
 	const handleCreateNewGame = () => {
 		createRoom();
 		resetToDefaults();
+	};
+
+	const resetAnimation = () => {
+		setShowAnimation(false);
+		setAnimationData(null);
 	};
 
 	// helper function
@@ -938,6 +979,32 @@ const SpinPie: React.FC = () => {
 							);
 						})}
 					</div>
+				</div>
+			)}
+
+			{/* Overlay when animation is shown */}
+			{showAnimation && (
+				<div
+					style={{
+						position: "fixed",
+						top: 0,
+						left: 0,
+						width: "100vw",
+						height: "100vh",
+						backgroundColor: "rgba(0, 0, 0, 0.5)", // semi-transparent dark overlay
+						display: "flex",
+						justifyContent: "center",
+						alignItems: "center",
+						zIndex: 9999, // ensure it's on top of everything
+					}}
+					onClick={resetAnimation}
+				>
+					<Lottie
+						animationData={animationData}
+						loop={false} // run once
+						style={{ width: 500, height: 500 }}
+						onComplete={resetAnimation} // hide when finished
+					/>
 				</div>
 			)}
 		</div>
