@@ -16,10 +16,13 @@
 		"web-vitals": "^3.0.0"
 	},
 	"scripts": {
-		"format": "prettier --write \"**/*.ts\" \"**/*.tsx\" \"**/*.json\"",
-		"dev": "npm run format && vite",
+		"prettier:check": "prettier --check \"src/**/*.{ts,tsx,json}\"",
+		"prettier:write": "prettier --write \"src/**/*.{ts,tsx,json}\"",
+		"prettier:auto": "npm run prettier:check || npm run prettier:write",
+		"format": "npm run prettier:write",
+		"dev": "npm run prettier:auto && vite",
 		"start": "serve -s dist",
-		"build": "npm run format && vite build",
+		"build": "npm run prettier:auto && vite build",
 		"preview": "vite preview"
 	},
 	"eslintConfig": {

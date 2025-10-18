@@ -122,6 +122,10 @@ const SpinPie: React.FC = () => {
 		});
 	};
 
+	const normalizeRotation = (radians: number): number => {
+		return ((radians % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+	};
+
 	useEffect(() => {
 		const canvas = canvasRef.current;
 		if (!canvas) return;
@@ -178,8 +182,11 @@ const SpinPie: React.FC = () => {
 			}));
 
 			// Update the rotation too
-			if (gameState.currentBallRotation !== undefined) {
-				setRotation(gameState.currentBallRotation);
+			if (
+				gameState.currentBallRotation !== undefined &&
+				!isNaN(gameState.currentBallRotation)
+			) {
+				setRotation(normalizeRotation(gameState.currentBallRotation));
 			}
 		};
 
@@ -211,6 +218,12 @@ const SpinPie: React.FC = () => {
 				...prev,
 				...gameState,
 			}));
+			setRotation(
+				normalizeRotation(
+					gameState.currentBallRotation ||
+						DEFAULT_CANVAS_STATE.rotation,
+				),
+			); // update rotation according to fielder's final choice
 		};
 
 		const handleSetField = (gameState: GameState) => {
@@ -219,6 +232,7 @@ const SpinPie: React.FC = () => {
 				...prev,
 				...gameState,
 			}));
+			setRotation(DEFAULT_CANVAS_STATE.rotation); // set rotation to 0 when new turn starts
 		};
 
 		// Register event listeners
@@ -242,12 +256,6 @@ const SpinPie: React.FC = () => {
 			socket.off("set_field", handleSetField);
 		};
 	}, [socket, roomId, currentPlayer]);
-
-	const getAngle = (x: number, y: number, rect: DOMRect) => {
-		const centerX = rect.left + rect.width / 2;
-		const centerY = rect.top + rect.height / 2;
-		return Math.atan2(y - centerY, x - centerX);
-	};
 
 	const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
 		const rect = canvasRef.current!.getBoundingClientRect();
@@ -296,16 +304,16 @@ const SpinPie: React.FC = () => {
 			const angle = Math.atan2(dy, dx);
 			const newRotation = angle - startAngle;
 			// console.log("Dragging, new rotation (radians):", newRotation);
-			setRotation(newRotation);
+			setRotation(normalizeRotation(newRotation));
 
 			// Update game state with new rotation
 			setGameState((prev) => ({
 				...prev,
-				myRotation: newRotation,
+				myRotation: normalizeRotation(newRotation),
 			}));
 
 			// Send rotation to server for opponent to see
-			emitRotationChange(newRotation);
+			emitRotationChange(normalizeRotation(newRotation));
 		}
 	};
 
@@ -327,9 +335,10 @@ const SpinPie: React.FC = () => {
 			return;
 		}
 
+		const fullCircle = 2 * Math.PI;
 		const angle = Math.atan2(dy, dx) - rotation;
-		const normalized = (angle + 2 * Math.PI) % (2 * Math.PI);
-		const sliceAngle = (2 * Math.PI) / slices.length;
+		const normalized = ((angle % fullCircle) + fullCircle) % fullCircle;
+		const sliceAngle = fullCircle / slices.length;
 		const sliceIndex = Math.floor(normalized / sliceAngle) % slices.length;
 
 		const degrees = ((rotation * 180) / Math.PI) % 360;
@@ -358,20 +367,20 @@ const SpinPie: React.FC = () => {
 	// should handle parameter in degrees
 	const handleSetRotation = (radians: number) => {
 		if (!isNaN(radians)) {
-			setRotation(radians);
+			setRotation(normalizeRotation(radians));
 			setGameState((prev) => ({
 				...prev,
-				myRotation: radians,
+				myRotation: normalizeRotation(radians),
 			}));
 			// Send manual rotation to server for opponent to see
-			emitRotationChange(radians);
+			emitRotationChange(normalizeRotation(radians));
 		}
 	};
 
 	const resetForNextBall = () => {
-		setRotation(0);
-		setShotSelected(undefined);
-		setMessage("");
+		setRotation(DEFAULT_CANVAS_STATE.rotation);
+		setShotSelected(DEFAULT_CANVAS_STATE.shotSelected);
+		setMessage(DEFAULT_CANVAS_STATE.message);
 	};
 
 	// // Emit rotation changes to server (only during player's turn)
@@ -398,9 +407,17 @@ const SpinPie: React.FC = () => {
 
 		if (socket) {
 			if (bowling) {
-				console.log("Bowler setting field with rotation:", rotation);
+				console.log(
+					"Bowler setting field with rotation:",
+					normalizeRotation(rotation),
+				);
 				// Bowler sets the field
-				socket.emit("field_set", currentPlayer!.id, roomId!, rotation);
+				socket.emit(
+					"field_set",
+					currentPlayer!.id,
+					roomId!,
+					normalizeRotation(rotation),
+				);
 			} else {
 				if (!shotSelected) {
 					alert(
@@ -641,7 +658,6 @@ const SpinPie: React.FC = () => {
 								pointerEvents: "none", // allows clicks to go through to canvas
 								overflow: "hidden",
 								transform: `rotate(${rotation}rad)`, // 🔁 rotate with canvas
-								transition: "transform 0.1s linear", // smooth optional
 							}}
 						>
 							{/* Slice division lines drawn on top */}
