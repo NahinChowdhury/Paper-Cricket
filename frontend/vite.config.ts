@@ -7,6 +7,6 @@ export default defineConfig({
 		port: 3000,
 	},
 	build: {
-		outDir: "build", // optional, to match CRA's 'build'
+		outDir: "dist", // optional, to match CRA's 'build'
 	},
 });
