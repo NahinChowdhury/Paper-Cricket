@@ -7,8 +7,8 @@ export function createStartingGameState(): GameState {
 		currentBallRotation: undefined,
 		currentBallBatsmanChoice: undefined,
 		playerBowling: "",
-		originalTotalBalls: 1, // should be 6
-		totalBalls: 1, // should be 6
+		originalTotalBalls: 6, // should be 6
+		totalBalls: 6, // should be 6
 		totalWickets: 2,
 		inningsOneRuns: 0,
 		inningsTwoRuns: 0,
