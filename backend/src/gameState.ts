@@ -2,22 +2,48 @@ import { GameState, DeliveryRecord } from "./types";
 
 export function createStartingGameState(): GameState {
 	return {
-		players: [],
-		currentBall: 1,
-		currentBallRotation: undefined,
-		currentBallBatsmanChoice: undefined,
-		playerBowling: "",
-		originalTotalBalls: 6, // should be 6
-		totalBalls: 6, // should be 6
-		totalWickets: 2,
-		inningsOneRuns: 0,
-		inningsTwoRuns: 0,
-		inningsOneWicketCurrentCount: 0,
-		inningsTwoWicketCurrentCount: 0,
-		gamePhase: "waiting",
-		innings: 1,
-		deliveryHistory: [],
-	};
+		players: [], // list of player IDs. Max 2
+		audience: [], // list of audience IDs. Can be empty
+
+		originalPresets: [], // original presets chosen at start of innings
+		modifiedPresets: [], // modified presets during the innings
+		presetChosen: 1, // index of preset chosen for current delivery
+
+		fielderPowerupsActive: [], // currently active powerup for fielding side
+		batsmanPowerupsActive: [], // currently active powerup for batting side
+		fielderUsedPowerups: [], // used powerups for fielding side
+		batsmanUsedPowerups: [], // used powerups for batting side
+		fielderUnusedPowerups: [], // unused should be initialized with all powerups
+		batsmanUnusedPowerups: [], // unused should be initialized with all powerups
+
+		currentBall: 1, // current turn number
+		currentBallRotation: undefined, // current ball rotation
+		currentBallBatsmanChoice: undefined, // current ball batsman choice
+
+		playerBowling: "", // player ID of who is bowling
+		playerBatting: "", // player ID of who is batting
+
+		originalTotalBalls: 6, // Will not change during the game
+		totalBalls: 6, // Fixed to 6 right now. Can change if Wide or No Ball is bowled
+
+		totalWickets: 2, // Fixed to 2 right now
+		inningsOneWicketCurrentCount: 0, // wickets fallen so far in innings one
+		inningsTwoWicketCurrentCount: 0, // wickets fallen so far in innings two
+
+		inningsOneRuns: 0, // runs scored in innings one
+		inningsTwoRuns: 0, // runs scored in innings two
+		innings: 1, // Can be 2 max
+
+		gamePhase: "waiting", // game state
+		surrenderedBy: null, // player ID who surrendered, null if none
+
+		tossSelector: null, // player ID who won the toss, null if not yet decided
+		playerTossChoice: null, // choice made by toss selector, null if not yet decided
+		serverTossChoice: null, // server's random choice for toss, null if not yet decided
+		tossWinner: null, // player ID who won the toss, null if not yet decided
+
+		deliveryHistory: [], // list of turn records
+	}
 }
 
 export class GameStateManager {
@@ -26,8 +52,6 @@ export class GameStateManager {
 	// Create initial game state for a room
 	createInitialGameState(playerId: string, roomId: string): GameState {
 		const initialState: GameState = createStartingGameState();
-		initialState.players.push(playerId);
-		initialState.playerBowling = playerId; // First player to join is the bowler
 
 		this.gameStates.set(roomId, initialState);
 		return initialState;
@@ -230,5 +254,20 @@ export class GameStateManager {
 	// Clean up game state when room is destroyed
 	cleanupGameState(roomId: string): void {
 		this.gameStates.delete(roomId);
+	}
+
+	removeUserFromGameAudience(playerId: string, roomId: string): void {
+		const gameState = this.gameStates.get(roomId);
+		if (!gameState) {
+			return;
+		}
+
+		// Remove user from audience list
+		gameState.audience = gameState.audience.filter((p) => p !== playerId);
+
+		// If no audience left, clean up game state
+		if (gameState.audience.length === 0 && gameState.players.length === 0) {
+			this.cleanupGameState(roomId);
+		}
 	}
 }

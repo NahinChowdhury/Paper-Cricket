@@ -6,7 +6,8 @@ import { v4 as uuidv4 } from "uuid";
 import { RoomManager } from "./roomManager";
 import { GameStateManager } from "./gameState";
 // Import types from local types file
-import { ClientEvents, GameRoom, Player, ServerEvents } from "./types";
+import { ClientEvents, GameRoom, User, ServerEvents } from "./types";
+import { verifyUserisActivePlayerInAGame } from "./helper/helperMethods";
 
 const app = express();
 const server = createServer(app);
@@ -38,13 +39,28 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 	socket.on("create_room", (playerId: string) => {
 		try {
 			const roomId = uuidv4();
+
+			// check player isn't already in a room as an active player
+			const existingRoomId = roomManager.getRoomByPlayerId(playerId);
+			if (verifyUserisActivePlayerInAGame(playerId, existingRoomId, roomManager, gameStateManager)) {
+				socket.emit("cannot_create_game", existingRoomId!);
+				return;
+			}
+
+			// Remove user from any previous rooms and the audience list of those rooms
+			if (existingRoomId) {
+				// above ensures the user isn't a player in an active game
+				gameStateManager.removeUserFromGameAudience(playerId, existingRoomId);
+				roomManager.removePlayerFromRoom(playerId);
+			}
+
 			roomManager.createRoom(playerId, roomId);
 			socket.join(roomId);
 
 			// Create a game state for the new room
 			gameStateManager.createInitialGameState(playerId, roomId);
 			socket.emit("room_created", roomId);
-			console.log(`Room created: ${roomId} by player: ${playerId}`);
+			console.log(`Room created: ${roomId} by user: ${playerId}`);
 		} catch (error) {
 			console.error("Error creating room:", error);
 			socket.emit("room_not_found");
@@ -61,7 +77,7 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 			}
 
 			// find if player has joined the room before
-			const existingPlayer = room.players.find((p) => p.id === playerId);
+			const existingPlayer = room.users.find((p) => p.id === playerId);
 			if (existingPlayer) {
 				socket.join(roomId);
 				const gameState = gameStateManager.getGameState(roomId);
@@ -81,7 +97,7 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 				return;
 			}
 
-			if (room.players.length >= 2) {
+			if (room.users.length >= 2) {
 				socket.emit("room_full");
 				return;
 			}
@@ -114,7 +130,7 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 	});
 
 	// Handle player_joined event from frontend (for game initialization)
-	socket.on("player_joined", (player: Player) => {
+	socket.on("player_joined", (player: User) => {
 		try {
 			console.log("Player joined event received:", player);
 
@@ -126,25 +142,25 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 			}
 
 			// Check if this player is already in the room
-			const existingPlayer = room.players.find((p) => p.id === player.id);
+			const existingPlayer = room.users.find((p) => p.id === player.id);
 			if (!existingPlayer) {
 				console.log("Player not found in room, adding them");
 
 				// Check room size before adding
-				if (room.players.length >= room.maxPlayers) {
+				if (room.users.length >= room.maxPlayers) {
 					console.log("Room is full, cannot add player:", player.id);
 					socket.emit("room_full");
 					return;
 				}
 
 				// Add the player to the room
-				const addedPlayer: Player = roomManager.addPlayerToRoom(
+				const addedUser: User = roomManager.addPlayerToRoom(
 					player.id,
 					player.roomId,
 				);
 				gameStateManager.addPlayerToGame(player.id, player.roomId);
 				console.log(
-					`Player ${addedPlayer.id} added to room ${addedPlayer.roomId}`,
+					`Player ${addedUser.id} added to room ${addedUser.roomId}`,
 				);
 			}
 
@@ -152,7 +168,7 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 			const updatedRoom: GameRoom | undefined = roomManager.getRoom(
 				player.roomId,
 			);
-			if (updatedRoom && updatedRoom.players.length === 2) {
+			if (updatedRoom && updatedRoom.users.length === 2) {
 				// Get the game state
 				// if the game state is waiting, then start the game
 				// otherwise, send the game start to that socket only
