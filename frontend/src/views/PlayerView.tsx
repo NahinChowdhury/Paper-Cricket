@@ -16,8 +16,13 @@ const PlayerView: React.FC = () => {
 		return <PreGameJoiningView />;
 	}
 
-	const { gamePhase, tossSelector, tossWinner, playerBatting, playerFielding } =
-		gameState;
+	const {
+		gamePhase,
+		tossSelector,
+		tossWinner,
+		playerBatting,
+		playerFielding,
+	} = gameState;
 
 	if (gamePhase === "waiting") {
 		return <GameWaitingView />;

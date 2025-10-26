@@ -16,10 +16,18 @@ const PreGameDecisionMakerView: React.FC = () => {
 
 		if (gamePhase === "toss") {
 			console.log("🪙 Toss choice made:", choice);
-			socket.emit("toss_selection_made", user, choice as "heads" | "tails");
+			socket.emit(
+				"toss_selection_made",
+				user,
+				choice as "heads" | "tails",
+			);
 		} else if (gamePhase === "side selection") {
 			console.log("🏏 Side selection made:", choice);
-			socket.emit("side_selection_made", user, choice as "batting" | "fielding");
+			socket.emit(
+				"side_selection_made",
+				user,
+				choice as "batting" | "fielding",
+			);
 		}
 	};
 

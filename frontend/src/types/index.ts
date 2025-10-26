@@ -111,7 +111,7 @@ export interface ServerEvents {
 	room_full: () => void;
 	game_started: (gameState: GameState) => void;
 	rotation_update: (gameState: GameState, rotation: number) => void;
-	shot_selection_hover_update: (gameState: GameState,choice: string) => void;
+	shot_selection_hover_update: (gameState: GameState, choice: string) => void;
 	game_ended: (gameState: GameState) => void;
 	game_surrendered: (gameState: GameState) => void;
 	user_left: (playerId: string) => void;

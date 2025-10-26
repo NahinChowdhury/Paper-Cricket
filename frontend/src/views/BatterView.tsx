@@ -123,7 +123,12 @@ const BatterView: React.FC = () => {
 		const ctx = canvas.getContext("2d");
 		if (!ctx) return;
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
-		console.log("Redrawing pie with rotation:", rotation, "and shotSelected:", shotSelected);
+		console.log(
+			"Redrawing pie with rotation:",
+			rotation,
+			"and shotSelected:",
+			shotSelected,
+		);
 		drawPie(ctx);
 	}, [rotation, shotSelected, drawPie]);
 
@@ -174,7 +179,11 @@ const BatterView: React.FC = () => {
 					style={{
 						border: "2px solid #ddd",
 						borderRadius: "50%",
-						cursor: (gameState.playerBatting === user.id && gameState.gamePhase === "batting") ? "pointer" : "not-allowed",
+						cursor:
+							gameState.playerBatting === user.id &&
+							gameState.gamePhase === "batting"
+								? "pointer"
+								: "not-allowed",
 					}}
 					onClick={handleClick}
 				/>

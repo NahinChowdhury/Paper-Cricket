@@ -94,18 +94,25 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({
 				};
 			});
 		});
-		socket.on ("shot_selection_hover_update", (gameState: GameState, choice: string) => {
-			// Although the currentBatsmanChoice is probably undefined in the actual gameState, we handle it separately for temporary UI purposes
-			console.log("Shot selection hover update received:", choice);
-			setGameState((prev) => {
-				if (!prev) return { ...gameState, currentBallBatsmanChoice: choice };
-				return {
-					...prev,
-					...gameState,
-					currentBallBatsmanChoice: choice,
-				};
-			});
-		});
+		socket.on(
+			"shot_selection_hover_update",
+			(gameState: GameState, choice: string) => {
+				// Although the currentBatsmanChoice is probably undefined in the actual gameState, we handle it separately for temporary UI purposes
+				console.log("Shot selection hover update received:", choice);
+				setGameState((prev) => {
+					if (!prev)
+						return {
+							...gameState,
+							currentBallBatsmanChoice: choice,
+						};
+					return {
+						...prev,
+						...gameState,
+						currentBallBatsmanChoice: choice,
+					};
+				});
+			},
+		);
 		socket.on("play_shot", (state: GameState) => {
 			console.log("Play shot event received:", state);
 			setGameState(state);
@@ -114,7 +121,6 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({
 			console.log("Set field event received:", state);
 			setGameState(state);
 		});
-
 
 		return () => {
 			socket.off("joined_as_player");

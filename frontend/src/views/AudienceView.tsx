@@ -27,8 +27,16 @@ const AudienceView: React.FC = () => {
 	// 🔹 Safety check
 	if (!gameState || !user) return <PreGameJoiningView />;
 
-	const { gamePhase, tossSelector, currentBallRotation = 0, currentBallBatsmanChoice = undefined } = gameState;
-	const shotSelected: string | null = currentBallBatsmanChoice !== undefined ? currentBallBatsmanChoice : null;
+	const {
+		gamePhase,
+		tossSelector,
+		currentBallRotation = 0,
+		currentBallBatsmanChoice = undefined,
+	} = gameState;
+	const shotSelected: string | null =
+		currentBallBatsmanChoice !== undefined
+			? currentBallBatsmanChoice
+			: null;
 
 	// =========================
 	//  PRE-GAME PHASES

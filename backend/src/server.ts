@@ -263,15 +263,14 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 					)!; // other player
 				}
 
-				console.log(`Toss selection made by player ${player.id}: ${choice}, server chose: ${serverChoice}, toss winner: ${gameState.tossWinner}`);
+				console.log(
+					`Toss selection made by player ${player.id}: ${choice}, server chose: ${serverChoice}, toss winner: ${gameState.tossWinner}`,
+				);
 				// Update game phase to side selection
 				gameState.gamePhase = "side selection";
 
 				// Broadcast updated game state to all in room
-				io.to(player.roomId).emit(
-					"side_selection_started",
-					gameState
-				);
+				io.to(player.roomId).emit("side_selection_started", gameState);
 			} catch (error) {
 				handleSocketError(socket, error);
 			}
@@ -282,7 +281,9 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 		"side_selection_made",
 		(player: User, choice: "batting" | "fielding") => {
 			try {
-				console.log(`Side selection made by player ${player.id}: ${choice}`);
+				console.log(
+					`Side selection made by player ${player.id}: ${choice}`,
+				);
 				const gameState = gameStateManager.getGameState(player.roomId);
 				if (!gameState) {
 					throw createError(
@@ -438,57 +439,46 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 		},
 	);
 
-
-	socket.on(
-		"shot_selection_hover",
-		(playerId: string, choice: string) => {
-			try {
-				// get game state
-				const roomId =
-					roomManager.getRoomByPlayerId(playerId);
-				if (!roomId) {
-					throw createError(
-						"ROOM_NOT_FOUND",
-						"No room found for player",
-					);
-				}
-
-				const gameState = gameStateManager.getGameState(roomId);
-				if (!gameState) {
-					throw createError(
-						"GAMESTATE_NOT_FOUND",
-						"No game state found for room",
-					);
-				}
-
-				// Ensure choice is valid by ensuring choice exists in the chosen modified preset's value list
-				const validChoices = gameState.modifiedPresets[
-					gameState.presetChosen
-				];
-				if (!validChoices.includes(choice)) {
-					// throw createError(
-					// 	"INVALID_CHOICE",
-					// 	"The shot choice is not valid based on the chosen preset",
-					// ); 
-					// ignore because it is just a UX improvement event
-					return;
-				}
-
-
-
-				// Broadcast the hover selection to other players in the room
-				socket
-					.to(roomId)
-					.emit("shot_selection_hover_update", gameState, choice);
-
-				console.log(
-					`Player ${playerId} hovered shot selection in room ${roomId}: ${choice}`,
-				);
-			} catch (error) {
-				handleSocketError(socket, error);
+	socket.on("shot_selection_hover", (playerId: string, choice: string) => {
+		try {
+			// get game state
+			const roomId = roomManager.getRoomByPlayerId(playerId);
+			if (!roomId) {
+				throw createError("ROOM_NOT_FOUND", "No room found for player");
 			}
-		},
-	);
+
+			const gameState = gameStateManager.getGameState(roomId);
+			if (!gameState) {
+				throw createError(
+					"GAMESTATE_NOT_FOUND",
+					"No game state found for room",
+				);
+			}
+
+			// Ensure choice is valid by ensuring choice exists in the chosen modified preset's value list
+			const validChoices =
+				gameState.modifiedPresets[gameState.presetChosen];
+			if (!validChoices.includes(choice)) {
+				// throw createError(
+				// 	"INVALID_CHOICE",
+				// 	"The shot choice is not valid based on the chosen preset",
+				// );
+				// ignore because it is just a UX improvement event
+				return;
+			}
+
+			// Broadcast the hover selection to other players in the room
+			socket
+				.to(roomId)
+				.emit("shot_selection_hover_update", gameState, choice);
+
+			console.log(
+				`Player ${playerId} hovered shot selection in room ${roomId}: ${choice}`,
+			);
+		} catch (error) {
+			handleSocketError(socket, error);
+		}
+	});
 
 	// Bowler sends their desired field rotation
 	socket.on(

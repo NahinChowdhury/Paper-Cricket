@@ -159,7 +159,6 @@
 
 // 		// TODO: same implementation as above for joined_as_audience?
 
-
 // 		// Event handler functions (defined outside useEffect for dependencies)
 // 		const handlePlayerJoined = (gameState: GameState, player: Player) => {
 // 			console.log("Player joined room:", player);

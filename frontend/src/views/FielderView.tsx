@@ -26,7 +26,10 @@ const FielderView: React.FC = () => {
 	if (!gameState || !user) return null;
 
 	const canRotate = gameState.gamePhase === "setting field";
-	const shotSelected: string | null = gameState.currentBallBatsmanChoice !== undefined ? gameState.currentBallBatsmanChoice : null;
+	const shotSelected: string | null =
+		gameState.currentBallBatsmanChoice !== undefined
+			? gameState.currentBallBatsmanChoice
+			: null;
 
 	// 🔹 Handle surrender
 	const handleSurrender = () => {
