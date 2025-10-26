@@ -1,25 +1,3 @@
-// Basic type definitions for the multiplayer game
-
-export const presetValues: string[] = [
-	"0",
-	"1",
-	"2",
-	"3",
-	"4",
-	"5",
-	"6",
-	"W",
-	"NB",
-	"WD",
-];
-
-export interface GameRoom {
-	id: string; // room ID
-	users: User[]; // users who joined the room as player/spectator/stand-by for now
-	created: Date; // creation time
-	roomCreator: string; // ID of the room creator
-}
-
 export interface User {
 	id: string;
 	roomId: string;

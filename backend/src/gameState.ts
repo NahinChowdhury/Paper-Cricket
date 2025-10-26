@@ -1,5 +1,9 @@
 import { createError } from "./errors/AppError";
-import { evaluateBatsmanChoice, recordDelivery, shuffle } from "./helper/helperMethods";
+import {
+	evaluateBatsmanChoice,
+	recordDelivery,
+	shuffle,
+} from "./helper/helperMethods";
 import { GameState, DeliveryRecord, presetValues } from "./types";
 
 export function createStartingGameState(): GameState {
@@ -45,7 +49,7 @@ export function createStartingGameState(): GameState {
 		tossWinner: null, // player ID who won the toss, null if not yet decided
 
 		deliveryHistory: [], // list of turn records
-	}
+	};
 }
 
 export class GameStateManager {
@@ -65,13 +69,22 @@ export class GameStateManager {
 			throw new Error("No game state found for room");
 		}
 
-		if(gameState.gamePhase !== "waiting" && gameState.players.includes(playerId)) {
-			throw createError("CANNOT_JOIN_AUDIENCE_WHILE_PLAYING", "Cannot join audience while actively playing in the game");
+		if (
+			gameState.gamePhase !== "waiting" &&
+			gameState.players.includes(playerId)
+		) {
+			throw createError(
+				"CANNOT_JOIN_AUDIENCE_WHILE_PLAYING",
+				"Cannot join audience while actively playing in the game",
+			);
 		}
 
 		// look for duplicates
 		if (gameState.audience.includes(playerId)) {
-			throw createError("USER_ALREADY_IN_AUDIENCE", "User already in game audience");
+			throw createError(
+				"USER_ALREADY_IN_AUDIENCE",
+				"User already in game audience",
+			);
 		}
 
 		// Remove user from players list if present
@@ -87,16 +100,25 @@ export class GameStateManager {
 	addUserToGamePlayers(playerId: string, roomId: string): GameState {
 		const gameState: GameState | undefined = this.gameStates.get(roomId);
 		if (!gameState) {
-			throw createError("GAMESTATE_NOT_FOUND", "No game state found for room");
+			throw createError(
+				"GAMESTATE_NOT_FOUND",
+				"No game state found for room",
+			);
 		}
 
 		if (gameState.players.length >= 2) {
-			throw createError("MAX_PLAYERS_REACHED", "Game already has maximum number of players. Please join as audience.");
+			throw createError(
+				"MAX_PLAYERS_REACHED",
+				"Game already has maximum number of players. Please join as audience.",
+			);
 		}
 
 		// look for duplicates
 		if (gameState.players.includes(playerId)) {
-			throw createError("USER_ALREADY_PLAYING", "User already in game players");
+			throw createError(
+				"USER_ALREADY_PLAYING",
+				"User already in game players",
+			);
 		}
 
 		gameState.players.push(playerId);
@@ -114,25 +136,32 @@ export class GameStateManager {
 		const gameState: GameState | undefined = this.gameStates.get(roomId);
 
 		if (!gameState) {
-			throw createError("GAMESTATE_NOT_FOUND", "No game state found for room");
+			throw createError(
+				"GAMESTATE_NOT_FOUND",
+				"No game state found for room",
+			);
 		}
 
 		if (gameState.players.length < 2) {
-			throw createError("NOT_ENOUGH_PLAYERS", "Cannot start game without 2 players");
+			throw createError(
+				"NOT_ENOUGH_PLAYERS",
+				"Cannot start game without 2 players",
+			);
 		}
 
 		// update game phase
 		gameState.gamePhase = "toss";
 
 		// Choosee tossSelector randomly
-		const randomIndex = Math.floor(Math.random() * gameState.players.length);
+		const randomIndex = Math.floor(
+			Math.random() * gameState.players.length,
+		);
 		gameState.tossSelector = gameState.players[randomIndex];
 
 		console.log(`Game started in room ${roomId}`);
 
 		return gameState;
 	}
-
 
 	generateFieldPresets(): string[][] {
 		const presets: string[][] = [];
@@ -143,7 +172,7 @@ export class GameStateManager {
 
 			// Check if identical preset already exists
 			const isDuplicate = presets.some(
-				(p) => p.join(",") === shuffled.join(",")
+				(p) => p.join(",") === shuffled.join(","),
 			);
 			if (!isDuplicate) {
 				presets.push(shuffled);
@@ -162,17 +191,22 @@ export class GameStateManager {
 	): GameState {
 		let gameState = this.gameStates.get(roomId);
 		if (!gameState) {
-			throw createError("GAMESTATE_NOT_FOUND", "No game state found for room");
+			throw createError(
+				"GAMESTATE_NOT_FOUND",
+				"No game state found for room",
+			);
 		}
 
 		// Ensure we take input from the bowler only
 		if (gameState.playerFielding !== playerId) {
-			throw createError("INVALID_MOVE", "Only bowlers are allowed to set the field during 'setting field' game phase!");
+			throw createError(
+				"INVALID_MOVE",
+				"Only bowlers are allowed to set the field during 'setting field' game phase!",
+			);
 		}
 		gameState.currentBallRotation = rotation;
 		gameState.gamePhase = "batting";
 		gameState.presetChosen = presetChoice;
-
 
 		return gameState;
 	}
@@ -187,16 +221,25 @@ export class GameStateManager {
 		choice = choice.trim(); // sanitize input
 
 		if (!gameState) {
-			throw createError("GAMESTATE_NOT_FOUND", "No game state found for room");
+			throw createError(
+				"GAMESTATE_NOT_FOUND",
+				"No game state found for room",
+			);
 		}
 
-		if(gameState.gamePhase !== "batting") {
-			throw createError("INVALID_MOVE", "Cannot play shot when game phase is not 'batting'");
+		if (gameState.gamePhase !== "batting") {
+			throw createError(
+				"INVALID_MOVE",
+				"Cannot play shot when game phase is not 'batting'",
+			);
 		}
 
 		// Ensure we take input from the batsman only
 		if (gameState.playerBatting !== playerId) {
-			throw createError("INVALID_MOVE", "Only batsmen are allowed to choose a shot during 'batting' game phase!");
+			throw createError(
+				"INVALID_MOVE",
+				"Only batsmen are allowed to choose a shot during 'batting' game phase!",
+			);
 		}
 
 		if (presetValues.indexOf(choice) === -1) {
@@ -206,8 +249,9 @@ export class GameStateManager {
 		gameState.currentBallBatsmanChoice = choice;
 
 		// cache the preset chosen for this delivery before resetting
-		const presetForThisDelivery =
-			[...gameState.modifiedPresets[gameState.presetChosen]];
+		const presetForThisDelivery = [
+			...gameState.modifiedPresets[gameState.presetChosen],
+		];
 		const presetIndex = gameState.presetChosen;
 
 		// Reset the presets early for next delivery
@@ -217,14 +261,15 @@ export class GameStateManager {
 		gameState.batsmanUsedPowerups.push(...gameState.batsmanPowerupsActive);
 		gameState.fielderPowerupsActive = [];
 		gameState.batsmanPowerupsActive = [];
-		gameState.modifiedPresets = gameState.originalPresets.map((preset) => [...preset]); // no reference to originalPresets nested lists
+		gameState.modifiedPresets = gameState.originalPresets.map((preset) => [
+			...preset,
+		]); // no reference to originalPresets nested lists
 
 		// Record the delivery
 		recordDelivery(gameState, presetIndex, presetForThisDelivery);
-		
+
 		// Evaluate the batsman choice
 		evaluateBatsmanChoice(gameState, choice);
-
 
 		// Check for end of innings or game
 		// If currentBall exceeds totalBalls OR all wickets are down
@@ -238,7 +283,7 @@ export class GameStateManager {
 
 		// If all balls are bowled or all wickets are down, end or switch innings
 		if (gameState.innings === 2) {
-			if(inningsOver) {
+			if (inningsOver) {
 				gameState.gamePhase = "finished";
 				return gameState;
 			} else {
@@ -254,7 +299,7 @@ export class GameStateManager {
 			// Start second innings
 			gameState.innings = 2;
 			gameState.currentBall = createStartingGameState().currentBall;
-			
+
 			// swap batting and fielding players
 			const temp = gameState.playerBatting;
 			gameState.playerBatting = gameState.playerFielding;
@@ -303,24 +348,39 @@ export class GameStateManager {
 			return false;
 		}
 
-		return gameState.gamePhase !== "waiting" && gameState.players.includes(playerId);
+		return (
+			gameState.gamePhase !== "waiting" &&
+			gameState.players.includes(playerId)
+		);
 	}
 
 	attemptSurrenderGame(playerId: string, roomId: string): boolean {
 		const gameState = this.gameStates.get(roomId);
 		if (!gameState) {
-			throw createError("GAMESTATE_NOT_FOUND", "No game state found for room");
+			throw createError(
+				"GAMESTATE_NOT_FOUND",
+				"No game state found for room",
+			);
 		}
-		
+
 		// Ensure only active players can surrender
 		if (!gameState.players.includes(playerId)) {
-			throw createError("UNABLE_TO_SURRENDER", "Only active players can surrender the game.");
+			throw createError(
+				"UNABLE_TO_SURRENDER",
+				"Only active players can surrender the game.",
+			);
 		}
 
-		if(gameState.gamePhase === "finished" || gameState.gamePhase === "surrendered" || gameState.gamePhase === "waiting") {
-			throw createError("UNABLE_TO_SURRENDER", "Cannot surrender the game at this stage");
+		if (
+			gameState.gamePhase === "finished" ||
+			gameState.gamePhase === "surrendered" ||
+			gameState.gamePhase === "waiting"
+		) {
+			throw createError(
+				"UNABLE_TO_SURRENDER",
+				"Cannot surrender the game at this stage",
+			);
 		}
-
 
 		gameState.gamePhase = "surrendered";
 		gameState.surrenderedBy = playerId;

@@ -21,3 +21,12 @@ Visions:
   - Audience can see the batsman's live mouse movement while batting.
 
 
+25th October, 2023
+Global gamestate component distribution works in the frontend which is amazing!!!
+Need to handle surrender better because now it crashes. Need to enable disconnect for audience.
+Need to display score in the UI for everyone. Maybe it can be a sub component as it's consistent for all.
+Need to display presets and selection of presets for fielder and everyone else's underlying wheel should be updated too.
+Need to display power ups for all views.
+Try to merge audience and batter views as much as possible
+Need to write server side power up handling.
+Need to handle end game view as well as what should happen if a game ends/surrendered but a user tries to join (should just show scoreboard to user. Do not even show them the player/audience option page)

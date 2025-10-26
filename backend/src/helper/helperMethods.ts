@@ -4,16 +4,21 @@ import { GameStateManager } from "../gameState";
 import { DeliveryRecord, GameState } from "../types";
 import { createError } from "../errors/AppError";
 
-
-export function verifyUserisActivePlayerInAGame(playerId: string, existingRoomId: string | undefined, roomManager: RoomManager, gameStateManager: GameStateManager): boolean {
-	
+export function verifyUserisActivePlayerInAGame(
+	playerId: string,
+	existingRoomId: string | undefined,
+	roomManager: RoomManager,
+	gameStateManager: GameStateManager,
+): boolean {
 	// get the room's game state's player IDs and see if playerId is in that list
 	if (existingRoomId) {
-		const existingGameState =
-			gameStateManager.getGameState(existingRoomId);
+		const existingGameState = gameStateManager.getGameState(existingRoomId);
 		if (
 			existingGameState &&
-			existingGameState.players.includes(playerId)
+			existingGameState.players.includes(playerId) &&
+			!["waiting", "finished", "surrendered"].includes(
+				existingGameState.gamePhase,
+			)
 		) {
 			// player is already in an active game
 			return true;
@@ -21,7 +26,6 @@ export function verifyUserisActivePlayerInAGame(playerId: string, existingRoomId
 	}
 	return false;
 }
-
 
 /**
  * Proper Fisher–Yates shuffle to get unbiased random permutation.
@@ -35,14 +39,17 @@ export function shuffle<T>(array: T[]): T[] {
 	return array;
 }
 
-
 /**
  * Records the delivery details in the game state.
  * @param gameState - The current game state
  * @param presetIndex - The index of the preset used for this delivery
  * @param presetForThisDelivery - The preset configuration for this delivery
  */
-export function recordDelivery(gameState: GameState, presetIndex:number, presetForThisDelivery: string[]): void {
+export function recordDelivery(
+	gameState: GameState,
+	presetIndex: number,
+	presetForThisDelivery: string[],
+): void {
 	const delivery: DeliveryRecord = {
 		ballNumber: gameState.currentBall,
 		innings: gameState.innings,
@@ -62,8 +69,10 @@ export function recordDelivery(gameState: GameState, presetIndex:number, presetF
 	gameState.deliveryHistory.push(delivery);
 }
 
-
-export function evaluateBatsmanChoice(gameState: GameState, choice: string): void {
+export function evaluateBatsmanChoice(
+	gameState: GameState,
+	choice: string,
+): void {
 	// Determine outcome (wicket or runs)
 	switch (choice) {
 		case "W": // Wicket
@@ -87,8 +96,9 @@ export function evaluateBatsmanChoice(gameState: GameState, choice: string): voi
 			// Set all modifiedPresets for next delivery to original presets
 			// and then swap "W" with "0" to ensure no wicket can fall
 			// in all modified presets
-			gameState.modifiedPresets = gameState.originalPresets.map((preset) =>
-				preset.map((value) => (value === "W" ? "0" : value))
+			gameState.modifiedPresets = gameState.originalPresets.map(
+				(preset) =>
+					preset.map((value) => (value === "W" ? "0" : value)),
 			);
 			break;
 		case "0":

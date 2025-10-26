@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { useRoom } from "./hooks/useRoom";
-import { useSocket } from "./contexts/SocketContext";
+import { useRoom } from "../hooks/useRoom";
+import { useSocket } from "../contexts/SocketContext";
 
 const RoomLobby: React.FC = () => {
 	const { socket, isConnected } = useSocket();

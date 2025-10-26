@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Socket } from "socket.io-client";
-import { ClientEvents, ServerEvents } from "../contexts/SocketContext";
 import { usePlayerId } from "./usePlayerId";
+import { ClientEvents, ServerEvents } from "../types";
 
 export const useRoom = (socket: Socket<ServerEvents, ClientEvents> | null) => {
 	const navigate = useNavigate();

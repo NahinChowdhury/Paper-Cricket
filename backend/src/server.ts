@@ -43,7 +43,14 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 
 			// check player isn't already in a room as an active player
 			const existingRoomId = roomManager.getRoomByPlayerId(playerId);
-			if (verifyUserisActivePlayerInAGame(playerId, existingRoomId, roomManager, gameStateManager)) {
+			if (
+				verifyUserisActivePlayerInAGame(
+					playerId,
+					existingRoomId,
+					roomManager,
+					gameStateManager,
+				)
+			) {
 				socket.emit("cannot_create_game", existingRoomId!);
 				return;
 			}
@@ -51,7 +58,10 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 			// Remove user from any previous rooms and the audience list of those rooms
 			if (existingRoomId) {
 				// above ensures the user isn't a player in an active game
-				gameStateManager.removeUserFromGameAudience(playerId, existingRoomId);
+				gameStateManager.removeUserFromGameAudience(
+					playerId,
+					existingRoomId,
+				);
 				roomManager.removePlayerFromRoom(playerId);
 			}
 
@@ -80,16 +90,17 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 			}
 
 			const existingGameState = gameStateManager.getGameState(roomId);
-			
+
 			if (existingGameState) {
-				if (existingGameState.gamePhase === "finished" || existingGameState.gamePhase === "surrendered") {
+				if (
+					existingGameState.gamePhase === "finished" ||
+					existingGameState.gamePhase === "surrendered"
+				) {
 					socket.emit("game_ended", existingGameState);
 					return;
 				}
 
-				if (
-					existingGameState.gamePhase !== "waiting"
-				) {
+				if (existingGameState.gamePhase !== "waiting") {
 					// if the game has already started and the user is already in
 					// the player list or audience list, let them re-join
 					if (
@@ -103,7 +114,7 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 							existingGameState,
 						);
 						socket.emit(
-							"user_joined",
+							"user_already_joined",
 							existingGameState,
 							roomManager.getUserByPlayerId(playerId)!,
 						);
@@ -122,162 +133,203 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 	});
 
 	// This event should never be called by a player who is actively playing in a game
-	socket.on("join_as_player", (player: User) => {
+	socket.on("join_as_player", (playerId: string) => {
 		try {
-			const room = roomManager.getRoom(player.roomId);
-			if (!room) {
+			const roomId: string | undefined =
+				roomManager.getRoomByPlayerId(playerId);
+			if (!roomId) {
 				socket.emit("room_not_found");
 				return;
 			}
 
 			// Add the player to the room (Not really necessary if already added in join_room)
-			roomManager.addPlayerToRoom(player.id, player.roomId); // Optional
-			
-			gameStateManager.addUserToGamePlayers(player.id, player.roomId);
+			roomManager.addPlayerToRoom(playerId, roomId); // Optional
+
+			gameStateManager.addUserToGamePlayers(playerId, roomId);
 			// update the user to be playing
-			const user = roomManager.getUserByPlayerId(player.id);
+			const user = roomManager.getUserByPlayerId(playerId);
 			if (user) {
 				user.isPlaying = true; // this should update the user in the room's user list as well
 			}
 
-			socket.join(player.roomId);
+			socket.join(roomId);
 			// socket.emit("joined_as_player", gameStateManager.getGameState(player.roomId)!);
 			// console.log(`Player ${player.id} joined as player in room ${player.roomId}`);
 
 			// Check if both players are now connected and start game
-			const updatedGameState: GameState | undefined = gameStateManager.getGameState(
-				player.roomId,
-			);
+			const updatedGameState: GameState | undefined =
+				gameStateManager.getGameState(roomId);
 			if (updatedGameState && updatedGameState.players.length === 2) {
 				// if the game state is waiting, then start the game
 				// otherwise, send the game start to that socket only
 				if (updatedGameState.gamePhase === "waiting") {
 					console.log(
 						"Both players connected, starting game in room:",
-						player.roomId,
+						roomId,
 					);
 
 					// Set the game phase to "toss"
-					const gameState = gameStateManager.startGame(
-						player.roomId,
-					);
-					console.log(
-						`Game started by room creator: ${player.id}`,
-					);
+					const gameState = gameStateManager.startGame(roomId);
+					console.log(`Game started by room creator: ${playerId}`);
 
+					// Send a joined_as_player to the joining player so that they can update their user state
+					socket.emit("joined_as_player", gameState, user!);
 					// Notify all players that game has started
-					io.to(player.roomId).emit("toss_started", gameState);
+					io.to(roomId).emit("toss_started", gameState);
 					return;
 				}
 			}
 
-			socket.emit("joined_as_player", gameStateManager.getGameState(player.roomId)!);
-			socket.to(player.roomId).emit("game_updated", gameStateManager.getGameState(player.roomId)!); // doesn't send to self
+			socket.emit(
+				"joined_as_player",
+				gameStateManager.getGameState(roomId)!,
+				user!,
+			);
+			socket
+				.to(roomId)
+				.emit("game_updated", gameStateManager.getGameState(roomId)!); // doesn't send to self
 		} catch (error) {
 			handleSocketError(socket, error);
 		}
 	});
 
-
 	// This event should never be called by a player who is actively playing in a game
-	socket.on("join_as_audience", (player: User) => {
+	socket.on("join_as_audience", (playerId: string) => {
 		try {
-			const room = roomManager.getRoom(player.roomId);
-			if (!room) {
+			const roomId: string | undefined =
+				roomManager.getRoomByPlayerId(playerId);
+			if (!roomId) {
 				socket.emit("room_not_found");
 				return;
 			}
 
 			// Add the player to the room (Not really necessary if already added in join_room)
-			roomManager.addPlayerToRoom(player.id, player.roomId); // Optional
+			roomManager.addPlayerToRoom(playerId, roomId); // Optional
 
-			gameStateManager.addUserToGameAudience(player.id, player.roomId);
+			gameStateManager.addUserToGameAudience(playerId, roomId);
 			// update the user to be not playing
-			const user = roomManager.getUserByPlayerId(player.id);
+			const user = roomManager.getUserByPlayerId(playerId);
 			if (user) {
 				user.isPlaying = false; // this should update the user in the room's user list as well
 			}
 
-			socket.join(player.roomId);
-			
-			socket.emit("joined_as_audience", gameStateManager.getGameState(player.roomId)!);
-			socket.to(player.roomId).emit("game_updated", gameStateManager.getGameState(player.roomId)!); // doesn't send to self
+			socket.join(roomId);
+
+			socket.emit(
+				"joined_as_audience",
+				gameStateManager.getGameState(roomId)!,
+				roomManager.getUserByPlayerId(playerId)!,
+			);
+			socket
+				.to(roomId)
+				.emit("game_updated", gameStateManager.getGameState(roomId)!); // doesn't send to self
 		} catch (error) {
 			handleSocketError(socket, error);
 		}
 	});
 
-	socket.on("toss_selection_made", (player: User, choice: "heads" | "tails") => {
-		try {
-			const gameState = gameStateManager.getGameState(player.roomId);
-			if (!gameState) {
-				throw createError("GAMESTATE_NOT_FOUND", "No game state found for room");
+	socket.on(
+		"toss_selection_made",
+		(player: User, choice: "heads" | "tails") => {
+			try {
+				const gameState = gameStateManager.getGameState(player.roomId);
+				if (!gameState) {
+					throw createError(
+						"GAMESTATE_NOT_FOUND",
+						"No game state found for room",
+					);
+				}
+
+				// Check if the player is allowed to make a toss selection
+				if (gameState.tossSelector !== player.id) {
+					throw createError(
+						"INVALID_MOVE",
+						"You are not authorized to make the toss selection",
+					);
+				}
+
+				// Server randomly chooses heads or tails
+				const serverChoice = Math.random() < 0.5 ? "heads" : "tails";
+
+				gameState.playerTossChoice = choice;
+				gameState.serverTossChoice = serverChoice;
+
+				// Determine toss winner
+				if (choice === serverChoice) {
+					gameState.tossWinner = player.id;
+				} else {
+					gameState.tossWinner = gameState.players.find(
+						(id) => id !== player.id,
+					)!; // other player
+				}
+
+				console.log(`Toss selection made by player ${player.id}: ${choice}, server chose: ${serverChoice}, toss winner: ${gameState.tossWinner}`);
+				// Update game phase to side selection
+				gameState.gamePhase = "side selection";
+
+				// Broadcast updated game state to all in room
+				io.to(player.roomId).emit(
+					"side_selection_started",
+					gameState
+				);
+			} catch (error) {
+				handleSocketError(socket, error);
 			}
+		},
+	);
 
-			// Check if the player is allowed to make a toss selection
-			if (gameState.tossSelector !== player.id) {
-				throw createError("INVALID_MOVE", "You are not authorized to make the toss selection");
+	socket.on(
+		"side_selection_made",
+		(player: User, choice: "batting" | "fielding") => {
+			try {
+				console.log(`Side selection made by player ${player.id}: ${choice}`);
+				const gameState = gameStateManager.getGameState(player.roomId);
+				if (!gameState) {
+					throw createError(
+						"GAMESTATE_NOT_FOUND",
+						"No game state found for room",
+					);
+				}
+
+				// Check if the player is allowed to make a side selection
+				if (gameState.tossWinner !== player.id) {
+					throw createError(
+						"INVALID_MOVE",
+						"You are not authorized to make the side selection",
+					);
+				}
+
+				// Assign sides based on choice
+				if (choice === "batting") {
+					gameState.playerBatting = player.id;
+					gameState.playerFielding = gameState.players.find(
+						(id) => id !== player.id,
+					)!;
+				} else {
+					gameState.playerBatting = gameState.players.find(
+						(id) => id !== player.id,
+					)!;
+					gameState.playerFielding = player.id;
+				}
+
+				// Update game phase to 'setting field'
+				gameState.gamePhase = "setting field";
+
+				// server will create 3 presets for the fielding player to choose from
+				gameState.originalPresets =
+					gameStateManager.generateFieldPresets();
+				gameState.modifiedPresets = gameState.originalPresets.map(
+					(preset) => [...preset],
+				); // no reference to originalPresets nested lists
+
+				console.log("Side selection completed. Game state:", gameState);
+				// Broadcast updated game state to all in room
+				io.to(player.roomId).emit("game_started", gameState);
+			} catch (error) {
+				handleSocketError(socket, error);
 			}
-
-			// Server randomly chooses heads or tails
-			const serverChoice = Math.random() < 0.5 ? "heads" : "tails";
-			
-			gameState.playerTossChoice = choice;
-			gameState.serverTossChoice = serverChoice;
-
-			// Determine toss winner
-			if (choice === serverChoice) {
-				gameState.tossWinner = player.id;
-			} else {
-				gameState.tossWinner = gameState.players.find((id) => id !== player.id)!; // other player
-			}
-
-			// Update game phase to side selection
-			gameState.gamePhase = "side selection";
-
-			// Broadcast updated game state to all in room
-			io.to(player.roomId).emit("side_selection_started", player, choice);
-		} catch (error) {
-			handleSocketError(socket, error);
-		}
-	});
-
-
-	socket.on("side_selection_made", (player: User, choice: "batting" | "fielding") => {
-		try {
-			const gameState = gameStateManager.getGameState(player.roomId);
-			if (!gameState) {
-				throw createError("GAMESTATE_NOT_FOUND", "No game state found for room");
-			}
-
-			// Check if the player is allowed to make a side selection
-			if (gameState.tossWinner !== player.id) {
-				throw createError("INVALID_MOVE", "You are not authorized to make the side selection");
-			}
-
-			// Assign sides based on choice
-			if (choice === "batting") {
-				gameState.playerBatting = player.id;
-				gameState.playerFielding = gameState.players.find((id) => id !== player.id)!;
-			} else {
-				gameState.playerBatting = gameState.players.find((id) => id !== player.id)!;
-				gameState.playerFielding = player.id;
-			}
-
-			// Update game phase to 'setting field'
-			gameState.gamePhase = "setting field";
-
-			// server will create 3 presets for the fielding player to choose from
-			gameState.originalPresets = gameStateManager.generateFieldPresets();
-			gameState.modifiedPresets = gameState.originalPresets.map((preset) => [...preset]); // no reference to originalPresets nested lists
-
-			// Broadcast updated game state to all in room
-			io.to(player.roomId).emit("game_started", gameState);
-		} catch (error) {
-			handleSocketError(socket, error);
-		}
-	})
-
+		},
+	);
 
 	// // REDUNDANT - Keep for reference
 	// socket.on("player_joined", (player: User) => {
@@ -366,7 +418,10 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 				// get game state
 				const gameState = gameStateManager.getGameState(data.roomId);
 				if (!gameState) {
-					throw createError("GAMESTATE_NOT_FOUND", "No game state found for room");
+					throw createError(
+						"GAMESTATE_NOT_FOUND",
+						"No game state found for room",
+					);
 				}
 
 				// For now, just broadcast the rotation to other players in the room
@@ -383,10 +438,67 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 		},
 	);
 
+
+	socket.on(
+		"shot_selection_hover",
+		(playerId: string, choice: string) => {
+			try {
+				// get game state
+				const roomId =
+					roomManager.getRoomByPlayerId(playerId);
+				if (!roomId) {
+					throw createError(
+						"ROOM_NOT_FOUND",
+						"No room found for player",
+					);
+				}
+
+				const gameState = gameStateManager.getGameState(roomId);
+				if (!gameState) {
+					throw createError(
+						"GAMESTATE_NOT_FOUND",
+						"No game state found for room",
+					);
+				}
+
+				// Ensure choice is valid by ensuring choice exists in the chosen modified preset's value list
+				const validChoices = gameState.modifiedPresets[
+					gameState.presetChosen
+				];
+				if (!validChoices.includes(choice)) {
+					// throw createError(
+					// 	"INVALID_CHOICE",
+					// 	"The shot choice is not valid based on the chosen preset",
+					// ); 
+					// ignore because it is just a UX improvement event
+					return;
+				}
+
+
+
+				// Broadcast the hover selection to other players in the room
+				socket
+					.to(roomId)
+					.emit("shot_selection_hover_update", gameState, choice);
+
+				console.log(
+					`Player ${playerId} hovered shot selection in room ${roomId}: ${choice}`,
+				);
+			} catch (error) {
+				handleSocketError(socket, error);
+			}
+		},
+	);
+
 	// Bowler sends their desired field rotation
 	socket.on(
 		"field_set",
-		(playerId: string, roomId: string, rotation: number, presetChoice: number) => {
+		(
+			playerId: string,
+			roomId: string,
+			rotation: number,
+			presetChoice: number,
+		) => {
 			try {
 				console.log(
 					`Field set received from player ${playerId} in room ${roomId}: ${rotation}`,
@@ -426,6 +538,8 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 				if (gameState.gamePhase === "finished") {
 					io.to(roomId).emit("game_ended", gameState);
 					console.log(`Game ended in room ${roomId}`);
+
+					// TODO: Run room cleanup properly
 					return;
 				}
 
@@ -439,9 +553,16 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 		},
 	);
 
-	socket.on("power_up_used", (playerId: string, roomId: string, powerUp: string, modification: any) => {
-		// TODO: implement power-up logic in game state
-		/**
+	socket.on(
+		"power_up_used",
+		(
+			playerId: string,
+			roomId: string,
+			powerUp: string,
+			modification: any,
+		) => {
+			// TODO: implement power-up logic in game state
+			/**
 		 * Client sends the power up name along with any context needed with the power up.
 			Additional context is optional and client can send this power_up_used event as many times as they want for the same power up that is currently being used.
 			Server will simply try to move the power up to active list and many any modifications to the wheel if needed.
@@ -452,26 +573,42 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 			For either cases, the power up will be removed from the unused group and added to the active power ups list.
 			Based on the power up’s details, the presets will be modified as needed and then server will emit socket.emit(“game_updated”) to everyone except for the batter if it’s a fielder power up being used. We should not have explicit states for these power ups in the frontend. We should simply update the gamestate with the new value for optimistic update and the UI will be rerendered when the backend sends the new gamestate.
 		 */
-	});
+		},
+	);
 
 	socket.on("leave_room", (playerId: string) => {
 		// get the roomId from the removed player
 		const roomId = roomManager.getRoomByPlayerId(playerId);
-		
+
 		try {
 			if (roomId) {
-				if(gameStateManager.isUserPlayingInOngoingGame(playerId, roomId)) {
+				if (
+					gameStateManager.isUserPlayingInOngoingGame(
+						playerId,
+						roomId,
+					)
+				) {
 					// if the user is an active player, we may want to handle it differently
 					// for now, just log and return
-					console.log(`Active player ${playerId} cannot leave the room ${roomId} directly.`);
-					throw createError("UNABLE_TO_LEAVE_ROOM", "Active players cannot leave the room directly. They must surrender or wait for the game to end.");
+					console.log(
+						`Active player ${playerId} cannot leave the room ${roomId} directly.`,
+					);
+					throw createError(
+						"UNABLE_TO_LEAVE_ROOM",
+						"Active players cannot leave the room directly. They must surrender or wait for the game to end.",
+					);
 				}
 
 				roomManager.removePlayerFromRoom(playerId);
 				gameStateManager.removeUserFromGameAudience(playerId, roomId);
 
 				socket.emit("user_left", playerId); // Client will take this and redirect the user to the main room
-				socket.to(roomId).emit("game_updated", gameStateManager.getGameState(roomId)!); // Update other clients about the user leaving
+				socket
+					.to(roomId)
+					.emit(
+						"game_updated",
+						gameStateManager.getGameState(roomId)!,
+					); // Update other clients about the user leaving
 			}
 		} catch (error) {
 			handleSocketError(socket, error);
@@ -485,14 +622,27 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 		try {
 			if (roomId) {
 				// Update game state to surrendered
-				const gameState = gameStateManager.attemptSurrenderGame(playerId, roomId); // throws error if unable to surrender
-
-				// No need to clean up the game state or room for now, just mark the game as surrendered
-				// TODO: implement post-game cleanup after some time
+				const gameState = gameStateManager.attemptSurrenderGame(
+					playerId,
+					roomId,
+				); // throws error if unable to surrender
 
 				// Notify all players about game end due to surrender
 				io.to(roomId).emit("game_surrendered", gameState);
 				console.log(`Player ${playerId} surrendered in room ${roomId}`);
+
+				// No need to clean up the game state or room for now, just mark the game as surrendered
+				// Remove all players from the game room
+				const room = roomManager.getRoom(roomId);
+				if (room) {
+					room.users.forEach((user) => {
+						roomManager.removePlayerFromRoom(user.id);
+					});
+				}
+
+				// TODO: Need to properly clean up old rooms and game states after some time
+
+				console.log(`Room ${roomId} removed after surrender.`);
 			}
 		} catch (error) {
 			handleSocketError(socket, error);
@@ -505,7 +655,6 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 		// maybe keep the player in the game state for reconnection?
 		console.log(`Client disconnected: ${playerId}`);
 	});
-
 });
 
 // Basic health check endpoint

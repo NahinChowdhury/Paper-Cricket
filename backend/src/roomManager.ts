@@ -42,7 +42,7 @@ export class RoomManager {
 			roomId: roomId,
 			connected: true,
 			isRoomCreator: room.roomCreator === playerId,
-			isPlaying: false
+			isPlaying: false,
 		};
 
 		room.users.push(user);
@@ -73,13 +73,13 @@ export class RoomManager {
 		const room = this.rooms.get(roomId);
 		if (room) {
 			room.users = room.users.filter((p) => p.id !== playerId);
-			
+
 			// Clean up empty rooms
 			if (room.users.length === 0) {
 				this.rooms.delete(roomId);
 			}
 		}
-		
+
 		// Remove player from playerRooms mapping
 		this.playerRooms.delete(playerId);
 	}
@@ -99,7 +99,6 @@ export class RoomManager {
 	getAllRooms(): GameRoom[] {
 		return Array.from(this.rooms.values());
 	}
-
 
 	getRoomByPlayerId(playerId: string): string | undefined {
 		return this.playerRooms.get(playerId);

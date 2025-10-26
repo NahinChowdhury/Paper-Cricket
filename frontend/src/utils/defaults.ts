@@ -1,4 +1,4 @@
-import { GameState, Player } from "../contexts/SocketContext";
+import { GameState, Player } from "../contexts/GameContext";
 
 export const DEFAULT_GAME_STATE: GameState = {
 	players: [],

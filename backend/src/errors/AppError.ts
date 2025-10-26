@@ -3,10 +3,10 @@ import { ClientEvents, ServerEvents } from "../types";
 
 /**
  * Custom application error class with error codes.
- * 
+ *
  * Example usage:
  *   throw new AppError("User not found", "USER_NOT_FOUND");
- * 
+ *
  *   if (err instanceof AppError) {
  *     console.error(err.code, err.message);
  *   }
@@ -47,12 +47,13 @@ export function createError(code: ErrorCode, message: string): AppError {
 	return new AppError(message, code);
 }
 
-
-
 /**
  * Handles AppError-based responses to clients via socket emits.
  */
-export function handleSocketError(socket: Socket<ClientEvents, ServerEvents>, error: unknown): void {
+export function handleSocketError(
+	socket: Socket<ClientEvents, ServerEvents>,
+	error: unknown,
+): void {
 	if (error instanceof AppError) {
 		switch (error.code) {
 			case "ROOM_FULL":
@@ -74,7 +75,10 @@ export function handleSocketError(socket: Socket<ClientEvents, ServerEvents>, er
 		// Fallback for unexpected errors
 		socket.emit("server_error", {
 			code: "UNKNOWN_ERROR",
-			message: error instanceof Error ? error.message : "An unknown error occurred",
+			message:
+				error instanceof Error
+					? error.message
+					: "An unknown error occurred",
 		});
 	}
 }
