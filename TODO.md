@@ -23,6 +23,7 @@ Visions:
 
 25th October, 2023
 Global gamestate component distribution works in the frontend which is amazing!!!
+Need to show a recap whena delivery finishes
 Need to handle surrender better because now it crashes. Need to enable disconnect for audience.
 Need to display score in the UI for everyone. Maybe it can be a sub component as it's consistent for all.
 Need to display presets and selection of presets for fielder and everyone else's underlying wheel should be updated too.

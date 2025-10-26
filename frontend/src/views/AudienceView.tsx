@@ -21,80 +21,73 @@ const SPINNER_RADIUS = 150;
 const OVERLAY_COLOR = "rgba(0, 0, 0, 1)";
 
 const AudienceView: React.FC = () => {
-	const { gameState, user } = useGame();
-	const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const { gameState, user } = useGame();
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-	// 🔹 Safety check
-	if (!gameState || !user) return <PreGameJoiningView />;
+  // ✅ You can extract values early — no problem
+  const currentBallRotation = gameState?.currentBallRotation ?? 0;
+  const shotSelected =
+    gameState?.currentBallBatsmanChoice !== undefined
+      ? gameState.currentBallBatsmanChoice
+      : null;
+  const gamePhase = gameState?.gamePhase;
+  const tossSelector = gameState?.tossSelector;
 
-	const {
-		gamePhase,
-		tossSelector,
-		currentBallRotation = 0,
-		currentBallBatsmanChoice = undefined,
-	} = gameState;
-	const shotSelected: string | null =
-		currentBallBatsmanChoice !== undefined
-			? currentBallBatsmanChoice
-			: null;
+  // ✅ Hooks are declared before any conditional return
+  const drawPie = useCallback(
+    (ctx: CanvasRenderingContext2D) => {
+      const sliceAngle = (2 * Math.PI) / slices.length;
+      const cx = ctx.canvas.width / 2;
+      const cy = ctx.canvas.height / 2;
+
+      slices.forEach((slice, i) => {
+        const start = i * sliceAngle + currentBallRotation;
+        const end = start + sliceAngle;
+        const radius = shotSelected === slice.label ? SPINNER_RADIUS + 10 : SPINNER_RADIUS;
+
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, radius, start, end);
+        ctx.closePath();
+        ctx.fillStyle = slice.color;
+        ctx.fill();
+
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(start + sliceAngle / 2);
+        ctx.textAlign = "right";
+        ctx.fillStyle = "white";
+        ctx.font = "16px sans-serif";
+        ctx.fillText(slice.label, SPINNER_RADIUS - 10, 5);
+        ctx.restore();
+      });
+    },
+    [currentBallRotation, shotSelected]
+  );
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawPie(ctx);
+  }, [drawPie]);
+
+  // ✅ Conditional UI comes AFTER all hooks
+  if (!gameState || !user) return <PreGameJoiningView />;
+  if (gamePhase === "waiting") return <GameWaitingView />;
+  if (gamePhase === "toss" || gamePhase === "side selection") {
+    return tossSelector === user.id ? (
+      <PreGameDecisionMakerView />
+    ) : (
+      <PreGameDecisionSpectatorView />
+    );
+  }
 
 	// =========================
-	//  PRE-GAME PHASES
+	//  IN-GAME READ-ONLY DISPLAY
 	// =========================
-	if (gamePhase === "waiting") return <GameWaitingView />;
-
-	if (gamePhase === "toss" || gamePhase === "side selection") {
-		if (tossSelector === user.id) return <PreGameDecisionMakerView />;
-		else return <PreGameDecisionSpectatorView />;
-	}
-
-	// =========================
-	//  IN-GAME DISPLAY (READ-ONLY)
-	// =========================
-	const drawPie = useCallback(
-		(ctx: CanvasRenderingContext2D) => {
-			const sliceAngle = (2 * Math.PI) / slices.length;
-			const cx = ctx.canvas.width / 2;
-			const cy = ctx.canvas.height / 2;
-
-			slices.forEach((slice, i) => {
-				const start = i * sliceAngle + currentBallRotation;
-				const end = start + sliceAngle;
-
-				const radius =
-					shotSelected === slice.label
-						? SPINNER_RADIUS + 10
-						: SPINNER_RADIUS;
-
-				ctx.beginPath();
-				ctx.moveTo(cx, cy);
-				ctx.arc(cx, cy, radius, start, end);
-				ctx.closePath();
-				ctx.fillStyle = slice.color;
-				ctx.fill();
-
-				ctx.save();
-				ctx.translate(cx, cy);
-				ctx.rotate(start + sliceAngle / 2);
-				ctx.textAlign = "right";
-				ctx.fillStyle = "white";
-				ctx.font = "16px sans-serif";
-				ctx.fillText(slice.label, SPINNER_RADIUS - 10, 5);
-				ctx.restore();
-			});
-		},
-		[currentBallRotation, shotSelected],
-	);
-
-	useEffect(() => {
-		const canvas = canvasRef.current;
-		if (!canvas) return;
-		const ctx = canvas.getContext("2d");
-		if (!ctx) return;
-		ctx.clearRect(0, 0, canvas.width, canvas.height);
-		drawPie(ctx);
-	}, [currentBallRotation, drawPie]);
-
 	return (
 		<div
 			style={{
