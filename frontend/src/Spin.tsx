@@ -151,6 +151,15 @@ const SpinPie: React.FC = () => {
 			console.log("Joining room:", roomId, "as player:", playerId);
 			socket.emit("join_room", roomId, playerId!);
 		}
+
+		// TODO: we will have an event called user_joined and this will be the central state update handler for game state.
+		// We will look at the game phase, innings, current ball, etc. and update the local game state accordingly.
+		// Every important useState should be updated from this single source of truth
+		// because if a user rejoins the game at any stage, they will be sent the current game state via this event.
+
+		// TODO: same implementation as above for joined_as_audience?
+
+
 		// Event handler functions (defined outside useEffect for dependencies)
 		const handlePlayerJoined = (gameState: GameState, player: Player) => {
 			console.log("Player joined room:", player);

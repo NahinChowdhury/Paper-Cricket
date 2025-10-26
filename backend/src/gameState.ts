@@ -1,4 +1,6 @@
-import { GameState, DeliveryRecord } from "./types";
+import { createError } from "./errors/AppError";
+import { evaluateBatsmanChoice, recordDelivery, shuffle } from "./helper/helperMethods";
+import { GameState, DeliveryRecord, presetValues } from "./types";
 
 export function createStartingGameState(): GameState {
 	return {
@@ -20,7 +22,7 @@ export function createStartingGameState(): GameState {
 		currentBallRotation: undefined, // current ball rotation
 		currentBallBatsmanChoice: undefined, // current ball batsman choice
 
-		playerBowling: "", // player ID of who is bowling
+		playerFielding: "", // player ID of who is fielding
 		playerBatting: "", // player ID of who is batting
 
 		originalTotalBalls: 6, // Will not change during the game
@@ -50,28 +52,51 @@ export class GameStateManager {
 	private gameStates: Map<string, GameState> = new Map();
 
 	// Create initial game state for a room
-	createInitialGameState(playerId: string, roomId: string): GameState {
+	createInitialGameState(roomId: string): GameState {
 		const initialState: GameState = createStartingGameState();
 
 		this.gameStates.set(roomId, initialState);
 		return initialState;
 	}
 
-	// Add player to a room
-	addPlayerToGame(playerId: string, roomId: string): GameState {
+	addUserToGameAudience(playerId: string, roomId: string): GameState {
 		const gameState: GameState | undefined = this.gameStates.get(roomId);
 		if (!gameState) {
 			throw new Error("No game state found for room");
 		}
 
-		// look for duplicates
-		if (gameState.players.includes(playerId)) {
-			throw new Error("Player already in game");
+		if(gameState.gamePhase !== "waiting" && gameState.players.includes(playerId)) {
+			throw createError("CANNOT_JOIN_AUDIENCE_WHILE_PLAYING", "Cannot join audience while actively playing in the game");
 		}
 
-		// Ensure only 2 players
+		// look for duplicates
+		if (gameState.audience.includes(playerId)) {
+			throw createError("USER_ALREADY_IN_AUDIENCE", "User already in game audience");
+		}
+
+		// Remove user from players list if present
+		gameState.players = gameState.players.filter((p) => p !== playerId);
+
+		// Add to audience list
+		gameState.audience.push(playerId);
+
+		return gameState;
+	}
+
+	// Add user to game players list
+	addUserToGamePlayers(playerId: string, roomId: string): GameState {
+		const gameState: GameState | undefined = this.gameStates.get(roomId);
+		if (!gameState) {
+			throw createError("GAMESTATE_NOT_FOUND", "No game state found for room");
+		}
+
 		if (gameState.players.length >= 2) {
-			throw new Error("Game already has maximum players");
+			throw createError("MAX_PLAYERS_REACHED", "Game already has maximum number of players. Please join as audience.");
+		}
+
+		// look for duplicates
+		if (gameState.players.includes(playerId)) {
+			throw createError("USER_ALREADY_PLAYING", "User already in game players");
 		}
 
 		gameState.players.push(playerId);
@@ -89,14 +114,43 @@ export class GameStateManager {
 		const gameState: GameState | undefined = this.gameStates.get(roomId);
 
 		if (!gameState) {
-			throw new Error("No game state found for room");
+			throw createError("GAMESTATE_NOT_FOUND", "No game state found for room");
 		}
 
-		gameState.gamePhase = "setting field";
+		if (gameState.players.length < 2) {
+			throw createError("NOT_ENOUGH_PLAYERS", "Cannot start game without 2 players");
+		}
+
+		// update game phase
+		gameState.gamePhase = "toss";
+
+		// Choosee tossSelector randomly
+		const randomIndex = Math.floor(Math.random() * gameState.players.length);
+		gameState.tossSelector = gameState.players[randomIndex];
 
 		console.log(`Game started in room ${roomId}`);
 
 		return gameState;
+	}
+
+
+	generateFieldPresets(): string[][] {
+		const presets: string[][] = [];
+
+		// Generate up to 3 unique shuffles
+		while (presets.length < 3) {
+			const shuffled = shuffle([...presetValues]);
+
+			// Check if identical preset already exists
+			const isDuplicate = presets.some(
+				(p) => p.join(",") === shuffled.join(",")
+			);
+			if (!isDuplicate) {
+				presets.push(shuffled);
+			}
+		}
+
+		return presets;
 	}
 
 	// Record field setting sent by bowler
@@ -104,20 +158,21 @@ export class GameStateManager {
 		playerId: string,
 		roomId: string,
 		rotation: number,
+		presetChoice: number,
 	): GameState {
 		let gameState = this.gameStates.get(roomId);
 		if (!gameState) {
-			throw new Error("No game state found for room");
+			throw createError("GAMESTATE_NOT_FOUND", "No game state found for room");
 		}
 
 		// Ensure we take input from the bowler only
-		if (gameState.playerBowling !== playerId) {
-			throw new Error(
-				"Only bowlers are allowed to set the field during 'setting field' game phase!",
-			);
+		if (gameState.playerFielding !== playerId) {
+			throw createError("INVALID_MOVE", "Only bowlers are allowed to set the field during 'setting field' game phase!");
 		}
 		gameState.currentBallRotation = rotation;
 		gameState.gamePhase = "batting";
+		gameState.presetChosen = presetChoice;
+
 
 		return gameState;
 	}
@@ -129,88 +184,47 @@ export class GameStateManager {
 		choice: string,
 	): GameState {
 		let gameState = this.gameStates.get(roomId);
+		choice = choice.trim(); // sanitize input
+
 		if (!gameState) {
-			throw new Error("No game state found for room");
+			throw createError("GAMESTATE_NOT_FOUND", "No game state found for room");
+		}
+
+		if(gameState.gamePhase !== "batting") {
+			throw createError("INVALID_MOVE", "Cannot play shot when game phase is not 'batting'");
 		}
 
 		// Ensure we take input from the batsman only
-		if (gameState.playerBowling === playerId) {
-			throw new Error(
-				"Only batsmen are allowed to choose a shot during 'batting' game phase!",
-			);
+		if (gameState.playerBatting !== playerId) {
+			throw createError("INVALID_MOVE", "Only batsmen are allowed to choose a shot during 'batting' game phase!");
+		}
+
+		if (presetValues.indexOf(choice) === -1) {
+			throw createError("INVALID_MOVE", "Invalid choice made by batsman");
 		}
 
 		gameState.currentBallBatsmanChoice = choice;
 
-		if (
-			gameState.currentBallRotation === undefined ||
-			gameState.currentBallBatsmanChoice.trim() === ""
-		) {
-			throw new Error(
-				"Both field rotation and batsman choice must be set before recording the delivery!",
-			);
-		}
+		// cache the preset chosen for this delivery before resetting
+		const presetForThisDelivery =
+			[...gameState.modifiedPresets[gameState.presetChosen]];
+		const presetIndex = gameState.presetChosen;
+
+		// Reset the presets early for next delivery
+		// Because they might get modified during delivery evaluation
+		gameState.presetChosen = 1; // reset to default preset
+		gameState.fielderUsedPowerups.push(...gameState.fielderPowerupsActive);
+		gameState.batsmanUsedPowerups.push(...gameState.batsmanPowerupsActive);
+		gameState.fielderPowerupsActive = [];
+		gameState.batsmanPowerupsActive = [];
+		gameState.modifiedPresets = gameState.originalPresets.map((preset) => [...preset]); // no reference to originalPresets nested lists
 
 		// Record the delivery
-		const delivery: DeliveryRecord = {
-			ballNumber: gameState.currentBall,
-			innings: gameState.innings,
-			rotation: gameState.currentBallRotation,
-			batsmanChoice: gameState.currentBallBatsmanChoice,
-			timestamp: new Date(),
-			runsSoFar:
-				gameState.innings === 1
-					? gameState.inningsOneRuns
-					: gameState.inningsTwoRuns,
-		};
+		recordDelivery(gameState, presetIndex, presetForThisDelivery);
+		
+		// Evaluate the batsman choice
+		evaluateBatsmanChoice(gameState, choice);
 
-		gameState.deliveryHistory.push(delivery);
-
-		// Determine outcome (wicket or runs)
-		switch (choice) {
-			case "W": // Wicket
-				gameState.innings === 1
-					? (gameState.inningsOneWicketCurrentCount += 1)
-					: (gameState.inningsTwoWicketCurrentCount += 1);
-				break;
-			case "WD": // Wide
-			case "NB": // No Ball
-				// For now, No Ball and Wide do the same thing
-				// Increase runs by 1 but do not count ball
-				gameState.innings === 1
-					? (gameState.inningsOneRuns += 1)
-					: (gameState.inningsTwoRuns += 1);
-				gameState.totalBalls += 1; // Extra ball for wide/no-ball
-				break;
-			case "0":
-			case "1":
-			case "2":
-			case "3":
-			case "4":
-			case "5":
-			case "6":
-				const runs = parseInt(choice, 10);
-				if (!isNaN(runs) && runs >= 0 && runs <= 6) {
-					gameState.innings === 1
-						? (gameState.inningsOneRuns += runs)
-						: (gameState.inningsTwoRuns += runs);
-				} else {
-					throw new Error("Invalid batsman choice");
-				}
-				break;
-			default:
-				throw new Error("Invalid batsman choice");
-		}
-
-		// Checks if total runs exceed opponent's score in 2nd innings
-		if (gameState.innings === 2) {
-			const opponentRuns = gameState.inningsOneRuns;
-			const currentRuns = gameState.inningsTwoRuns;
-			if (currentRuns > opponentRuns) {
-				gameState.gamePhase = "finished";
-				return gameState;
-			}
-		}
 
 		// Check for end of innings or game
 		// If currentBall exceeds totalBalls OR all wickets are down
@@ -223,16 +237,28 @@ export class GameStateManager {
 					gameState.totalWickets);
 
 		// If all balls are bowled or all wickets are down, end or switch innings
-		if (inningsOver && gameState.innings === 2) {
-			gameState.gamePhase = "finished";
-			return gameState;
+		if (gameState.innings === 2) {
+			if(inningsOver) {
+				gameState.gamePhase = "finished";
+				return gameState;
+			} else {
+				// Check if chasing team has already won
+				const inningsOneRuns = gameState.inningsOneRuns;
+				const currentRuns = gameState.inningsTwoRuns;
+				if (currentRuns > inningsOneRuns) {
+					gameState.gamePhase = "finished";
+					return gameState;
+				}
+			}
 		} else if (inningsOver) {
 			// Start second innings
 			gameState.innings = 2;
 			gameState.currentBall = createStartingGameState().currentBall;
-			gameState.playerBowling = gameState.players.find(
-				(p) => p !== gameState?.playerBowling,
-			)!;
+			
+			// swap batting and fielding players
+			const temp = gameState.playerBatting;
+			gameState.playerBatting = gameState.playerFielding;
+			gameState.playerFielding = temp;
 			gameState.totalBalls = createStartingGameState().totalBalls;
 			// No need to reset runs and wickets because we have separate variables for both innings
 		} else {
@@ -269,5 +295,36 @@ export class GameStateManager {
 		if (gameState.audience.length === 0 && gameState.players.length === 0) {
 			this.cleanupGameState(roomId);
 		}
+	}
+
+	isUserPlayingInOngoingGame(playerId: string, roomId: string): boolean {
+		const gameState = this.gameStates.get(roomId);
+		if (!gameState) {
+			return false;
+		}
+
+		return gameState.gamePhase !== "waiting" && gameState.players.includes(playerId);
+	}
+
+	attemptSurrenderGame(playerId: string, roomId: string): boolean {
+		const gameState = this.gameStates.get(roomId);
+		if (!gameState) {
+			throw createError("GAMESTATE_NOT_FOUND", "No game state found for room");
+		}
+		
+		// Ensure only active players can surrender
+		if (!gameState.players.includes(playerId)) {
+			throw createError("UNABLE_TO_SURRENDER", "Only active players can surrender the game.");
+		}
+
+		if(gameState.gamePhase === "finished" || gameState.gamePhase === "surrendered" || gameState.gamePhase === "waiting") {
+			throw createError("UNABLE_TO_SURRENDER", "Cannot surrender the game at this stage");
+		}
+
+
+		gameState.gamePhase = "surrendered";
+		gameState.surrenderedBy = playerId;
+
+		return true;
 	}
 }

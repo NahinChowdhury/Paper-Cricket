@@ -10,10 +10,13 @@ export interface User {
 export interface GameRoom {
 	id: string; // room ID
 	users: User[]; // users who joined the room as player/spectator/stand-by for now
-	maxPlayers: number; // 2
 	created: Date; // creation time
 	roomCreator: string; // ID of the room creator
 }
+
+export const presetValues: string[] = [
+	"0", "1", "2", "3", "4", "5", "6", "W", "NB", "WD"
+];
 
 export interface GameState {
 	players: string[]; // list of player IDs. Max 2
@@ -33,8 +36,8 @@ export interface GameState {
 	currentBall: number; // current turn number
 	currentBallRotation: number | undefined; // current ball rotation
 	currentBallBatsmanChoice: string | undefined; // current ball batsman choice
-	
-	playerBowling: string; // player ID of who is bowling
+
+	playerFielding: string; // player ID of who is fielding
 	playerBatting: string; // player ID of who is batting
 	
 	originalTotalBalls: number; // Will not change during the game
@@ -69,34 +72,48 @@ export interface DeliveryRecord {
 	fielderPowerUpUsed: string[]; // powerup used by fielding side for that delivery
 	batsmanPowerUpUsed: string[]; // powerup used by batting side for that delivery
 	timestamp: Date;
-	runsSoFar: number; // runs scored in current innings so far
+	runsAfterThisDelivery: number; // runs scored in current innings after this delivery
 }
 
 // Events that clients send TO the server
 export interface ClientEvents {
 	create_room: (playerId: string) => void;
 	join_room: (roomId: string, playerId: string) => void;
+	join_as_player: (player: User) => void;
+	join_as_audience: (player: User) => void;
+	toss_selection_made: (player: User, choice: "heads" | "tails") => void;
+	side_selection_made: (player: User, choice: "batting" | "fielding") => void;
 	player_joined: (player: User) => void;
 	rotate_pie: (data: {
 		roomId: string;
 		playerId: string;
 		rotation: number;
 	}) => void; // will be redundant soon
-	field_set: (playerId: string, roomId: string, rotation: number) => void;
+	field_set: (playerId: string, roomId: string, rotation: number, presetChoice: number) => void;
 	shot_played: (playerId: string, roomId: string, choice: string) => void;
+	surrender: (playerId: string, roomId: string) => void;
+	leave_room: (playerId: string, roomId: string) => void;
+	power_up_used: (playerId: string, roomId: string, powerUp: string, modification: any) => void;
 }
 
 // Events that the server sends TO clients
 export interface ServerEvents {
-	player_joined: (gameState: GameState, player: User) => void;
+	user_joined: (gameState: GameState, player: User) => void;
+	joined_as_player: (gameState: GameState) => void;
+	joined_as_audience: (gameState: GameState) => void;
 	room_not_found: () => void;
 	room_full: () => void;
 	game_started: (gameState: GameState) => void;
 	rotation_update: (gameState: GameState, rotation: number) => void;
 	game_ended: (gameState: GameState) => void;
-	player_left: (playerId: string) => void; // players cant willingliy leave yet
+	game_surrendered: (gameState: GameState) => void;
+	user_left: (playerId: string) => void;
 	room_created: (roomId: string) => void;
 	play_shot: (gameState: GameState) => void;
 	set_field: (gameState: GameState) => void;
 	cannot_create_game: (roomId: string) => void;
+	server_error: (error: { code: string; message: string }) => void;
+	game_updated: (gameState: GameState) => void;
+	toss_started: (gameState: GameState) => void;
+	side_selection_started: (gameState: GameState) => void;
 }
