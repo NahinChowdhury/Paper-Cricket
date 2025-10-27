@@ -134,8 +134,15 @@ const AudienceView: React.FC = () => {
 
 			<h2 style={{ marginBottom: "10px" }}>🎟️ Audience View</h2>
 			<p style={{ fontSize: "1.2rem", marginBottom: "20px" }}>
-				You're watching the match live — the field updates in real time!
+			{recapState.isRecapping
+				? "Replay in progress — watch how the last delivery unfolded!"
+				: gameState.gamePhase === "setting field"
+				? "The fielder is setting up their formation — let's see the strategy unfold."
+				: gameState.gamePhase === "batting"
+					? "The batter is preparing their shot — tension's in the air!"
+					: "You're watching the match live — the field updates in real time!"}
 			</p>
+
 
 			{/* 🔹 Read-only wheel */}
 			<div style={{ position: "relative", display: "inline-block" }}>
@@ -158,14 +165,17 @@ const AudienceView: React.FC = () => {
 						left: 50,
 						width: SPINNER_RADIUS * 2 + 2,
 						height: SPINNER_RADIUS * 2 + 2,
-						backgroundColor: OVERLAY_COLOR,
 						borderRadius: "50%",
 						pointerEvents: "none",
 						overflow: "hidden",
 						transform: `rotate(${currentBallRotation}rad)`,
 						transition: "opacity 0.8s ease-in-out",
 						opacity: recapState.isRecapping ? 0 : 1, // fade out during recap
-					}}
+						backgroundColor:
+							displayState?.gamePhase === "setting field"
+								? "rgba(131, 131, 131, 1)" // solid black — blocks interaction and visibility
+								: OVERLAY_COLOR, // fully transparent for active phases
+							}}
 				>
 					<svg
 						width={SPINNER_RADIUS * 2 + 2}

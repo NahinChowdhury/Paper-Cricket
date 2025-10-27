@@ -187,11 +187,16 @@ const BatterView: React.FC = () => {
 				Surrender
 			</button>
 
+			{/* 🎯 Dynamic message based on phase */}
 			<h2 style={{ marginBottom: "10px" }}>🏏 Batter View</h2>
 			<p style={{ fontSize: "1.2rem", marginBottom: "20px" }}>
 				{recapState.isRecapping
-					? "Recap in progress..."
-					: "The field is set. Pick your shot carefully!"}
+					? "Recap in progress — reviewing the last ball..."
+					: displayState.gamePhase === "setting field"
+						? "Opponent is setting their field..."
+						: displayState.gamePhase === "batting"
+							? "Field is ready — pick your shot carefully!"
+							: "Waiting for next phase..."}
 			</p>
 
 			{/* 🔹 Pie + Mask */}
@@ -211,55 +216,54 @@ const BatterView: React.FC = () => {
 					onClick={handleClick}
 				/>
 
-				{/* 🔹 Black overlay mask */}
+				{/* 🔹 Overlay mask — fully black when inactive */}
 				<div
+				style={{
+					position: "absolute",
+					top: 50,
+					left: 50,
+					width: SPINNER_RADIUS * 2 + 2,
+					height: SPINNER_RADIUS * 2 + 2,
+					borderRadius: "50%",
+					pointerEvents: "none",
+					overflow: "hidden",
+					transform: `rotate(${rotation}rad)`,
+					transition: "opacity 0.8s ease-in-out",
+					opacity: recapState.isRecapping ? 0 : 1,
+					// 🟣 Fully black if fielder is setting field, transparent otherwise
+					backgroundColor:
+					displayState.gamePhase === "setting field"
+						? "rgba(131, 131, 131, 1)" // solid black — blocks interaction and visibility
+						: OVERLAY_COLOR, // fully transparent for active phases
+				}}
+				>
+				<svg
+					width={SPINNER_RADIUS * 2 + 2}
+					height={SPINNER_RADIUS * 2 + 2}
 					style={{
-						position: "absolute",
-						top: 50,
-						left: 50,
-						width: SPINNER_RADIUS * 2 + 2,
-						height: SPINNER_RADIUS * 2 + 2,
-						backgroundColor: OVERLAY_COLOR,
-						borderRadius: "50%",
-						pointerEvents: "none",
-						overflow: "hidden",
-						transform: `rotate(${rotation}rad)`,
-						transition: "opacity 0.8s ease-in-out",
-						opacity: recapState.isRecapping ? 0 : 1,
+					position: "absolute",
+					top: 0,
+					left: 0,
+					pointerEvents: "none",
 					}}
 				>
-					<svg
-						width={SPINNER_RADIUS * 2 + 2}
-						height={SPINNER_RADIUS * 2 + 2}
-						style={{
-							position: "absolute",
-							top: 0,
-							left: 0,
-							pointerEvents: "none",
-						}}
-					>
-						{Array.from({ length: slices.length }).map((_, i) => {
-							const angle =
-								(i * 2 * Math.PI) / slices.length - Math.PI / 2;
-							const x =
-								SPINNER_RADIUS +
-								SPINNER_RADIUS * Math.cos(angle);
-							const y =
-								SPINNER_RADIUS +
-								SPINNER_RADIUS * Math.sin(angle);
-							return (
-								<line
-									key={i}
-									x1={SPINNER_RADIUS}
-									y1={SPINNER_RADIUS}
-									x2={x}
-									y2={y}
-									stroke="white"
-									strokeWidth="2"
-								/>
-							);
-						})}
-					</svg>
+					{Array.from({ length: slices.length }).map((_, i) => {
+					const angle = (i * 2 * Math.PI) / slices.length - Math.PI / 2;
+					const x = SPINNER_RADIUS + SPINNER_RADIUS * Math.cos(angle);
+					const y = SPINNER_RADIUS + SPINNER_RADIUS * Math.sin(angle);
+					return (
+						<line
+						key={i}
+						x1={SPINNER_RADIUS}
+						y1={SPINNER_RADIUS}
+						x2={x}
+						y2={y}
+						stroke="white"
+						strokeWidth="2"
+						/>
+					);
+					})}
+				</svg>
 				</div>
 
 				{/* 🔹 Recap banner */}

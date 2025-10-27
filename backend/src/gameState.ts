@@ -32,7 +32,7 @@ export function createStartingGameState(): GameState {
 		originalTotalBalls: 6, // Will not change during the game
 		totalBalls: 6, // Fixed to 6 right now. Can change if Wide or No Ball is bowled
 
-		totalWickets: 1, // Fixed to 2 right now
+		totalWickets: 2, // Fixed to 2 right now
 		inningsOneWicketCurrentCount: 0, // wickets fallen so far in innings one
 		inningsTwoWicketCurrentCount: 0, // wickets fallen so far in innings two
 
@@ -271,6 +271,16 @@ export class GameStateManager {
 		// Evaluate the batsman choice
 		evaluateBatsmanChoice(gameState, choice);
 
+		// Checks if total runs exceed opponent's score in 2nd innings
+		if (gameState.innings === 2) {
+			const opponentRuns = gameState.inningsOneRuns;
+			const currentRuns = gameState.inningsTwoRuns;
+			if (currentRuns > opponentRuns) {
+				gameState.gamePhase = "finished";
+				return gameState;
+			}
+		}
+
 		// Check for end of innings or game
 		// If currentBall exceeds totalBalls OR all wickets are down
 		const inningsOver =
@@ -282,19 +292,9 @@ export class GameStateManager {
 					gameState.totalWickets);
 
 		// If all balls are bowled or all wickets are down, end or switch innings
-		if (gameState.innings === 2) {
-			if (inningsOver) {
-				gameState.gamePhase = "finished";
-				return gameState;
-			} else {
-				// Check if chasing team has already won
-				const inningsOneRuns = gameState.inningsOneRuns;
-				const currentRuns = gameState.inningsTwoRuns;
-				if (currentRuns > inningsOneRuns) {
-					gameState.gamePhase = "finished";
-					return gameState;
-				}
-			}
+		if (inningsOver && gameState.innings === 2) {
+			gameState.gamePhase = "finished";
+			return gameState;
 		} else if (inningsOver) {
 			// Start second innings
 			gameState.innings = 2;
@@ -309,7 +309,7 @@ export class GameStateManager {
 		} else {
 			gameState.currentBall++;
 		}
-
+		
 		gameState.currentBallRotation = undefined;
 		gameState.currentBallBatsmanChoice = undefined;
 		gameState.gamePhase = "setting field";

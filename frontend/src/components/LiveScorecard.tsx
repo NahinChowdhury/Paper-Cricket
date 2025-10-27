@@ -14,36 +14,14 @@ const slices = [
 
 interface LiveScorecardProps {
 	gameState: GameState;
-	maxBallsToShow?: number; // e.g., 12 to show only recent deliveries
+	maxBallsToShow?: number;
 }
 
 const LiveScorecard: React.FC<LiveScorecardProps> = ({
 	gameState,
-	maxBallsToShow = 12,
+	maxBallsToShow = 10,
 }) => {
 	if (!gameState) return null;
-
-	const {
-		innings,
-		deliveryHistory,
-		inningsOneRuns,
-		inningsTwoRuns,
-		inningsOneWicketCurrentCount,
-		inningsTwoWicketCurrentCount,
-		totalWickets,
-	} = gameState;
-
-	// Determine which innings we’re in
-	const currentRuns = innings === 1 ? inningsOneRuns : inningsTwoRuns;
-	const wickets =
-		innings === 1
-			? inningsOneWicketCurrentCount
-			: inningsTwoWicketCurrentCount;
-
-	// Show only deliveries from current innings
-	const currentDeliveries = deliveryHistory
-		.filter((d) => d.innings === innings)
-		.slice(-maxBallsToShow);
 
 	return (
 		<div
@@ -63,9 +41,9 @@ const LiveScorecard: React.FC<LiveScorecardProps> = ({
 					const allDeliveries = gameState.deliveryHistory.filter(
 						(d) => d.innings === inn,
 					);
-					const hasOverflow = allDeliveries.length > 10;
+					const hasOverflow = allDeliveries.length > maxBallsToShow;
 					const deliveries = hasOverflow
-						? allDeliveries.slice(-10)
+						? allDeliveries.slice(-maxBallsToShow)
 						: allDeliveries;
 
 					const runs =
@@ -77,6 +55,13 @@ const LiveScorecard: React.FC<LiveScorecardProps> = ({
 						inn === 1
 							? gameState.inningsOneWicketCurrentCount
 							: gameState.inningsTwoWicketCurrentCount;
+
+					// Only show current ball count for the current innings
+					const isCurrentInnings = gameState.innings === inn;
+					const currentBall = isCurrentInnings
+						? gameState.currentBall
+						: allDeliveries.length;
+					const totalBalls = gameState.totalBalls;
 
 					return (
 						<div
@@ -108,26 +93,26 @@ const LiveScorecard: React.FC<LiveScorecardProps> = ({
 							>
 								<strong>Innings {inn}</strong>
 								<span>
-									<span
-										style={{
-											color: "#FFD166",
-											fontWeight: "bold",
-										}}
-									>
-										{runs}
-									</span>{" "}
-									/{" "}
-									<span
-										style={{
-											color: "#F94144",
-											fontWeight: "bold",
-										}}
-									>
-										{wickets}
-									</span>{" "}
-									<small style={{ color: "#aaa" }}>
-										({gameState.totalWickets})
-									</small>
+									<span style={{ color: "#FFD166", fontWeight: "bold" }}>{runs} runs</span>
+									{" • "}
+									<span style={{ color: "#F94144", fontWeight: "bold" }}>
+									{wickets}/{gameState.totalWickets} wickets
+									</span>
+
+
+									{/* 🏏 Balls Played */}
+									{isCurrentInnings && (
+										<span
+											style={{
+												marginLeft: "10px",
+												color: "#9ad4d6",
+												fontWeight: 600,
+												fontSize: "0.8rem",
+											}}
+										>
+											• {currentBall}/{totalBalls} balls
+										</span>
+									)}
 								</span>
 							</div>
 
@@ -140,7 +125,6 @@ const LiveScorecard: React.FC<LiveScorecardProps> = ({
 									justifyContent: "flex-start",
 								}}
 							>
-								{/* Ellipsis if there are older balls */}
 								{hasOverflow && (
 									<span
 										style={{
@@ -195,6 +179,33 @@ const LiveScorecard: React.FC<LiveScorecardProps> = ({
 						</div>
 					);
 				})}
+				{/* Target Score and Runs required if 2nd Innings */}
+				{gameState.innings === 2 && (
+					<div
+						style={{
+							marginTop: "8px",
+							paddingTop: "8px",
+							borderTop: "1px solid rgba(255,255,255,0.2)",
+							fontSize: "0.9rem",
+						}}
+					>
+						<strong>Target: </strong>
+						<span style={{ color: "#FFD166", fontWeight: "bold" }}>
+							{gameState.inningsOneRuns + 1} runs
+						</span>
+						{" • "}
+						<strong>Runs Required: </strong>
+						<span style={{ color: "#90be6d", fontWeight: "bold" }}>
+							{Math.max(
+								0,
+								gameState.inningsOneRuns +
+									1 -
+									gameState.inningsTwoRuns,
+							)}{" "}
+							runs
+						</span>
+					</div>
+				)}
 		</div>
 	);
 };

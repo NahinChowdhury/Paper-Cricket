@@ -86,6 +86,7 @@ export function evaluateBatsmanChoice(
 				? (gameState.inningsOneRuns += 1)
 				: (gameState.inningsTwoRuns += 1);
 			gameState.totalBalls += 1; // Extra ball for wide/no-ball
+			break;
 		case "NB": // No Ball
 			// Increase runs by 1 but do not count ball
 			gameState.innings === 1

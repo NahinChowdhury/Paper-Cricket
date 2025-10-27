@@ -205,13 +205,16 @@ const FielderView: React.FC = () => {
 				Surrender
 			</button>
 
+			{/* 🎯 Dynamic message based on phase */}
 			<h2 style={{ marginBottom: "10px" }}>🧤 Fielder View</h2>
 			<p style={{ fontSize: "1.2rem", marginBottom: "20px" }}>
-				{recapState.isRecapping
-					? "Recap in progress..."
-					: canRotate
-						? "Drag to rotate and set your field."
-						: "Waiting for the batter..."}
+			{recapState.isRecapping
+				? "Recap in progress — replaying the last delivery..."
+				: displayState.gamePhase === "setting field"
+				? "Set your field rotation!"
+				: displayState.gamePhase === "batting"
+					? "Waiting for batter to play the shot..."
+					: ""}
 			</p>
 
 			{/* 🔹 Canvas */}
