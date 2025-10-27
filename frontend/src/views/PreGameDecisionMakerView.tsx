@@ -39,7 +39,7 @@ const PreGameDecisionMakerView: React.FC = () => {
 		if (!confirm) return;
 
 		console.log("Player surrendered:", user.id);
-		socket.emit("surrender", user.id, user.roomId); // server expects (playerId, roomId)
+		socket.emit("surrender", user.id); // server expects (playerId)
 	};
 
 	// 🔹 Dynamic UI setup

@@ -32,7 +32,7 @@ export function createStartingGameState(): GameState {
 		originalTotalBalls: 6, // Will not change during the game
 		totalBalls: 6, // Fixed to 6 right now. Can change if Wide or No Ball is bowled
 
-		totalWickets: 2, // Fixed to 2 right now
+		totalWickets: 1, // Fixed to 2 right now
 		inningsOneWicketCurrentCount: 0, // wickets fallen so far in innings one
 		inningsTwoWicketCurrentCount: 0, // wickets fallen so far in innings two
 
@@ -217,7 +217,7 @@ export class GameStateManager {
 		roomId: string,
 		choice: string,
 	): GameState {
-		let gameState = this.gameStates.get(roomId);
+		const gameState = this.gameStates.get(roomId);
 		choice = choice.trim(); // sanitize input
 
 		if (!gameState) {
@@ -354,7 +354,7 @@ export class GameStateManager {
 		);
 	}
 
-	attemptSurrenderGame(playerId: string, roomId: string): boolean {
+	attemptSurrenderGame(playerId: string, roomId: string): GameState {
 		const gameState = this.gameStates.get(roomId);
 		if (!gameState) {
 			throw createError(
@@ -385,6 +385,6 @@ export class GameStateManager {
 		gameState.gamePhase = "surrendered";
 		gameState.surrenderedBy = playerId;
 
-		return true;
+		return gameState;
 	}
 }

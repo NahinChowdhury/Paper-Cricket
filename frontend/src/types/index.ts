@@ -92,7 +92,7 @@ export interface ClientEvents {
 		presetChoice: number,
 	) => void;
 	shot_played: (playerId: string, roomId: string, choice: string) => void;
-	surrender: (playerId: string, roomId: string) => void;
+	surrender: (playerId: string) => void;
 	leave_room: (playerId: string, roomId: string) => void;
 	power_up_used: (
 		playerId: string,
@@ -119,6 +119,7 @@ export interface ServerEvents {
 	play_shot: (gameState: GameState) => void;
 	set_field: (gameState: GameState) => void;
 	cannot_create_game: (roomId: string) => void;
+	cannot_join_game: (roomId: string) => void;
 	server_error: (error: { code: string; message: string }) => void;
 	game_updated: (gameState: GameState) => void;
 	toss_started: (gameState: GameState) => void;

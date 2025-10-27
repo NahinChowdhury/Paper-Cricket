@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback } from "react";
 import { useSocket } from "../contexts/SocketContext";
 import { useGame } from "../contexts/GameContext";
+import LiveScorecard from "../components/LiveScorecard";
 
 const slices = [
 	{ label: "0", color: "#f94144" },
@@ -17,28 +18,36 @@ const SPINNER_RADIUS = 150;
 
 const FielderView: React.FC = () => {
 	const { socket } = useSocket();
-	const { gameState, user } = useGame();
+	const { gameState, recapState, user } = useGame();
+
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
 	const [rotation, setRotation] = useState(0);
 	const [isDragging, setIsDragging] = useState(false);
 	const [startAngle, setStartAngle] = useState(0);
 
-	if (!gameState || !user) return null;
+	// ✅ Choose which state to display
+	const displayState =
+		recapState.isRecapping && recapState.frozenState
+			? recapState.frozenState
+			: gameState;
 
-	const canRotate = gameState.gamePhase === "setting field";
+	if (!displayState || !user) return null;
+
+	const canRotate =
+		displayState.gamePhase === "setting field" && !recapState.isRecapping;
 	const shotSelected: string | null =
-		gameState.currentBallBatsmanChoice !== undefined
-			? gameState.currentBallBatsmanChoice
+		displayState.currentBallBatsmanChoice !== undefined
+			? displayState.currentBallBatsmanChoice
 			: null;
 
 	// 🔹 Handle surrender
 	const handleSurrender = () => {
 		if (!socket || !user) return;
 		if (!window.confirm("Are you sure you want to surrender?")) return;
-		socket.emit("surrender", user.id, user.roomId);
+		socket.emit("surrender", user.id);
 	};
 
-	// 🔹 Draw the pie
+	// 🔹 Draw pie
 	const drawPie = useCallback(
 		(ctx: CanvasRenderingContext2D, rotationAngle: number) => {
 			const sliceAngle = (2 * Math.PI) / slices.length;
@@ -86,7 +95,6 @@ const FielderView: React.FC = () => {
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
 		drawPie(ctx, rotation);
 
-		// Grey overlay when not in "set field"
 		if (!canRotate) {
 			ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
 			ctx.beginPath();
@@ -102,12 +110,11 @@ const FielderView: React.FC = () => {
 	}, [rotation, drawPie, canRotate]);
 
 	useEffect(() => {
-		// Reset rotation when game phase changes
-		if (gameState.gamePhase === "setting field") {
-			// reset rotation
+		// Reset rotation when entering "setting field"
+		if (displayState.gamePhase === "setting field") {
 			setRotation(0);
 		}
-	}, [gameState.gamePhase]);
+	}, [displayState.gamePhase]);
 
 	// 🔹 Drag logic
 	const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -131,7 +138,7 @@ const FielderView: React.FC = () => {
 		const newRot = normalizeRotation(Math.atan2(dy, dx) - startAngle);
 		setRotation(newRot);
 
-		// Emit live rotation to server (for batter/audience sync)
+		// Emit live rotation to server
 		if (socket && user?.roomId) {
 			socket.emit("rotate_pie", {
 				roomId: user.roomId,
@@ -143,7 +150,7 @@ const FielderView: React.FC = () => {
 
 	const handleMouseUp = () => setIsDragging(false);
 
-	// 🔹 Submit rotation to lock in field
+	// 🔹 Submit rotation
 	const handleSubmitRotation = () => {
 		if (!socket || !user || !canRotate) return;
 		console.log("Submitting final rotation:", rotation);
@@ -164,6 +171,21 @@ const FielderView: React.FC = () => {
 				fontFamily: "sans-serif",
 			}}
 		>
+			{/* 🏏 Live Scorecard (top-left) */}
+			<div
+				style={{
+					position: "absolute",
+					top: "20px",
+					left: "20px",
+					zIndex: 5,
+				}}
+			>
+				{/* Scorecard should be updated immediately even if recap is playing*/}
+				<LiveScorecard
+					gameState={gameState ? gameState : displayState}
+				/>
+			</div>
+
 			{/* 🔹 Surrender Button */}
 			<button
 				onClick={handleSurrender}
@@ -185,32 +207,60 @@ const FielderView: React.FC = () => {
 
 			<h2 style={{ marginBottom: "10px" }}>🧤 Fielder View</h2>
 			<p style={{ fontSize: "1.2rem", marginBottom: "20px" }}>
-				{canRotate
-					? "Drag to rotate and set your field."
-					: "Waiting for the batter..."}
+				{recapState.isRecapping
+					? "Recap in progress..."
+					: canRotate
+						? "Drag to rotate and set your field."
+						: "Waiting for the batter..."}
 			</p>
 
 			{/* 🔹 Canvas */}
-			<canvas
-				ref={canvasRef}
-				width={400}
-				height={400}
-				style={{
-					border: "2px solid #ddd",
-					borderRadius: "50%",
-					cursor: canRotate
-						? isDragging
-							? "grabbing"
-							: "grab"
-						: "not-allowed",
-					opacity: canRotate ? 1 : 0.5,
-					transition: "opacity 0.3s ease",
-				}}
-				onMouseDown={handleMouseDown}
-				onMouseMove={handleMouseMove}
-				onMouseUp={handleMouseUp}
-				onMouseLeave={handleMouseUp}
-			/>
+			<div style={{ position: "relative", display: "inline-block" }}>
+				<canvas
+					ref={canvasRef}
+					width={400}
+					height={400}
+					style={{
+						border: "2px solid #ddd",
+						borderRadius: "50%",
+						cursor: canRotate
+							? isDragging
+								? "grabbing"
+								: "grab"
+							: "not-allowed",
+						opacity: canRotate ? 1 : 0.5,
+						transition: "opacity 0.3s ease",
+					}}
+					onMouseDown={handleMouseDown}
+					onMouseMove={handleMouseMove}
+					onMouseUp={handleMouseUp}
+					onMouseLeave={handleMouseUp}
+				/>
+
+				{/* 🔹 Recap banner only */}
+				{recapState.isRecapping && (
+					<div
+						style={{
+							position: "absolute",
+							top: "50%",
+							left: "50%",
+							transform: "translate(-50%, -50%)",
+							color: "white",
+							fontSize: "1.6rem",
+							fontWeight: "bold",
+							textShadow: "0 0 8px rgba(0,0,0,0.7)",
+							backgroundColor: "rgba(0,0,0,0.6)",
+							padding: "12px 24px",
+							borderRadius: "8px",
+						}}
+					>
+						Batter chose{" "}
+						<span style={{ color: "#ffd166" }}>
+							{recapState.recapChoice ?? "?"}
+						</span>
+					</div>
+				)}
+			</div>
 
 			{/* 🔹 Submit button */}
 			{canRotate && (

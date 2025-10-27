@@ -18,7 +18,7 @@ const PreGameDecisionSpectatorView: React.FC = () => {
 		if (!confirm) return;
 
 		console.log("Player surrendered:", user.id);
-		socket.emit("surrender", user.id, user.roomId);
+		socket.emit("surrender", user.id);
 	};
 
 	// 🔹 Determine what to display based on phase

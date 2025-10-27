@@ -90,11 +90,26 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 			}
 
 			const existingGameState = gameStateManager.getGameState(roomId);
+			// check player isn't already in a room as an active player
+			const existingRoomId = roomManager.getRoomByPlayerId(playerId);
+			if (
+				existingRoomId !== roomId &&
+				verifyUserisActivePlayerInAGame(
+					playerId,
+					existingRoomId,
+					roomManager,
+					gameStateManager,
+				)
+			) {
+				socket.emit("cannot_join_game", existingRoomId!);
+				return;
+			}
 
 			if (existingGameState) {
 				if (
-					existingGameState.gamePhase === "finished" ||
-					existingGameState.gamePhase === "surrendered"
+					["finished", "surrendered"].includes(
+						existingGameState.gamePhase,
+					)
 				) {
 					socket.emit("game_ended", existingGameState);
 					return;
@@ -620,17 +635,6 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 				// Notify all players about game end due to surrender
 				io.to(roomId).emit("game_surrendered", gameState);
 				console.log(`Player ${playerId} surrendered in room ${roomId}`);
-
-				// No need to clean up the game state or room for now, just mark the game as surrendered
-				// Remove all players from the game room
-				const room = roomManager.getRoom(roomId);
-				if (room) {
-					room.users.forEach((user) => {
-						roomManager.removePlayerFromRoom(user.id);
-					});
-				}
-
-				// TODO: Need to properly clean up old rooms and game states after some time
 
 				console.log(`Room ${roomId} removed after surrender.`);
 			}

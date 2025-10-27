@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback } from "react";
 import { useSocket } from "../contexts/SocketContext";
 import { useGame } from "../contexts/GameContext";
+import LiveScorecard from "../components/LiveScorecard";
 
 const slices = [
 	{ label: "0", color: "#f94144" },
@@ -18,25 +19,37 @@ const OVERLAY_COLOR = "rgba(0, 0, 0, 1)";
 
 const BatterView: React.FC = () => {
 	const { socket } = useSocket();
-	const { gameState, user } = useGame();
+	const { gameState, recapState, user } = useGame();
 
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
 	const [shotSelected, setShotSelected] = useState<string | null>(null);
 
-	if (!gameState || !user) return null;
+	// =========================
+	//  SELECT WHICH STATE TO DISPLAY
+	// =========================
+	const displayState =
+		recapState.isRecapping && recapState.frozenState
+			? recapState.frozenState
+			: gameState;
 
-	const rotation = gameState.currentBallRotation || 0; // 🔹 derive from gameState, not local state
+	if (!displayState || !user) return null;
+
+	const rotation = displayState.currentBallRotation || 0;
+	const isBattingTurn =
+		displayState.playerBatting === user.id &&
+		displayState.gamePhase === "batting";
 
 	// 🎯 Handle surrender
 	const handleSurrender = () => {
 		if (!socket || !user) return;
 		const confirm = window.confirm("Are you sure you want to surrender?");
 		if (!confirm) return;
-		socket.emit("surrender", user.id, user.roomId);
+		socket.emit("surrender", user.id);
 	};
 
 	// 🎯 Handle shot selection
 	const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+		if (!isBattingTurn || recapState.isRecapping) return; // disable during recap
 		const canvas = canvasRef.current;
 		if (!canvas) return;
 		const rect = canvas.getBoundingClientRect();
@@ -53,20 +66,11 @@ const BatterView: React.FC = () => {
 		const normalized = ((angle % fullCircle) + fullCircle) % fullCircle;
 		const sliceAngle = fullCircle / slices.length;
 		const index = Math.floor(normalized / sliceAngle) % slices.length;
-		// Update selected shot
-		if (
-			gameState.playerBatting === user.id &&
-			gameState.gamePhase === "batting"
-		) {
-			setShotSelected(slices[index].label);
-			// Notify server of hover
-			if (socket && user?.roomId) {
-				socket.emit(
-					"shot_selection_hover",
-					user.id,
-					slices[index].label,
-				);
-			}
+
+		setShotSelected(slices[index].label);
+
+		if (socket && user?.roomId) {
+			socket.emit("shot_selection_hover", user.id, slices[index].label);
 		}
 	};
 
@@ -76,11 +80,19 @@ const BatterView: React.FC = () => {
 			alert("Please select a shot first!");
 			return;
 		}
+		console.log("Submitting shot:", shotSelected);
 		socket.emit("shot_played", user.id, user.roomId, shotSelected);
-		setShotSelected(null);
+		// we do not clear the shotSelected here to allow user to see their choice until recap is over
 	};
 
-	// 🧠 Draw pie segments (read-only)
+	useEffect(() => {
+		// Reset shot selection when recap is over
+		if (!recapState.isRecapping) {
+			setShotSelected(null);
+		}
+	}, [recapState.isRecapping]);
+
+	// 🧠 Draw pie segments
 	const drawPie = useCallback(
 		(ctx: CanvasRenderingContext2D) => {
 			const sliceAngle = (2 * Math.PI) / slices.length;
@@ -90,7 +102,6 @@ const BatterView: React.FC = () => {
 			slices.forEach((slice, i) => {
 				const start = i * sliceAngle + rotation;
 				const end = start + sliceAngle;
-
 				const radius =
 					shotSelected === slice.label
 						? SPINNER_RADIUS + 10
@@ -116,22 +127,18 @@ const BatterView: React.FC = () => {
 		[rotation, shotSelected],
 	);
 
-	// Redraw whenever rotation or selection changes
 	useEffect(() => {
 		const canvas = canvasRef.current;
 		if (!canvas) return;
 		const ctx = canvas.getContext("2d");
 		if (!ctx) return;
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
-		console.log(
-			"Redrawing pie with rotation:",
-			rotation,
-			"and shotSelected:",
-			shotSelected,
-		);
 		drawPie(ctx);
 	}, [rotation, shotSelected, drawPie]);
 
+	// =========================
+	//  UI RENDER
+	// =========================
 	return (
 		<div
 			style={{
@@ -146,6 +153,21 @@ const BatterView: React.FC = () => {
 				fontFamily: "sans-serif",
 			}}
 		>
+			{/* 🏏 Live Scorecard (top-left) */}
+			<div
+				style={{
+					position: "absolute",
+					top: "20px",
+					left: "20px",
+					zIndex: 5,
+				}}
+			>
+				{/* Scorecard should be updated immediately even if recap is playing*/}
+				<LiveScorecard
+					gameState={gameState ? gameState : displayState}
+				/>
+			</div>
+
 			{/* 🔹 Surrender Button */}
 			<button
 				onClick={handleSurrender}
@@ -167,7 +189,9 @@ const BatterView: React.FC = () => {
 
 			<h2 style={{ marginBottom: "10px" }}>🏏 Batter View</h2>
 			<p style={{ fontSize: "1.2rem", marginBottom: "20px" }}>
-				The field is set. Pick your shot carefully!
+				{recapState.isRecapping
+					? "Recap in progress..."
+					: "The field is set. Pick your shot carefully!"}
 			</p>
 
 			{/* 🔹 Pie + Mask */}
@@ -180,8 +204,7 @@ const BatterView: React.FC = () => {
 						border: "2px solid #ddd",
 						borderRadius: "50%",
 						cursor:
-							gameState.playerBatting === user.id &&
-							gameState.gamePhase === "batting"
+							isBattingTurn && !recapState.isRecapping
 								? "pointer"
 								: "not-allowed",
 					}}
@@ -201,6 +224,8 @@ const BatterView: React.FC = () => {
 						pointerEvents: "none",
 						overflow: "hidden",
 						transform: `rotate(${rotation}rad)`,
+						transition: "opacity 0.8s ease-in-out",
+						opacity: recapState.isRecapping ? 0 : 1,
 					}}
 				>
 					<svg
@@ -236,21 +261,48 @@ const BatterView: React.FC = () => {
 						})}
 					</svg>
 				</div>
+
+				{/* 🔹 Recap banner */}
+				{recapState.isRecapping && (
+					<div
+						style={{
+							position: "absolute",
+							top: "50%",
+							left: "50%",
+							transform: "translate(-50%, -50%)",
+							color: "white",
+							fontSize: "1.5rem",
+							fontWeight: "bold",
+							textShadow: "0 0 10px rgba(0,0,0,0.7)",
+						}}
+					>
+						User chose{" "}
+						<span style={{ color: "#ffd166" }}>
+							{recapState.recapChoice ?? "?"}
+						</span>
+					</div>
+				)}
 			</div>
 
 			{/* 🔹 Submit Shot Button */}
 			<div style={{ marginTop: "30px" }}>
 				<button
 					onClick={handleSubmitShot}
-					disabled={!shotSelected}
+					disabled={!shotSelected || recapState.isRecapping}
 					style={{
 						padding: "12px 24px",
 						fontSize: "16px",
-						backgroundColor: shotSelected ? "#4CAF50" : "#ccc",
+						backgroundColor:
+							shotSelected && !recapState.isRecapping
+								? "#4CAF50"
+								: "#ccc",
 						color: "white",
 						border: "none",
 						borderRadius: "5px",
-						cursor: shotSelected ? "pointer" : "not-allowed",
+						cursor:
+							shotSelected && !recapState.isRecapping
+								? "pointer"
+								: "not-allowed",
 					}}
 				>
 					Submit Shot

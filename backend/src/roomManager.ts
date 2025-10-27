@@ -56,6 +56,11 @@ export class RoomManager {
 		return this.rooms.get(roomId);
 	}
 
+	// Get all rooms
+	getRooms(): GameRoom[] {
+		return Array.from(this.rooms.values());
+	}
+
 	// Get user by socket ID
 	getUserByPlayerId(playerId: string): User | undefined {
 		const roomId = this.playerRooms.get(playerId);

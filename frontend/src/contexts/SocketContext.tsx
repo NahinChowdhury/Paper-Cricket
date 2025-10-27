@@ -1,74 +1,112 @@
+// src/contexts/SocketContext.tsx
 import React, {
 	createContext,
 	useContext,
 	useEffect,
-	useRef,
 	useState,
 	ReactNode,
 } from "react";
 import { io, Socket } from "socket.io-client";
-import { usePlayerId } from "../hooks/usePlayerId";
-import { ClientEvents, ServerEvents } from "../types";
+import { ServerEvents, ClientEvents } from "../types";
 
 interface SocketContextType {
 	socket: Socket<ServerEvents, ClientEvents> | null;
 	isConnected: boolean;
+	error: string | null;
+	setError: (msg: string | null) => void;
+	redirectPath: string | null;
+	setRedirectPath: (path: string | null) => void;
 }
 
 const SocketContext = createContext<SocketContextType>({
 	socket: null,
 	isConnected: false,
+	error: null,
+	setError: () => {},
+	redirectPath: null,
+	setRedirectPath: () => {},
 });
 
 export const SocketProvider: React.FC<{ children: ReactNode }> = ({
 	children,
 }) => {
-	const socketRef = useRef<Socket<ServerEvents, ClientEvents> | null>(null);
+	const [socket, setSocket] = useState<Socket<
+		ServerEvents,
+		ClientEvents
+	> | null>(null);
 	const [isConnected, setIsConnected] = useState(false);
-	const { playerId } = usePlayerId();
-
-	const backendURL =
-		import.meta.env.VITE_BACKEND_URL || "http://localhost:3001"; // fallback
-
-	if (!socketRef.current) {
-		socketRef.current = io(backendURL, {
-			transports: ["websocket", "polling"],
-			query: playerId
-				? {
-						playerId,
-					}
-				: undefined, // Send persistent player ID to server
-		});
-	}
+	const [error, setError] = useState<string | null>(null);
+	const [redirectPath, setRedirectPath] = useState<string | null>(null);
 
 	useEffect(() => {
-		const socket = socketRef.current!;
-		socket.on("connect", () => {
-			console.log(
-				"Connected to server - Socket ID:",
-				socket.id,
-				"Player ID:",
-				playerId,
-			);
+		const serverUrl =
+			import.meta.env.VITE_SERVER_URL || "http://localhost:3001";
+		const s = io(serverUrl);
+
+		s.on("connect", () => {
+			console.log("✅ Connected to socket server");
 			setIsConnected(true);
+			setError(null);
 		});
-		socket.on("disconnect", () => {
-			console.log("Disconnected from server");
+
+		s.on("disconnect", () => {
+			console.warn("❌ Disconnected from server");
 			setIsConnected(false);
 		});
 
-		// 👇 don’t close on unmount unless you really want to
+		// 🌐 Global error handlers
+		s.on("server_error", (err) => {
+			console.error("⚠️ Server error:", err);
+			setError(err.message || "Unexpected server error.");
+			if (["FORBIDDEN", "UNAUTHORIZED"].includes(err.code)) {
+				setRedirectPath("/forbidden");
+			} else {
+				setRedirectPath("/");
+			}
+		});
+
+		s.on("room_not_found", () => {
+			setError("The requested room could not be found.");
+			setRedirectPath("/");
+		});
+
+		s.on("room_full", () => {
+			setError("This room is already full. Please try another one.");
+			setRedirectPath("/");
+		});
+
+		s.on("cannot_create_game", () => {
+			setError("Unable to create a new game. Please try again later.");
+			setRedirectPath("/");
+		});
+
+		s.on("cannot_join_game", () => {
+			setError("You cannot join this game at the moment.");
+			setRedirectPath("/");
+		});
+
+		s.on("user_left", (playerId: string) => {
+			console.warn("User left:", playerId);
+			setError("A player has left the match. The game cannot continue.");
+			setRedirectPath("/");
+		});
+
+		setSocket(s);
 		return () => {
-			// socket.close();
-			socket.disconnect();
+			s.off();
+			s.disconnect();
 		};
 	}, []);
 
 	return (
 		<SocketContext.Provider
 			value={{
-				socket: socketRef.current,
+				socket,
 				isConnected,
+				error,
+				setError,
+				redirectPath,
+				setRedirectPath,
 			}}
 		>
 			{children}
@@ -76,6 +114,4 @@ export const SocketProvider: React.FC<{ children: ReactNode }> = ({
 	);
 };
 
-export const useSocket = () => {
-	return useContext(SocketContext);
-};
+export const useSocket = () => useContext(SocketContext);
