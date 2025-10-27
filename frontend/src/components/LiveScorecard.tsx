@@ -93,12 +93,24 @@ const LiveScorecard: React.FC<LiveScorecardProps> = ({
 							>
 								<strong>Innings {inn}</strong>
 								<span>
-									<span style={{ color: "#FFD166", fontWeight: "bold" }}>{runs} runs</span>
-									{" • "}
-									<span style={{ color: "#F94144", fontWeight: "bold" }}>
-									{wickets}/{gameState.totalWickets} wickets
+									<span
+										style={{
+											color: "#FFD166",
+											fontWeight: "bold",
+										}}
+									>
+										{runs} runs
 									</span>
-
+									{" • "}
+									<span
+										style={{
+											color: "#F94144",
+											fontWeight: "bold",
+										}}
+									>
+										{wickets}/{gameState.totalWickets}{" "}
+										wickets
+									</span>
 
 									{/* 🏏 Balls Played */}
 									{isCurrentInnings && (
@@ -179,33 +191,33 @@ const LiveScorecard: React.FC<LiveScorecardProps> = ({
 						</div>
 					);
 				})}
-				{/* Target Score and Runs required if 2nd Innings */}
-				{gameState.innings === 2 && (
-					<div
-						style={{
-							marginTop: "8px",
-							paddingTop: "8px",
-							borderTop: "1px solid rgba(255,255,255,0.2)",
-							fontSize: "0.9rem",
-						}}
-					>
-						<strong>Target: </strong>
-						<span style={{ color: "#FFD166", fontWeight: "bold" }}>
-							{gameState.inningsOneRuns + 1} runs
-						</span>
-						{" • "}
-						<strong>Runs Required: </strong>
-						<span style={{ color: "#90be6d", fontWeight: "bold" }}>
-							{Math.max(
-								0,
-								gameState.inningsOneRuns +
-									1 -
-									gameState.inningsTwoRuns,
-							)}{" "}
-							runs
-						</span>
-					</div>
-				)}
+			{/* Target Score and Runs required if 2nd Innings */}
+			{gameState.innings === 2 && (
+				<div
+					style={{
+						marginTop: "8px",
+						paddingTop: "8px",
+						borderTop: "1px solid rgba(255,255,255,0.2)",
+						fontSize: "0.9rem",
+					}}
+				>
+					<strong>Target: </strong>
+					<span style={{ color: "#FFD166", fontWeight: "bold" }}>
+						{gameState.inningsOneRuns + 1} runs
+					</span>
+					{" • "}
+					<strong>Runs Required: </strong>
+					<span style={{ color: "#90be6d", fontWeight: "bold" }}>
+						{Math.max(
+							0,
+							gameState.inningsOneRuns +
+								1 -
+								gameState.inningsTwoRuns,
+						)}{" "}
+						runs
+					</span>
+				</div>
+			)}
 		</div>
 	);
 };

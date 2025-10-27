@@ -444,10 +444,6 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 				socket
 					.to(data.roomId)
 					.emit("rotation_update", gameState, data.rotation);
-
-				console.log(
-					`Player ${data.playerId} rotated in room ${data.roomId}: ${data.rotation}`,
-				);
 			} catch (error) {
 				handleSocketError(socket, error);
 			}

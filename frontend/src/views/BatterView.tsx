@@ -218,52 +218,57 @@ const BatterView: React.FC = () => {
 
 				{/* 🔹 Overlay mask — fully black when inactive */}
 				<div
-				style={{
-					position: "absolute",
-					top: 50,
-					left: 50,
-					width: SPINNER_RADIUS * 2 + 2,
-					height: SPINNER_RADIUS * 2 + 2,
-					borderRadius: "50%",
-					pointerEvents: "none",
-					overflow: "hidden",
-					transform: `rotate(${rotation}rad)`,
-					transition: "opacity 0.8s ease-in-out",
-					opacity: recapState.isRecapping ? 0 : 1,
-					// 🟣 Fully black if fielder is setting field, transparent otherwise
-					backgroundColor:
-					displayState.gamePhase === "setting field"
-						? "rgba(131, 131, 131, 1)" // solid black — blocks interaction and visibility
-						: OVERLAY_COLOR, // fully transparent for active phases
-				}}
-				>
-				<svg
-					width={SPINNER_RADIUS * 2 + 2}
-					height={SPINNER_RADIUS * 2 + 2}
 					style={{
-					position: "absolute",
-					top: 0,
-					left: 0,
-					pointerEvents: "none",
+						position: "absolute",
+						top: 50,
+						left: 50,
+						width: SPINNER_RADIUS * 2 + 2,
+						height: SPINNER_RADIUS * 2 + 2,
+						borderRadius: "50%",
+						pointerEvents: "none",
+						overflow: "hidden",
+						transform: `rotate(${rotation}rad)`,
+						transition: "opacity 0.8s ease-in-out",
+						opacity: recapState.isRecapping ? 0 : 1,
+						// 🟣 Fully black if fielder is setting field, transparent otherwise
+						backgroundColor:
+							displayState.gamePhase === "setting field"
+								? "rgba(131, 131, 131, 1)" // solid black — blocks interaction and visibility
+								: OVERLAY_COLOR, // fully transparent for active phases
 					}}
 				>
-					{Array.from({ length: slices.length }).map((_, i) => {
-					const angle = (i * 2 * Math.PI) / slices.length - Math.PI / 2;
-					const x = SPINNER_RADIUS + SPINNER_RADIUS * Math.cos(angle);
-					const y = SPINNER_RADIUS + SPINNER_RADIUS * Math.sin(angle);
-					return (
-						<line
-						key={i}
-						x1={SPINNER_RADIUS}
-						y1={SPINNER_RADIUS}
-						x2={x}
-						y2={y}
-						stroke="white"
-						strokeWidth="2"
-						/>
-					);
-					})}
-				</svg>
+					<svg
+						width={SPINNER_RADIUS * 2 + 2}
+						height={SPINNER_RADIUS * 2 + 2}
+						style={{
+							position: "absolute",
+							top: 0,
+							left: 0,
+							pointerEvents: "none",
+						}}
+					>
+						{Array.from({ length: slices.length }).map((_, i) => {
+							const angle =
+								(i * 2 * Math.PI) / slices.length - Math.PI / 2;
+							const x =
+								SPINNER_RADIUS +
+								SPINNER_RADIUS * Math.cos(angle);
+							const y =
+								SPINNER_RADIUS +
+								SPINNER_RADIUS * Math.sin(angle);
+							return (
+								<line
+									key={i}
+									x1={SPINNER_RADIUS}
+									y1={SPINNER_RADIUS}
+									x2={x}
+									y2={y}
+									stroke="white"
+									strokeWidth="2"
+								/>
+							);
+						})}
+					</svg>
 				</div>
 
 				{/* 🔹 Recap banner */}

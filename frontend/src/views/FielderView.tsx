@@ -116,9 +116,25 @@ const FielderView: React.FC = () => {
 		}
 	}, [displayState.gamePhase]);
 
+	// 🧩 Prevents mobile browsers from scrolling the page while the user is dragging the wheel.
+	// Without this, touchmove events would trigger page scroll or bounce even inside the canvas.
+	useEffect(() => {
+		const preventScroll = (e: TouchEvent) => {
+			if (isDragging) e.preventDefault();
+		};
+		document.addEventListener("touchmove", preventScroll, {
+			passive: false,
+		});
+		return () => document.removeEventListener("touchmove", preventScroll);
+	}, [isDragging]);
+
 	// 🔹 Drag logic
 	const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
 		if (!canRotate) return;
+
+		// Disable scrolling while dragging
+		document.body.style.overflow = "hidden";
+
 		const rect = canvasRef.current!.getBoundingClientRect();
 		const cx = rect.left + rect.width / 2;
 		const cy = rect.top + rect.height / 2;
@@ -148,7 +164,10 @@ const FielderView: React.FC = () => {
 		}
 	};
 
-	const handleMouseUp = () => setIsDragging(false);
+	const handleMouseUp = () => {
+		setIsDragging(false);
+		document.body.style.overflow = ""; // Re-enable scroll
+	};
 
 	// 🔹 Submit rotation
 	const handleSubmitRotation = () => {
@@ -208,13 +227,13 @@ const FielderView: React.FC = () => {
 			{/* 🎯 Dynamic message based on phase */}
 			<h2 style={{ marginBottom: "10px" }}>🧤 Fielder View</h2>
 			<p style={{ fontSize: "1.2rem", marginBottom: "20px" }}>
-			{recapState.isRecapping
-				? "Recap in progress — replaying the last delivery..."
-				: displayState.gamePhase === "setting field"
-				? "Set your field rotation!"
-				: displayState.gamePhase === "batting"
-					? "Waiting for batter to play the shot..."
-					: ""}
+				{recapState.isRecapping
+					? "Recap in progress — replaying the last delivery..."
+					: displayState.gamePhase === "setting field"
+						? "Set your field rotation!"
+						: displayState.gamePhase === "batting"
+							? "Waiting for batter to play the shot..."
+							: ""}
 			</p>
 
 			{/* 🔹 Canvas */}
@@ -233,6 +252,9 @@ const FielderView: React.FC = () => {
 							: "not-allowed",
 						opacity: canRotate ? 1 : 0.5,
 						transition: "opacity 0.3s ease",
+						// 🧱 Important interaction rules:
+						touchAction: "none", // disable browser scrolling + pinch zoom on canvas
+						userSelect: "none", // prevent text/image selection
 					}}
 					onMouseDown={handleMouseDown}
 					onMouseMove={handleMouseMove}

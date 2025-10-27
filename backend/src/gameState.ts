@@ -309,7 +309,7 @@ export class GameStateManager {
 		} else {
 			gameState.currentBall++;
 		}
-		
+
 		gameState.currentBallRotation = undefined;
 		gameState.currentBallBatsmanChoice = undefined;
 		gameState.gamePhase = "setting field";
