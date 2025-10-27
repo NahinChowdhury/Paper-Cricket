@@ -40,7 +40,7 @@ export const SocketProvider: React.FC<{ children: ReactNode }> = ({
 
 	useEffect(() => {
 		const serverUrl =
-			import.meta.env.VITE_BACKEND_URL || "http://localhost:3002";
+			import.meta.env.VITE_BACKEND_URL || "http://localhost:3002"; // intentional set to 3002 which is incorrect to catch bugs
 		const s = io(serverUrl);
 
 		s.on("connect", () => {

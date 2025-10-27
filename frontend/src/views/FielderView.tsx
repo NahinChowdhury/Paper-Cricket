@@ -235,6 +235,9 @@ const FielderView: React.FC = () => {
 					onMouseMove={handleMouseMove}
 					onMouseUp={handleMouseUp}
 					onMouseLeave={handleMouseUp}
+					onTouchStart={(e) => handleMouseDown(e.touches[0] as any)}
+					onTouchMove={(e) => handleMouseMove(e.touches[0] as any)}
+					onTouchEnd={handleMouseUp}
 				/>
 
 				{/* 🔹 Recap banner only */}
