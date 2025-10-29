@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { RoomManager } from "../roomManager";
 import { GameStateManager } from "../gameState";
-import { GameRoleResponse } from "../types/rest";
+import { GameRoleResponse } from "../types/api";
 
 export const gamesRouter = Router();
 
@@ -56,9 +56,16 @@ export const initializeGamesRouter = (
 			return;
 		}
 
+		// Determine game status
+		const status =
+			gameState.gamePhase === "waiting"
+				? "Waiting for Players"
+				: "In Progress";
+
 		const response: GameRoleResponse = {
 			roomId,
 			role,
+			status,
 		};
 
 		res.json(response);

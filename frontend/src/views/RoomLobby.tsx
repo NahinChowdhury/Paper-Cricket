@@ -127,31 +127,96 @@ const RoomLobby: React.FC = () => {
 				<div
 					style={{
 						marginTop: "30px",
-						padding: "12px 20px",
-						background: "#e3f2fd",
+						padding: "16px 22px",
+						background: "linear-gradient(135deg, #e3f2fd, #f8fbff)",
 						border: "1px solid #bbdefb",
-						borderRadius: "8px",
+						borderRadius: "10px",
 						display: "flex",
 						justifyContent: "space-between",
 						alignItems: "center",
+						boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
 						maxWidth: "420px",
 						marginInline: "auto",
 					}}
 				>
-					<span style={{ color: "#1565c0", fontSize: "15px" }}>
-						🎮 You're currently in a game as{" "}
-						<strong>{activeGame.role}</strong>.
-					</span>
+					<div style={{ color: "#0d47a1", fontSize: "15px" }}>
+						{/* Header line (icon + text) */}
+						<div
+							style={{
+								display: "flex",
+								alignItems: "center",
+								gap: "6px",
+							}}
+						>
+							<span role="img" aria-label="controller">
+								🎮
+							</span>
+							<span>
+								<span style={{ opacity: 0.85 }}>
+									Active game as
+								</span>{" "}
+								<strong>{activeGame.role}</strong>
+							</span>
+						</div>
+
+						{/* Status blob aligned with the icon */}
+						<div
+							style={{
+								display: "flex",
+								alignItems: "center",
+								marginTop: "6px",
+							}}
+						>
+							<div
+								style={{
+									display: "inline-flex",
+									alignItems: "center",
+									gap: "6px",
+									padding: "4px 10px",
+									fontSize: "13px",
+									borderRadius: "6px",
+									backgroundColor:
+										activeGame.status === "In Progress"
+											? "#c8e6c9"
+											: "#fff3cd",
+									color:
+										activeGame.status === "In Progress"
+											? "#2e7d32"
+											: "#8a6d3b",
+									fontWeight: 500,
+								}}
+							>
+								<div
+									style={{
+										width: "10px",
+										height: "10px",
+										borderRadius: "50%",
+										backgroundColor:
+											activeGame.status === "In Progress"
+												? "green"
+												: "orange",
+										border: "1px solid rgba(0,0,0,0.3)",
+									}}
+								></div>
+								{activeGame.status === "In Progress"
+									? "Live Match"
+									: "Waiting for Players"}
+							</div>
+						</div>
+					</div>
+
 					<button
 						onClick={handleRejoinGame}
 						style={{
 							background: "#1565c0",
 							color: "white",
 							border: "none",
-							borderRadius: "5px",
-							padding: "6px 12px",
+							borderRadius: "6px",
+							padding: "8px 14px",
 							cursor: "pointer",
 							fontSize: "14px",
+							fontWeight: "500",
+							boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
 						}}
 					>
 						Rejoin

@@ -116,26 +116,22 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 					return;
 				}
 
-				if (existingGameState.gamePhase !== "waiting") {
-					// if the game has already started and the user is already in
-					// the player list or audience list, let them re-join
-					if (
-						existingGameState.players.includes(playerId) ||
-						existingGameState.audience.includes(playerId)
-					) {
-						// let them re-join
-						socket.join(roomId);
-						console.log(
-							`Player ${playerId} re-joined ongoing game in room: ${roomId}. gameState:`,
-							existingGameState,
-						);
-						socket.emit(
-							"user_already_joined",
-							existingGameState,
-							roomManager.getUserByPlayerId(playerId)!,
-						);
-						return;
-					}
+				if (
+					existingGameState.players.includes(playerId) ||
+					existingGameState.audience.includes(playerId)
+				) {
+					// let them re-join
+					socket.join(roomId);
+					console.log(
+						`Player ${playerId} re-joined ongoing game in room: ${roomId}. gameState:`,
+						existingGameState,
+					);
+					socket.emit(
+						"user_already_joined",
+						existingGameState,
+						roomManager.getUserByPlayerId(playerId)!,
+					);
+					return;
 				}
 			}
 
