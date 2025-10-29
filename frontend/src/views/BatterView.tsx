@@ -3,16 +3,17 @@ import { useSocket } from "../contexts/SocketContext";
 import { useGame } from "../contexts/GameContext";
 import LiveScorecard from "../components/LiveScorecard";
 
-const slices = [
-	{ label: "0", color: "#f94144" },
-	{ label: "1", color: "#f3722c" },
-	{ label: "2", color: "#f9c74f" },
-	{ label: "4", color: "#90be6d" },
-	{ label: "6", color: "#43aa8b" },
-	{ label: "W", color: "#577590" },
-	{ label: "NB", color: "#501111" },
-	{ label: "WD", color: "#9b9b9b" },
-];
+// Color mapping for different outcomes
+const colorsMap: Record<string, string> = {
+	"0": "#f94144",
+	"1": "#f3722c",
+	"2": "#f9c74f",
+	"4": "#90be6d",
+	"6": "#43aa8b",
+	"W": "#577590",
+	"NB": "#501111",
+	"WD": "#9b9b9b",
+};
 
 const SPINNER_RADIUS = 150;
 const OVERLAY_COLOR = "rgba(0, 0, 0, 1)";
@@ -64,13 +65,14 @@ const BatterView: React.FC = () => {
 		const fullCircle = 2 * Math.PI;
 		const angle = Math.atan2(dy, dx) - rotation;
 		const normalized = ((angle % fullCircle) + fullCircle) % fullCircle;
-		const sliceAngle = fullCircle / slices.length;
-		const index = Math.floor(normalized / sliceAngle) % slices.length;
+		const currentPreset = displayState.modifiedPresets[displayState.presetChosen];
+		const sliceAngle = fullCircle / currentPreset.length;
+		const index = Math.floor(normalized / sliceAngle) % currentPreset.length;
 
-		setShotSelected(slices[index].label);
+		setShotSelected(currentPreset[index]);
 
 		if (socket && user?.roomId) {
-			socket.emit("shot_selection_hover", user.id, slices[index].label);
+			socket.emit("shot_selection_hover", user.id, currentPreset[index]);
 		}
 	};
 
@@ -95,15 +97,16 @@ const BatterView: React.FC = () => {
 	// 🧠 Draw pie segments
 	const drawPie = useCallback(
 		(ctx: CanvasRenderingContext2D) => {
-			const sliceAngle = (2 * Math.PI) / slices.length;
+			const currentPreset = displayState.modifiedPresets[displayState.presetChosen];
+			const sliceAngle = (2 * Math.PI) / currentPreset.length;
 			const cx = ctx.canvas.width / 2;
 			const cy = ctx.canvas.height / 2;
 
-			slices.forEach((slice, i) => {
+			currentPreset.forEach((outcome, i) => {
 				const start = i * sliceAngle + rotation;
 				const end = start + sliceAngle;
 				const radius =
-					shotSelected === slice.label
+					shotSelected === outcome
 						? SPINNER_RADIUS + 10
 						: SPINNER_RADIUS;
 
@@ -111,7 +114,7 @@ const BatterView: React.FC = () => {
 				ctx.moveTo(cx, cy);
 				ctx.arc(cx, cy, radius, start, end);
 				ctx.closePath();
-				ctx.fillStyle = slice.color;
+				ctx.fillStyle = colorsMap[outcome] || "#000000"; // Fallback color if outcome not in map
 				ctx.fill();
 
 				ctx.save();
@@ -120,7 +123,7 @@ const BatterView: React.FC = () => {
 				ctx.textAlign = "right";
 				ctx.fillStyle = "white";
 				ctx.font = "16px sans-serif";
-				ctx.fillText(slice.label, radius - 10, 5);
+				ctx.fillText(outcome, radius - 10, 5);
 				ctx.restore();
 			});
 		},
@@ -247,9 +250,9 @@ const BatterView: React.FC = () => {
 							pointerEvents: "none",
 						}}
 					>
-						{Array.from({ length: slices.length }).map((_, i) => {
+						{Array.from({ length: displayState.modifiedPresets[displayState.presetChosen].length }).map((_, i) => {
 							const angle =
-								(i * 2 * Math.PI) / slices.length - Math.PI / 2;
+								(i * 2 * Math.PI) / displayState.modifiedPresets[displayState.presetChosen].length - Math.PI / 2;
 							const x =
 								SPINNER_RADIUS +
 								SPINNER_RADIUS * Math.cos(angle);

@@ -6,17 +6,17 @@ import PreGameDecisionMakerView from "./PreGameDecisionMakerView";
 import PreGameDecisionSpectatorView from "./PreGameDecisionSpectatorView";
 import LiveScorecard from "../components/LiveScorecard";
 
-// 🎨 Slice configuration (same as Batter/Fielder)
-const slices = [
-	{ label: "0", color: "#f94144" },
-	{ label: "1", color: "#f3722c" },
-	{ label: "2", color: "#f9c74f" },
-	{ label: "4", color: "#90be6d" },
-	{ label: "6", color: "#43aa8b" },
-	{ label: "W", color: "#577590" },
-	{ label: "NB", color: "#501111" },
-	{ label: "WD", color: "#9b9b9b" },
-];
+// Color mapping for different outcomes
+const colorsMap: Record<string, string> = {
+	"0": "#f94144",
+	"1": "#f3722c",
+	"2": "#f9c74f",
+	"4": "#90be6d",
+	"6": "#43aa8b",
+	"W": "#577590",
+	"NB": "#501111",
+	"WD": "#9b9b9b",
+};
 
 const SPINNER_RADIUS = 150;
 const OVERLAY_COLOR = "rgba(0, 0, 0, 1)";
@@ -33,6 +33,8 @@ const AudienceView: React.FC = () => {
 			? recapState.frozenState
 			: gameState;
 
+	if (!displayState) return;
+	
 	const currentBallRotation = displayState?.currentBallRotation ?? 0;
 	const shotSelected =
 		displayState?.currentBallBatsmanChoice !== undefined
@@ -46,15 +48,17 @@ const AudienceView: React.FC = () => {
 	// =========================
 	const drawPie = useCallback(
 		(ctx: CanvasRenderingContext2D) => {
-			const sliceAngle = (2 * Math.PI) / slices.length;
+			
+			const currentPreset = displayState.modifiedPresets[displayState.presetChosen];
+			const sliceAngle = (2 * Math.PI) / currentPreset.length;
 			const cx = ctx.canvas.width / 2;
 			const cy = ctx.canvas.height / 2;
 
-			slices.forEach((slice, i) => {
+			currentPreset.forEach((outcome, i) => {
 				const start = i * sliceAngle + currentBallRotation;
 				const end = start + sliceAngle;
 				const radius =
-					shotSelected === slice.label
+					shotSelected === outcome
 						? SPINNER_RADIUS + 10
 						: SPINNER_RADIUS;
 
@@ -62,7 +66,7 @@ const AudienceView: React.FC = () => {
 				ctx.moveTo(cx, cy);
 				ctx.arc(cx, cy, radius, start, end);
 				ctx.closePath();
-				ctx.fillStyle = slice.color;
+				ctx.fillStyle = colorsMap[outcome] || "#000000"; // Fallback color if outcome not in map
 				ctx.fill();
 
 				ctx.save();
@@ -71,7 +75,7 @@ const AudienceView: React.FC = () => {
 				ctx.textAlign = "right";
 				ctx.fillStyle = "white";
 				ctx.font = "16px sans-serif";
-				ctx.fillText(slice.label, SPINNER_RADIUS - 10, 5);
+				ctx.fillText(outcome, SPINNER_RADIUS - 10, 5);
 				ctx.restore();
 			});
 		},
@@ -186,9 +190,9 @@ const AudienceView: React.FC = () => {
 							pointerEvents: "none",
 						}}
 					>
-						{Array.from({ length: slices.length }).map((_, i) => {
+						{Array.from({ length: displayState?.modifiedPresets[displayState.presetChosen]?.length ?? 8 }).map((_, i) => {
 							const angle =
-								(i * 2 * Math.PI) / slices.length - Math.PI / 2;
+								(i * 2 * Math.PI) / (displayState?.modifiedPresets[displayState.presetChosen]?.length ?? 8) - Math.PI / 2;
 							const x =
 								SPINNER_RADIUS +
 								SPINNER_RADIUS * Math.cos(angle);

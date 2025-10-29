@@ -4,7 +4,7 @@ import {
 	recordDelivery,
 	shuffle,
 } from "./helper/helperMethods";
-import { GameState, DeliveryRecord, presetValues } from "./types";
+import { GameState, presetValues } from "./types";
 
 export function createStartingGameState(): GameState {
 	return {
