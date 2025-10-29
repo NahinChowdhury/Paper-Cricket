@@ -7,6 +7,7 @@ import { RoomManager } from "./roomManager";
 import { GameStateManager } from "./gameState";
 // Import types from local types file
 import { ClientEvents, GameRoom, User, ServerEvents, GameState } from "./types";
+import { initializeGamesRouter } from "./routes/games";
 import { verifyUserisActivePlayerInAGame } from "./helper/helperMethods";
 import { createError, handleSocketError } from "./errors/AppError";
 
@@ -651,6 +652,9 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 app.get("/health", (req, res) => {
 	res.json({ status: "OK", timestamp: new Date().toISOString() });
 });
+
+// Initialize routes
+app.use("/games", initializeGamesRouter(roomManager, gameStateManager));
 
 // Serve the frontend build in production (optional)
 if (process.env.NODE_ENV === "production") {
