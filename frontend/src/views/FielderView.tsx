@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState, useCallback } from "react";
 import { useSocket } from "../contexts/SocketContext";
 import { useGame } from "../contexts/GameContext";
 import LiveScorecard from "../components/LiveScorecard";
+import FielderPresets from "../components/FielderPresets";
 
 // Color mapping for different outcomes
 const colorsMap: Record<string, string> = {
@@ -25,6 +26,7 @@ const FielderView: React.FC = () => {
 	const [rotation, setRotation] = useState(0);
 	const [isDragging, setIsDragging] = useState(false);
 	const [startAngle, setStartAngle] = useState(0);
+	const [localPresetChoice, setLocalPresetChoice] = useState<number>(0);
 
 	// ✅ Choose which state to display
 	const displayState =
@@ -50,15 +52,19 @@ const FielderView: React.FC = () => {
 
 	// 🔹 Draw pie
 	const drawPie = useCallback(
-		(ctx: CanvasRenderingContext2D, rotationAngle: number) => {
+		(
+			ctx: CanvasRenderingContext2D,
+			rotationAngle: number,
+			localPresetChoice: number,
+		) => {
 			const sliceAngle =
 				(2 * Math.PI) /
-				displayState.modifiedPresets[displayState.presetChosen].length;
+				displayState.modifiedPresets[localPresetChoice].length;
 			const cx = ctx.canvas.width / 2;
 			const cy = ctx.canvas.height / 2;
 
 			const currentPreset =
-				displayState.modifiedPresets[displayState.presetChosen];
+				displayState.modifiedPresets[localPresetChoice];
 			currentPreset.forEach((outcome, i) => {
 				const start = i * sliceAngle + rotationAngle;
 				const end = start + sliceAngle;
@@ -98,7 +104,7 @@ const FielderView: React.FC = () => {
 		const ctx = canvas.getContext("2d");
 		if (!ctx) return;
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
-		drawPie(ctx, rotation);
+		drawPie(ctx, rotation, localPresetChoice);
 
 		if (!canRotate) {
 			ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
@@ -112,12 +118,17 @@ const FielderView: React.FC = () => {
 			);
 			ctx.fill();
 		}
-	}, [rotation, drawPie, canRotate]);
+	}, [rotation, drawPie, canRotate, localPresetChoice]);
 
 	useEffect(() => {
 		// Reset rotation when entering "setting field"
 		if (displayState.gamePhase === "setting field") {
+			console.log(
+				"Entering field setting phase. presetChosen:",
+				displayState.presetChosen,
+			);
 			setRotation(0);
+			setLocalPresetChoice(displayState.presetChosen || 0);
 		}
 	}, [displayState.gamePhase]);
 
@@ -165,6 +176,29 @@ const FielderView: React.FC = () => {
 				roomId: user.roomId,
 				playerId: user.id,
 				rotation: newRot,
+				presetChoice: localPresetChoice,
+			});
+		}
+	};
+
+	const handlePresetClick = (index: number) => {
+		console.log(
+			"Selected preset:",
+			index,
+			"Pattern:",
+			displayState.modifiedPresets[index],
+		);
+		setLocalPresetChoice(index);
+		// Reset rotation when preset is changed
+		setRotation(0);
+
+		// Emit live rotation to server with new preset
+		if (socket && user?.roomId) {
+			socket.emit("rotate_pie", {
+				roomId: user.roomId,
+				playerId: user.id,
+				rotation: 0,
+				presetChoice: index,
 			});
 		}
 	};
@@ -177,8 +211,18 @@ const FielderView: React.FC = () => {
 	// 🔹 Submit rotation
 	const handleSubmitRotation = () => {
 		if (!socket || !user || !canRotate) return;
-		console.log("Submitting final rotation:", rotation);
-		socket.emit("field_set", user.id, user.roomId, rotation, 1);
+		console.log("Submitting field setup:", {
+			rotation,
+			presetIndex: localPresetChoice,
+			presetPattern: displayState.modifiedPresets[localPresetChoice],
+		});
+		socket.emit(
+			"field_set",
+			user.id,
+			user.roomId,
+			rotation,
+			localPresetChoice,
+		);
 	};
 
 	return (
@@ -294,6 +338,19 @@ const FielderView: React.FC = () => {
 					</div>
 				)}
 			</div>
+
+			{/* 🔹 Preset Selection */}
+			<FielderPresets
+				modifiedPresets={displayState.modifiedPresets}
+				selectedPreset={localPresetChoice}
+				onPresetClick={canRotate ? handlePresetClick : undefined}
+				style={{
+					opacity: canRotate ? 1 : 0.5,
+					transition: "opacity 0.3s ease",
+					pointerEvents: canRotate ? "auto" : "none",
+					cursor: canRotate ? "pointer" : "not-allowed",
+				}}
+			/>
 
 			{/* 🔹 Submit button */}
 			{canRotate && (

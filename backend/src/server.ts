@@ -426,7 +426,12 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 	// Basic rotation handling (placeholder - no turn validation yet)
 	socket.on(
 		"rotate_pie",
-		(data: { roomId: string; playerId: string; rotation: number }) => {
+		(data: {
+			roomId: string;
+			playerId: string;
+			rotation: number;
+			presetChoice: number;
+		}) => {
 			try {
 				// get game state
 				const gameState = gameStateManager.getGameState(data.roomId);
@@ -440,7 +445,12 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 				// For now, just broadcast the rotation to other players in the room
 				socket
 					.to(data.roomId)
-					.emit("rotation_update", gameState, data.rotation);
+					.emit(
+						"rotation_update",
+						gameState,
+						data.rotation,
+						data.presetChoice,
+					);
 			} catch (error) {
 				handleSocketError(socket, error);
 			}

@@ -13,9 +13,9 @@ const colorsMap: Record<string, string> = {
 	"2": "#f9c74f",
 	"4": "#90be6d",
 	"6": "#43aa8b",
-	"W": "#577590",
-	"NB": "#501111",
-	"WD": "#9b9b9b",
+	W: "#577590",
+	NB: "#501111",
+	WD: "#9b9b9b",
 };
 
 const SPINNER_RADIUS = 150;
@@ -34,28 +34,34 @@ const AudienceView: React.FC = () => {
 			: gameState;
 
 	if (!displayState) return;
-	
-	const currentBallRotation = displayState?.currentBallRotation ?? 0;
-	const shotSelected =
-		displayState?.currentBallBatsmanChoice !== undefined
-			? displayState.currentBallBatsmanChoice
-			: null;
-	const gamePhase = displayState?.gamePhase;
-	const tossSelector = displayState?.tossSelector;
+
+	const {
+		currentBallRotation: rotation = 0,
+		presetChosen = 0,
+		currentBallBatsmanChoice,
+		gamePhase,
+		tossSelector,
+		modifiedPresets,
+		inningsOneRuns,
+		inningsTwoRuns,
+		playerBatting,
+		playerFielding,
+	} = displayState;
+
+	const shotSelected = currentBallBatsmanChoice ?? null;
 
 	// =========================
 	//  DRAWING LOGIC
 	// =========================
 	const drawPie = useCallback(
 		(ctx: CanvasRenderingContext2D) => {
-			
-			const currentPreset = displayState.modifiedPresets[displayState.presetChosen];
+			const currentPreset = modifiedPresets[presetChosen];
 			const sliceAngle = (2 * Math.PI) / currentPreset.length;
 			const cx = ctx.canvas.width / 2;
 			const cy = ctx.canvas.height / 2;
 
 			currentPreset.forEach((outcome, i) => {
-				const start = i * sliceAngle + currentBallRotation;
+				const start = i * sliceAngle + rotation;
 				const end = start + sliceAngle;
 				const radius =
 					shotSelected === outcome
@@ -79,7 +85,7 @@ const AudienceView: React.FC = () => {
 				ctx.restore();
 			});
 		},
-		[currentBallRotation, shotSelected],
+		[rotation, shotSelected, presetChosen],
 	);
 
 	useEffect(() => {
@@ -140,9 +146,9 @@ const AudienceView: React.FC = () => {
 			<p style={{ fontSize: "1.2rem", marginBottom: "20px" }}>
 				{recapState.isRecapping
 					? "Replay in progress — watch how the last delivery unfolded!"
-					: gameState.gamePhase === "setting field"
+					: gamePhase === "setting field"
 						? "The fielder is setting up their formation — let's see the strategy unfold."
-						: gameState.gamePhase === "batting"
+						: gamePhase === "batting"
 							? "The batter is preparing their shot — tension's in the air!"
 							: "You're watching the match live — the field updates in real time!"}
 			</p>
@@ -171,11 +177,11 @@ const AudienceView: React.FC = () => {
 						borderRadius: "50%",
 						pointerEvents: "none",
 						overflow: "hidden",
-						transform: `rotate(${currentBallRotation}rad)`,
+						transform: `rotate(${rotation}rad)`,
 						transition: "opacity 0.8s ease-in-out",
 						opacity: recapState.isRecapping ? 0 : 1, // fade out during recap
 						backgroundColor:
-							displayState?.gamePhase === "setting field"
+							gamePhase === "setting field"
 								? "rgba(131, 131, 131, 1)" // solid black — blocks interaction and visibility
 								: OVERLAY_COLOR, // fully transparent for active phases
 					}}
@@ -190,9 +196,14 @@ const AudienceView: React.FC = () => {
 							pointerEvents: "none",
 						}}
 					>
-						{Array.from({ length: displayState?.modifiedPresets[displayState.presetChosen]?.length ?? 8 }).map((_, i) => {
+						{Array.from({
+							length: modifiedPresets[presetChosen]?.length ?? 8,
+						}).map((_, i) => {
 							const angle =
-								(i * 2 * Math.PI) / (displayState?.modifiedPresets[displayState.presetChosen]?.length ?? 8) - Math.PI / 2;
+								(i * 2 * Math.PI) /
+									(modifiedPresets[presetChosen]?.length ??
+										8) -
+								Math.PI / 2;
 							const x =
 								SPINNER_RADIUS +
 								SPINNER_RADIUS * Math.cos(angle);

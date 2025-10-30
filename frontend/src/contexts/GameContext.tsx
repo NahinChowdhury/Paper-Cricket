@@ -109,13 +109,26 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({
 		// ------------------------------------
 		// SPECIAL CASES (NO RECAP)
 		// ------------------------------------
-		socket.on("rotation_update", (state: GameState, rotation: number) => {
-			// Although the currentBallRotation is probably 0 in the actual gameState, we handle it separately for temporary UI purposes
-			setGameState((prev) => {
-				if (!prev) return { ...state, currentBallRotation: rotation };
-				return { ...prev, ...state, currentBallRotation: rotation };
-			});
-		});
+		socket.on(
+			"rotation_update",
+			(state: GameState, rotation: number, presetChosen: number) => {
+				// Although the currentBallRotation is probably 0 in the actual gameState, we handle it separately for temporary UI purposes
+				setGameState((prev) => {
+					if (!prev)
+						return {
+							...state,
+							currentBallRotation: rotation,
+							presetChosen: presetChosen,
+						};
+					return {
+						...prev,
+						...state,
+						currentBallRotation: rotation,
+						presetChosen: presetChosen,
+					};
+				});
+			},
+		);
 
 		socket.on(
 			"shot_selection_hover_update",

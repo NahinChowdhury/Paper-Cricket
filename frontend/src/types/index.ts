@@ -84,6 +84,7 @@ export interface ClientEvents {
 		roomId: string;
 		playerId: string;
 		rotation: number;
+		presetChoice: number;
 	}) => void; // will be redundant soon
 	field_set: (
 		playerId: string,
@@ -110,7 +111,11 @@ export interface ServerEvents {
 	room_not_found: () => void;
 	room_full: () => void;
 	game_started: (gameState: GameState) => void;
-	rotation_update: (gameState: GameState, rotation: number) => void;
+	rotation_update: (
+		gameState: GameState,
+		rotation: number,
+		presetChoice: number,
+	) => void;
 	shot_selection_hover_update: (gameState: GameState, choice: string) => void;
 	game_ended: (gameState: GameState) => void;
 	game_surrendered: (gameState: GameState) => void;

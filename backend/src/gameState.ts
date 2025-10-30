@@ -13,7 +13,7 @@ export function createStartingGameState(): GameState {
 
 		originalPresets: [], // original presets chosen at start of innings
 		modifiedPresets: [], // modified presets during the innings
-		presetChosen: 1, // index of preset chosen for current delivery
+		presetChosen: 0, // index of preset chosen for current delivery
 
 		fielderPowerupsActive: [], // currently active powerup for fielding side
 		batsmanPowerupsActive: [], // currently active powerup for batting side
@@ -256,7 +256,7 @@ export class GameStateManager {
 
 		// Reset the presets early for next delivery
 		// Because they might get modified during delivery evaluation
-		gameState.presetChosen = 1; // reset to default preset
+		gameState.presetChosen = 0; // reset to default preset
 		gameState.fielderUsedPowerups.push(...gameState.fielderPowerupsActive);
 		gameState.batsmanUsedPowerups.push(...gameState.batsmanPowerupsActive);
 		gameState.fielderPowerupsActive = [];
