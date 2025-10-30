@@ -311,6 +311,12 @@ export class GameStateManager {
 			gameState.playerFielding = temp;
 			gameState.totalBalls = createStartingGameState().totalBalls;
 			// No need to reset runs and wickets because we have separate variables for both innings
+
+			// create new presets for new batsman
+			gameState.originalPresets = this.generateFieldPresets();
+			gameState.modifiedPresets = gameState.originalPresets.map(
+				(preset) => [...preset],
+			);
 		} else {
 			gameState.currentBall++;
 		}

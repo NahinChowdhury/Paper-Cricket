@@ -16,7 +16,6 @@ const colorsMap: Record<string, string> = {
 };
 
 const SPINNER_RADIUS = 150;
-const OVERLAY_COLOR = "rgba(0, 0, 0, 1)";
 
 const BatterView: React.FC = () => {
 	const { socket } = useSocket();
@@ -127,20 +126,40 @@ const BatterView: React.FC = () => {
 				ctx.moveTo(cx, cy);
 				ctx.arc(cx, cy, radius, start, end);
 				ctx.closePath();
-				ctx.fillStyle = colorsMap[outcome] || "#000000"; // Fallback color if outcome not in map
+
+				// Only use color when recapping, otherwise use black/grey
+				if (recapState.isRecapping) {
+					ctx.fillStyle = colorsMap[outcome] || "#000000";
+				} else {
+					ctx.fillStyle = isBattingTurn ? "#000000" : "#808080";
+				}
 				ctx.fill();
 
-				ctx.save();
-				ctx.translate(cx, cy);
-				ctx.rotate(start + sliceAngle / 2);
-				ctx.textAlign = "right";
-				ctx.fillStyle = "white";
-				ctx.font = "16px sans-serif";
-				ctx.fillText(outcome, radius - 10, 5);
-				ctx.restore();
+				// Add white stroke between segments
+				ctx.strokeStyle = "white";
+				ctx.lineWidth = 2;
+				ctx.stroke();
+
+				// Only show labels during recap
+				if (recapState.isRecapping) {
+					ctx.save();
+					ctx.translate(cx, cy);
+					ctx.rotate(start + sliceAngle / 2);
+					ctx.textAlign = "right";
+					ctx.fillStyle = "white";
+					ctx.font = "16px sans-serif";
+					ctx.fillText(outcome, radius - 10, 5);
+					ctx.restore();
+				}
 			});
 		},
-		[rotation, shotSelected, presetChosen],
+		[
+			rotation,
+			shotSelected,
+			presetChosen,
+			recapState.isRecapping,
+			isBattingTurn,
+		],
 	);
 
 	useEffect(() => {
@@ -232,65 +251,6 @@ const BatterView: React.FC = () => {
 					}}
 					onClick={handleClick}
 				/>
-
-				{/* 🔹 Overlay mask — fully black when inactive */}
-				<div
-					style={{
-						position: "absolute",
-						top: 50,
-						left: 50,
-						width: SPINNER_RADIUS * 2 + 2,
-						height: SPINNER_RADIUS * 2 + 2,
-						borderRadius: "50%",
-						pointerEvents: "none",
-						overflow: "hidden",
-						transform: `rotate(${rotation}rad)`,
-						transition: "opacity 0.8s ease-in-out",
-						opacity: recapState.isRecapping ? 0 : 1,
-						// 🟣 Fully black if fielder is setting field, transparent otherwise
-						backgroundColor:
-							gamePhase === "setting field"
-								? "rgba(131, 131, 131, 1)" // solid black — blocks interaction and visibility
-								: OVERLAY_COLOR, // fully transparent for active phases
-					}}
-				>
-					<svg
-						width={SPINNER_RADIUS * 2 + 2}
-						height={SPINNER_RADIUS * 2 + 2}
-						style={{
-							position: "absolute",
-							top: 0,
-							left: 0,
-							pointerEvents: "none",
-						}}
-					>
-						{Array.from({
-							length: modifiedPresets[presetChosen].length,
-						}).map((_, i) => {
-							const angle =
-								(i * 2 * Math.PI) /
-									modifiedPresets[presetChosen].length -
-								Math.PI / 2;
-							const x =
-								SPINNER_RADIUS +
-								SPINNER_RADIUS * Math.cos(angle);
-							const y =
-								SPINNER_RADIUS +
-								SPINNER_RADIUS * Math.sin(angle);
-							return (
-								<line
-									key={i}
-									x1={SPINNER_RADIUS}
-									y1={SPINNER_RADIUS}
-									x2={x}
-									y2={y}
-									stroke="white"
-									strokeWidth="2"
-								/>
-							);
-						})}
-					</svg>
-				</div>
 
 				{/* 🔹 Recap banner */}
 				{recapState.isRecapping && (
