@@ -215,10 +215,9 @@ export class GameStateManager {
 	updateShotPlayed(
 		playerId: string,
 		roomId: string,
-		choice: string,
+		choiceIndex: number,
 	): GameState {
 		const gameState = this.gameStates.get(roomId);
-		choice = choice.trim(); // sanitize input
 
 		if (!gameState) {
 			throw createError(
@@ -242,11 +241,17 @@ export class GameStateManager {
 			);
 		}
 
-		if (presetValues.indexOf(choice) === -1) {
-			throw createError("INVALID_MOVE", "Invalid choice made by batsman");
+		// Get the value at the chosen index
+		const choiceValue =
+			gameState.modifiedPresets[gameState.presetChosen][choiceIndex];
+		if (presetValues.indexOf(choiceValue) === -1) {
+			throw createError(
+				"INVALID_MOVE",
+				"Invalid choice index made by batsman",
+			);
 		}
 
-		gameState.currentBallBatsmanChoice = choice;
+		gameState.currentBallBatsmanChoice = choiceIndex;
 
 		// cache the preset chosen for this delivery before resetting
 		const presetForThisDelivery = [
@@ -268,8 +273,8 @@ export class GameStateManager {
 		// Record the delivery
 		recordDelivery(gameState, presetIndex, presetForThisDelivery);
 
-		// Evaluate the batsman choice
-		evaluateBatsmanChoice(gameState, choice);
+		// Evaluate the batsman choice using the actual value
+		evaluateBatsmanChoice(gameState, choiceValue);
 
 		// Checks if total runs exceed opponent's score in 2nd innings
 		if (gameState.innings === 2) {

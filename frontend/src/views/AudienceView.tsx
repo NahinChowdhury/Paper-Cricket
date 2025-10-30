@@ -64,9 +64,7 @@ const AudienceView: React.FC = () => {
 				const start = i * sliceAngle + rotation;
 				const end = start + sliceAngle;
 				const radius =
-					shotSelected === outcome
-						? SPINNER_RADIUS + 10
-						: SPINNER_RADIUS;
+					shotSelected === i ? SPINNER_RADIUS + 10 : SPINNER_RADIUS;
 
 				ctx.beginPath();
 				ctx.moveTo(cx, cy);

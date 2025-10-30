@@ -151,10 +151,11 @@ const LiveScorecard: React.FC<LiveScorecardProps> = ({
 
 								{deliveries.length > 0 ? (
 									deliveries.map((d, i) => {
+										const value =
+											d.modifiedPreset[d.batsmanChoice];
 										const sliceColor =
 											slices.find(
-												(s) =>
-													s.label === d.batsmanChoice,
+												(s) => s.label === value,
 											)?.color || "#666";
 										return (
 											<div
@@ -170,9 +171,9 @@ const LiveScorecard: React.FC<LiveScorecardProps> = ({
 													fontWeight: "bold",
 													fontSize: "0.8rem",
 												}}
-												title={`Ball ${i + 1}: ${d.batsmanChoice}`}
+												title={`Ball ${i + 1}: ${value}`}
 											>
-												{d.batsmanChoice}
+												{value}
 											</div>
 										);
 									})

@@ -43,7 +43,7 @@ export interface GameState {
 
 	currentBall: number; // current turn number
 	currentBallRotation: number | undefined; // current ball rotation
-	currentBallBatsmanChoice: string | undefined; // current ball batsman choice
+	currentBallBatsmanChoice: number | undefined; // index of batsman choice in modifiedPresets[presetChosen]
 
 	playerFielding: string; // player ID of who is fielding
 	playerBatting: string; // player ID of who is batting
@@ -81,7 +81,7 @@ export interface DeliveryRecord {
 	ballNumber: number;
 	innings: number;
 	rotation: number;
-	batsmanChoice: string; // batsman choice is the run for that ball
+	batsmanChoice: number; // index of batsman choice in the preset used for that delivery
 	presetChosen: number; // index of preset chosen for that delivery
 	modifiedPreset: string[]; // modified preset used for that delivery
 	fielderPowerUpUsed: string[]; // powerup used by fielding side for that delivery
@@ -99,7 +99,7 @@ export interface ClientEvents {
 	toss_selection_made: (player: User, choice: "heads" | "tails") => void;
 	side_selection_made: (player: User, choice: "batting" | "fielding") => void;
 	player_joined: (player: User) => void;
-	shot_selection_hover: (playerId: string, choice: string) => void;
+	shot_selection_hover: (playerId: string, choiceIndex: number) => void;
 	rotate_pie: (data: {
 		roomId: string;
 		playerId: string;
@@ -112,7 +112,11 @@ export interface ClientEvents {
 		rotation: number,
 		presetChoice: number,
 	) => void;
-	shot_played: (playerId: string, roomId: string, choice: string) => void;
+	shot_played: (
+		playerId: string,
+		roomId: string,
+		choiceIndex: number,
+	) => void;
 	surrender: (playerId: string) => void;
 	leave_room: (playerId: string, roomId: string) => void;
 	power_up_used: (
@@ -136,7 +140,10 @@ export interface ServerEvents {
 		rotation: number,
 		presetChoice: number,
 	) => void;
-	shot_selection_hover_update: (gameState: GameState, choice: string) => void;
+	shot_selection_hover_update: (
+		gameState: GameState,
+		choiceIndex: number,
+	) => void;
 	game_ended: (gameState: GameState) => void;
 	game_surrendered: (gameState: GameState) => void;
 	user_left: (playerId: string) => void;

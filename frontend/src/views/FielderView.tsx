@@ -38,7 +38,7 @@ const FielderView: React.FC = () => {
 
 	const canRotate =
 		displayState.gamePhase === "setting field" && !recapState.isRecapping;
-	const shotSelected: string | null =
+	const shotSelected: number | null =
 		displayState.currentBallBatsmanChoice !== undefined
 			? displayState.currentBallBatsmanChoice
 			: null;
@@ -70,9 +70,7 @@ const FielderView: React.FC = () => {
 				const end = start + sliceAngle;
 
 				const radius =
-					shotSelected === outcome
-						? SPINNER_RADIUS + 10
-						: SPINNER_RADIUS;
+					shotSelected === i ? SPINNER_RADIUS + 10 : SPINNER_RADIUS;
 
 				ctx.beginPath();
 				ctx.moveTo(cx, cy);
@@ -333,7 +331,8 @@ const FielderView: React.FC = () => {
 					>
 						Batter chose{" "}
 						<span style={{ color: "#ffd166" }}>
-							{recapState.recapChoice ?? "?"}
+							{recapState.recapChoice ?? "?"}{" "}
+							{/* recapChoice is already the value string */}
 						</span>
 					</div>
 				)}

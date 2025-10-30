@@ -11,7 +11,7 @@ import { useSocket } from "./SocketContext";
 interface RecapState {
 	isRecapping: boolean;
 	frozenState: GameState | null;
-	recapChoice: string | null;
+	recapChoice: string | null; // Batsman choice (actual value) for the delivery being recapped
 }
 
 interface GameContextType {
@@ -132,16 +132,22 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({
 
 		socket.on(
 			"shot_selection_hover_update",
-			(state: GameState, choice: string) => {
+			(state: GameState, choiceIndex: number) => {
 				// Although the currentBatsmanChoice is probably undefined in the actual gameState, we handle it separately for temporary UI purposes
-				console.log("Shot selection hover update received:", choice);
+				console.log(
+					"Shot selection hover update received:",
+					choiceIndex,
+				);
 				setGameState((prev) => {
 					if (!prev)
-						return { ...state, currentBallBatsmanChoice: choice };
+						return {
+							...state,
+							currentBallBatsmanChoice: choiceIndex,
+						};
 					return {
 						...prev,
 						...state,
-						currentBallBatsmanChoice: choice,
+						currentBallBatsmanChoice: choiceIndex,
 					};
 				});
 			},
@@ -172,15 +178,17 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({
 			// console.log("Previous game state:", gameState);
 			// console.log("New game state:", state);
 			// Snapshot current game state for recap display
+			const latestDelivery =
+				state.deliveryHistory[state.deliveryHistory.length - 1];
 			setRecapState({
 				isRecapping: true,
-				frozenState: gameState,
-				// get the last ball's batsman choice from the new game state's delivery history
+				frozenState: gameState, // keep previous state for recap
+				// get the last ball's batsman choice value
 				recapChoice:
 					state.deliveryHistory.length > 0
-						? state.deliveryHistory[
-								state.deliveryHistory.length - 1
-							].batsmanChoice
+						? latestDelivery.modifiedPreset[
+								latestDelivery.batsmanChoice
+							]
 						: null,
 			});
 

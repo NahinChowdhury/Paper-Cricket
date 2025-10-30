@@ -23,7 +23,7 @@ const BatterView: React.FC = () => {
 	const { gameState, recapState, user } = useGame();
 
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
-	const [shotSelected, setShotSelected] = useState<string | null>(null);
+	const [shotSelected, setShotSelected] = useState<number | null>(null);
 
 	// =========================
 	//  SELECT WHICH STATE TO DISPLAY
@@ -78,21 +78,26 @@ const BatterView: React.FC = () => {
 		const sliceAngle = fullCircle / currentPreset.length;
 		const index =
 			Math.floor(normalized / sliceAngle) % currentPreset.length;
-
-		setShotSelected(currentPreset[index]);
+		setShotSelected(index);
 
 		if (socket && user?.roomId) {
-			socket.emit("shot_selection_hover", user.id, currentPreset[index]);
+			socket.emit("shot_selection_hover", user.id, index);
 		}
 	};
 
 	// 🎯 Handle shot submission
 	const handleSubmitShot = () => {
-		if (!socket || !user || !shotSelected) {
+		if (!socket || !user || shotSelected === null) {
 			alert("Please select a shot first!");
 			return;
 		}
-		console.log("Submitting shot:", shotSelected);
+
+		console.log(
+			"Submitting shot index:",
+			shotSelected,
+			"value:",
+			modifiedPresets[presetChosen][shotSelected],
+		);
 		socket.emit("shot_played", user.id, user.roomId, shotSelected);
 		// we do not clear the shotSelected here to allow user to see their choice until recap is over
 	};
@@ -116,9 +121,7 @@ const BatterView: React.FC = () => {
 				const start = i * sliceAngle + rotation;
 				const end = start + sliceAngle;
 				const radius =
-					shotSelected === outcome
-						? SPINNER_RADIUS + 10
-						: SPINNER_RADIUS;
+					shotSelected === i ? SPINNER_RADIUS + 10 : SPINNER_RADIUS;
 
 				ctx.beginPath();
 				ctx.moveTo(cx, cy);
@@ -149,6 +152,7 @@ const BatterView: React.FC = () => {
 		drawPie(ctx);
 	}, [rotation, shotSelected, drawPie]);
 
+	const unableToSubmitShot = shotSelected === null || recapState.isRecapping;
 	// =========================
 	//  UI RENDER
 	// =========================
@@ -304,7 +308,8 @@ const BatterView: React.FC = () => {
 					>
 						User chose{" "}
 						<span style={{ color: "#ffd166" }}>
-							{recapState.recapChoice ?? "?"}
+							{recapState.recapChoice ?? "?"}{" "}
+							{/* recapChoice is already the value string */}
 						</span>
 					</div>
 				)}
@@ -314,21 +319,17 @@ const BatterView: React.FC = () => {
 			<div style={{ marginTop: "30px" }}>
 				<button
 					onClick={handleSubmitShot}
-					disabled={!shotSelected || recapState.isRecapping}
+					disabled={unableToSubmitShot}
 					style={{
 						padding: "12px 24px",
 						fontSize: "16px",
-						backgroundColor:
-							shotSelected && !recapState.isRecapping
-								? "#4CAF50"
-								: "#ccc",
+						backgroundColor: unableToSubmitShot
+							? "#ccc"
+							: "#4CAF50",
 						color: "white",
 						border: "none",
 						borderRadius: "5px",
-						cursor:
-							shotSelected && !recapState.isRecapping
-								? "pointer"
-								: "not-allowed",
+						cursor: unableToSubmitShot ? "not-allowed" : "pointer",
 					}}
 				>
 					Submit Shot
