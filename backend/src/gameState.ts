@@ -1,10 +1,20 @@
 import { createError } from "./errors/AppError";
 import {
 	evaluateBatsmanChoice,
+	isInningsOver,
 	recordDelivery,
 	shuffle,
+	validateFieldShiftModification,
+	validatePowerUpUse,
+	validateThirdManModification,
 } from "./helper/helperMethods";
-import { GameState, presetValues } from "./types";
+import {
+	batsmanPowerUpNames,
+	fielderPowerUpNames,
+	GameState,
+	presetValues,
+	SocketEmissionMode,
+} from "./types";
 
 export function createStartingGameState(): GameState {
 	return {
@@ -19,8 +29,8 @@ export function createStartingGameState(): GameState {
 		batsmanPowerupsActive: [], // currently active powerup for batting side
 		fielderUsedPowerups: [], // used powerups for fielding side
 		batsmanUsedPowerups: [], // used powerups for batting side
-		fielderUnusedPowerups: [], // unused should be initialized with all powerups
-		batsmanUnusedPowerups: [], // unused should be initialized with all powerups
+		fielderUnusedPowerups: [...fielderPowerUpNames], // unused should be initialized with all powerups
+		batsmanUnusedPowerups: [...batsmanPowerUpNames], // unused should be initialized with all powerups
 
 		currentBall: 1, // current turn number
 		currentBallRotation: undefined, // current ball rotation
@@ -49,11 +59,233 @@ export function createStartingGameState(): GameState {
 		tossWinner: null, // player ID who won the toss, null if not yet decided
 
 		deliveryHistory: [], // list of turn records
+
+		powerUpContext: {},
 	};
 }
 
 export class GameStateManager {
 	private gameStates: Map<string, GameState> = new Map();
+
+	/**
+	 * User Story:
+	 *  Player can add an extra wicket on the board.
+	 * Player can move this Wicket to anywhere they like.
+	 * IMPORTANT: Player should only be able to move the new wicket. Nothing else! The sequence of everything else should be identical.
+	 * @param gameState
+	 * @param playerId
+	 * @param modification
+	 * @returns
+	 */
+	handleThirdManPowerUp(
+		gameState: GameState,
+		playerId: string,
+		modification?: any,
+	): SocketEmissionMode {
+		validatePowerUpUse(gameState, playerId, "Third Man");
+
+		// If no modification, just add the power-up to active list and add extra wicket
+		if (!modification) {
+			// Add to active list and remove from unused
+			gameState.fielderPowerupsActive.push("Third Man");
+			gameState.fielderUnusedPowerups =
+				gameState.fielderUnusedPowerups.filter(
+					(p) => p !== "Third Man",
+				);
+
+			// Add extra wicket to each preset
+			gameState.modifiedPresets = gameState.modifiedPresets.map(
+				(preset) => [...preset, "W"],
+			);
+
+			// Initialize powerUpContext for Third Man
+			const thirdManContext: Record<number, number> = {};
+
+			gameState.modifiedPresets.forEach((_, index) => {
+				thirdManContext[index] =
+					gameState.modifiedPresets[index].length - 1;
+			});
+
+			gameState.powerUpContext["Third Man"] = thirdManContext;
+
+			return SocketEmissionMode.TO_ALL_IN_ROOM;
+		}
+		// If modification provided, update wicket position
+		else {
+			const { presetChosen, newWicketIndex } = modification;
+			validateThirdManModification(
+				gameState,
+				presetChosen,
+				newWicketIndex,
+			);
+
+			// Ensure there is an entry of Third Man in powerUpContext
+			if (gameState.powerUpContext["Third Man"] === undefined) {
+				return SocketEmissionMode.TO_NONE; // Should never reach here due to earlier validation
+			}
+
+			const currentPreset = gameState.modifiedPresets[presetChosen];
+			const specialWicketIndex =
+				gameState.powerUpContext["Third Man"][presetChosen];
+
+			// Move the special wicket to new position
+			const updatedPreset = [...currentPreset];
+			updatedPreset.splice(specialWicketIndex, 1); // Remove from old position
+			updatedPreset.splice(newWicketIndex, 0, "W"); // Insert at new position
+			gameState.modifiedPresets[presetChosen] = updatedPreset;
+
+			// Update context with new position
+			gameState.powerUpContext["Third Man"][presetChosen] =
+				newWicketIndex;
+			return SocketEmissionMode.TO_OTHERS_IN_ROOM;
+		}
+	}
+
+	/**
+	 * User Story:
+	 * Player can shuffle the field for a turn.
+	 * Player can manually modify the pie order as they please.
+	 * It will reset to the default field view next round
+	 *
+	 * @param gameState
+	 * @param playerId
+	 * @param modification
+	 * @returns
+	 */
+	handleFieldShiftPowerUp(
+		gameState: GameState,
+		playerId: string,
+		modification?: any,
+	): SocketEmissionMode {
+		validatePowerUpUse(gameState, playerId, "Field Shift");
+
+		if (!modification) {
+			// Just activate the power-up
+			gameState.fielderPowerupsActive.push("Field Shift");
+			gameState.fielderUnusedPowerups =
+				gameState.fielderUnusedPowerups.filter(
+					(p) => p !== "Field Shift",
+				);
+			return SocketEmissionMode.TO_ALL_IN_ROOM;
+		} else {
+			const { presetChosen, newPreset } = modification;
+			validateFieldShiftModification(gameState, presetChosen, newPreset);
+			gameState.modifiedPresets[presetChosen] = [...newPreset]; // Apply the new preset modification
+			return SocketEmissionMode.TO_OTHERS_IN_ROOM;
+		}
+	}
+
+	/**
+	 * User Story:
+	 * Player can reverse the order of the pies for the turn
+	 *
+	 * @param gameState
+	 * @param playerId
+	 * @returns
+	 */
+	handleMirrorFieldPowerUp(
+		gameState: GameState,
+		playerId: string,
+	): SocketEmissionMode {
+		validatePowerUpUse(gameState, playerId, "Mirror Field");
+
+		// Add to active and remove from unused
+		gameState.fielderPowerupsActive.push("Mirror Field");
+		gameState.fielderUnusedPowerups =
+			gameState.fielderUnusedPowerups.filter((p) => p !== "Mirror Field");
+
+		// Reverse all presets
+		gameState.modifiedPresets = gameState.modifiedPresets.map((preset) =>
+			[...preset].reverse(),
+		);
+		return SocketEmissionMode.TO_ALL_IN_ROOM;
+	}
+
+	/**
+	 * User Story:
+	 * Player can click on a pie and see what’s under it before submitting the shot
+	 *
+	 * @param gameState
+	 * @param playerId
+	 * @param modification
+	 * @returns
+	 */
+	handleScoutReportPowerUp(
+		gameState: GameState,
+		playerId: string,
+		modification?: any,
+	): SocketEmissionMode {
+		validatePowerUpUse(gameState, playerId, "Scout Report");
+
+		if (!modification) {
+			// Just activate the power-up
+			gameState.batsmanPowerupsActive.push("Scout Report");
+			gameState.batsmanUnusedPowerups =
+				gameState.batsmanUnusedPowerups.filter(
+					(p) => p !== "Scout Report",
+				);
+			return SocketEmissionMode.TO_ALL_IN_ROOM;
+		} else {
+			// Add the revealed pie index to context
+			const { pieIndex } = modification;
+			if (gameState.powerUpContext["Scout Report"] === undefined) {
+				gameState.powerUpContext["Scout Report"] = pieIndex;
+			}
+			return SocketEmissionMode.TO_ALL_IN_ROOM;
+		}
+	}
+
+	/**
+	 * User Story:
+	 * If the batter hits wicket, ignore the wicket for that ball
+	 *
+	 * @param gameState
+	 * @param playerId
+	 * @returns
+	 */
+	handleInvulnerabilityPowerUp(
+		gameState: GameState,
+		playerId: string,
+	): SocketEmissionMode {
+		validatePowerUpUse(gameState, playerId, "Invulnerability");
+
+		// Add to active and remove from unused
+		gameState.batsmanPowerupsActive.push("Invulnerability");
+		gameState.batsmanUnusedPowerups =
+			gameState.batsmanUnusedPowerups.filter(
+				(p) => p !== "Invulnerability",
+			);
+
+		// Replace all wickets with 0s in current modifiedPresets
+		gameState.modifiedPresets = gameState.modifiedPresets.map((preset) =>
+			preset.map((value) => (value === "W" ? "0" : value)),
+		);
+		return SocketEmissionMode.TO_ALL_IN_ROOM;
+	}
+
+	/**
+	 * User Story:
+	 * Temporarily locks the fielder's rotation for the next ball.
+	 * Fielder must send the same rotation but they can change the preset
+	 * @param gameState
+	 * @param playerId
+	 * @returns
+	 */
+	handleFrozenHandsPowerUp(
+		gameState: GameState,
+		playerId: string,
+	): SocketEmissionMode {
+		validatePowerUpUse(gameState, playerId, "Frozen Hands");
+
+		// Add to active and remove from unused
+		gameState.batsmanPowerupsActive.push("Frozen Hands");
+		gameState.batsmanUnusedPowerups =
+			gameState.batsmanUnusedPowerups.filter((p) => p !== "Frozen Hands");
+
+		// Add entry to context with current delivery number
+		gameState.powerUpContext["Frozen Hands"] = gameState.currentBall;
+		return SocketEmissionMode.TO_ALL_IN_ROOM;
+	}
 
 	// Create initial game state for a room
 	createInitialGameState(roomId: string): GameState {
@@ -288,13 +520,7 @@ export class GameStateManager {
 
 		// Check for end of innings or game
 		// If currentBall exceeds totalBalls OR all wickets are down
-		const inningsOver =
-			gameState.currentBall === gameState.totalBalls ||
-			(gameState.innings === 1
-				? gameState.inningsOneWicketCurrentCount >=
-					gameState.totalWickets
-				: gameState.inningsTwoWicketCurrentCount >=
-					gameState.totalWickets);
+		const inningsOver = isInningsOver(gameState);
 
 		// If all balls are bowled or all wickets are down, end or switch innings
 		if (inningsOver && gameState.innings === 2) {

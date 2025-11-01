@@ -169,14 +169,7 @@ const FielderView: React.FC = () => {
 		setRotation(newRot);
 
 		// Emit live rotation to server
-		if (socket && user?.roomId) {
-			socket.emit("rotate_pie", {
-				roomId: user.roomId,
-				playerId: user.id,
-				rotation: newRot,
-				presetChoice: localPresetChoice,
-			});
-		}
+		emitRotatePie(newRot, localPresetChoice);
 	};
 
 	const handlePresetClick = (index: number) => {
@@ -191,15 +184,23 @@ const FielderView: React.FC = () => {
 		setRotation(0);
 
 		// Emit live rotation to server with new preset
-		if (socket && user?.roomId) {
-			socket.emit("rotate_pie", {
-				roomId: user.roomId,
-				playerId: user.id,
-				rotation: 0,
-				presetChoice: index,
-			});
-		}
+		emitRotatePie(0, index);
 	};
+
+	const emitRotatePie = useCallback(
+		(rotationAngle: number, presetChoice: number) => {
+			if (socket && user?.roomId) {
+				socket.emit(
+					"rotate_pie",
+					user.roomId,
+					user.id,
+					rotationAngle,
+					presetChoice,
+				);
+			}
+		},
+		[socket, user],
+	);
 
 	const handleMouseUp = () => {
 		setIsDragging(false);

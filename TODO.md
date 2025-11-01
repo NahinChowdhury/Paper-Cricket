@@ -9,7 +9,7 @@ Then same logic as before. new current player bowls for 5 turns and we keep log 
 We can then look to keep log of total score, wickets and what not
 
 
-5th October, 2025
+## 5th October, 2025
 Implement wicket logic, over display and showing per ball scores as they are displayed
 Mask the batter's POV. For now, simply have an overlay, but think about how to actually hide the values beneath so that people don't get the root values from inspect element.
 Handle errors by ending a message to the frontend. A simple handler like "error" should be enough for the frontend. Frontend will perform task based on error details
@@ -21,7 +21,7 @@ Visions:
   - Audience can see the batsman's live mouse movement while batting.
 
 
-25th October, 2023
+## 25th October, 2025
 Global gamestate component distribution works in the frontend which is amazing!!!
 Need to show a recap whena delivery finishes
 Need to handle surrender better because now it crashes. Need to enable disconnect for audience.
@@ -31,3 +31,21 @@ Need to display power ups for all views.
 Try to merge audience and batter views as much as possible
 Need to write server side power up handling.
 Need to handle end game view as well as what should happen if a game ends/surrendered but a user tries to join (should just show scoreboard to user. Do not even show them the player/audience option page)
+
+
+## 29th October, 2025
+Fielders can now see presets as well as select them while submitting their field setup.
+Batsman and audience get the appropriate preset choice.
+Batsman choice is now an index value, not the actual string value of the choice.
+This allowed us to get rid of the overlay for the batter and audience view. Selecting a pie now takes the index into account. Not the value. It will be difficult for people to cheat now. Only way they can cheat is by getting the socket events log.
+
+Next: 
+
+Work on power up logic in backend
+Display power ups and allow usage in frontend
+
+
+## 1st November, 2025
+Power ups backend logic has been written. Looks good.
+Next we should implement the frontend. We should start off with displaying the power ups for everyone. They should not do anything.
+Then we implement the UI for each. Starting off with the power ups that don't provide any powerupcontext. Then implement the frozen hands power up and then finally implement the draggable shuffle power ups.

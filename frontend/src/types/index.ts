@@ -55,7 +55,27 @@ export interface GameState {
 	tossWinner: string | null; // player ID who won the toss, null if not yet decided
 
 	deliveryHistory: DeliveryRecord[]; // list of turn records
+
+	powerUpContext: Partial<PowerUpContextType>; // Map that can contain all power-ups context types
 }
+
+export interface PowerUpContextType {
+	"Third Man"?: Record<number, number>; // preset index -> wicket index mapping
+	"Scout Report"?: number; // index of preset to reveal
+	"Frozen Hands"?: number; // delivery number where fielder can’t rotate
+}
+
+export const fielderPowerUpNames: string[] = [
+	"Third Man",
+	"Field Shift",
+	"Mirror Field",
+];
+
+export const batsmanPowerUpNames: string[] = [
+	"Scout Report",
+	"Invulnerability",
+	"Frozen Hands",
+];
 
 export interface DeliveryRecord {
 	ballNumber: number;
@@ -80,12 +100,12 @@ export interface ClientEvents {
 	side_selection_made: (player: User, choice: "batting" | "fielding") => void;
 	player_joined: (player: User) => void;
 	shot_selection_hover: (playerId: string, choiceIndex: number) => void;
-	rotate_pie: (data: {
-		roomId: string;
-		playerId: string;
-		rotation: number;
-		presetChoice: number;
-	}) => void; // will be redundant soon
+	rotate_pie: (
+		roomId: string,
+		playerId: string,
+		rotation: number,
+		presetChoice: number,
+	) => void;
 	field_set: (
 		playerId: string,
 		roomId: string,
@@ -103,7 +123,7 @@ export interface ClientEvents {
 		playerId: string,
 		roomId: string,
 		powerUp: string,
-		modification: any,
+		modification?: any,
 	) => void;
 }
 
@@ -136,4 +156,5 @@ export interface ServerEvents {
 	game_updated: (gameState: GameState) => void;
 	toss_started: (gameState: GameState) => void;
 	side_selection_started: (gameState: GameState) => void;
+	power_up_used: (gameState: GameState) => void;
 }

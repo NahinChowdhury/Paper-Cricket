@@ -5,6 +5,7 @@ import cors from "cors";
 import { v4 as uuidv4 } from "uuid";
 import { RoomManager } from "./roomManager";
 import { GameStateManager } from "./gameState";
+import { managePowerUpContext } from "./helper/helperMethods";
 // Import types from local types file
 import {
 	ClientEvents,
@@ -13,6 +14,7 @@ import {
 	ServerEvents,
 	GameState,
 	presetValues,
+	SocketEmissionMode,
 } from "./types";
 import { initializeGamesRouter } from "./routes/games";
 import { verifyUserisActivePlayerInAGame } from "./helper/helperMethods";
@@ -433,15 +435,15 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 	// Basic rotation handling (placeholder - no turn validation yet)
 	socket.on(
 		"rotate_pie",
-		(data: {
-			roomId: string;
-			playerId: string;
-			rotation: number;
-			presetChoice: number;
-		}) => {
+		(
+			roomId: string,
+			playerId: string,
+			rotation: number,
+			presetChoice: number,
+		) => {
 			try {
 				// get game state
-				const gameState = gameStateManager.getGameState(data.roomId);
+				const gameState = gameStateManager.getGameState(roomId);
 				if (!gameState) {
 					throw createError(
 						"GAMESTATE_NOT_FOUND",
@@ -451,13 +453,8 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 
 				// For now, just broadcast the rotation to other players in the room
 				socket
-					.to(data.roomId)
-					.emit(
-						"rotation_update",
-						gameState,
-						data.rotation,
-						data.presetChoice,
-					);
+					.to(roomId)
+					.emit("rotation_update", gameState, rotation, presetChoice);
 			} catch (error) {
 				handleSocketError(socket, error);
 			}
@@ -525,6 +522,16 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 					`Field set received from player ${playerId} in room ${roomId}: ${rotation}`,
 				);
 
+				// If the powerContext has "Frozen Hands", then the rotation should be 0
+				const gameStateBeforeUpdate =
+					gameStateManager.getGameState(roomId);
+				if (!gameStateBeforeUpdate) {
+					throw createError(
+						"GAMESTATE_NOT_FOUND",
+						"No game state found for room",
+					);
+				}
+
 				// Updates game state and changes gamephase to 'batting'
 				const gameState = gameStateManager.updateFieldSetup(
 					playerId,
@@ -532,6 +539,9 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 					rotation,
 					presetChoice,
 				);
+
+				// Manage power-up context (clear all except Frozen Hands)
+				managePowerUpContext(gameState, playerId);
 
 				// Notify all players about turn end and next turn
 				io.to(roomId).emit("play_shot", gameState);
@@ -555,6 +565,9 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 					roomId,
 					choiceIndex,
 				);
+
+				// Clean up power-up context after shot is played
+				managePowerUpContext(gameState, playerId);
 
 				if (gameState.gamePhase === "finished") {
 					io.to(roomId).emit("game_ended", gameState);
@@ -580,20 +593,143 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 			playerId: string,
 			roomId: string,
 			powerUp: string,
-			modification: any,
+			modification?: any,
 		) => {
-			// TODO: implement power-up logic in game state
-			/**
-		 * Client sends the power up name along with any context needed with the power up.
-			Additional context is optional and client can send this power_up_used event as many times as they want for the same power up that is currently being used.
-			Server will simply try to move the power up to active list and many any modifications to the wheel if needed.
-			For example, with shuffle, the client will send the power up name along with the modified wheel order and the preset index. Server will update the modified wheel if the modification is allowed(the pies in the original wheel should be identical to the newly modified wheel. Order may vary). Server will not send an event back to the client in this case because it might lead to UI lag. Server will simply update the preset modifications in the gamestate as they keep coming.
-			We will socket.emit(“game_updated”) only if we end up moving a new power up to the active list. If a power up already exists in the active list and is simply providing update on the modifications, we don’t need to emit new event. This may lead to UI lag.
-			Server ensures the user sending the power up command is the bowler when the gamephase is setting_field and the batter if the gamephase is batting.
-			Server ensures that the power up played is used from the unused power ups list.
-			For either cases, the power up will be removed from the unused group and added to the active power ups list.
-			Based on the power up’s details, the presets will be modified as needed and then server will emit socket.emit(“game_updated”) to everyone except for the batter if it’s a fielder power up being used. We should not have explicit states for these power ups in the frontend. We should simply update the gamestate with the new value for optimistic update and the UI will be rerendered when the backend sends the new gamestate.
-		 */
+			try {
+				console.log(
+					`Power-up ${powerUp} used by player ${playerId} in room ${roomId}`,
+				);
+
+				const gameState = gameStateManager.getGameState(roomId);
+				if (!gameState) {
+					throw createError(
+						"GAMESTATE_NOT_FOUND",
+						"No game state found for room",
+					);
+				}
+
+				const isBatting = gameState.playerBatting === playerId;
+				const isFielding = gameState.playerFielding === playerId;
+
+				let socketEmissionMode: SocketEmissionMode =
+					SocketEmissionMode.TO_NONE;
+
+				// Handle each power-up type
+				switch (powerUp) {
+					case "Third Man":
+						if (!isFielding) {
+							throw createError(
+								"INVALID_MOVE",
+								"Only fielders can use Third Man power-up",
+							);
+						}
+						socketEmissionMode =
+							gameStateManager.handleThirdManPowerUp(
+								gameState,
+								playerId,
+								modification,
+							);
+						break;
+
+					case "Field Shift":
+						if (!isFielding) {
+							throw createError(
+								"INVALID_MOVE",
+								"Only fielders can use Field Shift power-up",
+							);
+						}
+						socketEmissionMode =
+							gameStateManager.handleFieldShiftPowerUp(
+								gameState,
+								playerId,
+								modification,
+							);
+						break;
+
+					case "Mirror Field":
+						if (!isFielding) {
+							throw createError(
+								"INVALID_MOVE",
+								"Only fielders can use Mirror Field power-up",
+							);
+						}
+						socketEmissionMode =
+							gameStateManager.handleMirrorFieldPowerUp(
+								gameState,
+								playerId,
+							);
+						break;
+
+					case "Scout Report":
+						if (!isBatting) {
+							throw createError(
+								"INVALID_MOVE",
+								"Only batsmen can use Scout Report power-up",
+							);
+						}
+						socketEmissionMode =
+							gameStateManager.handleScoutReportPowerUp(
+								gameState,
+								playerId,
+								modification,
+							);
+						break;
+
+					case "Invulnerability":
+						if (!isBatting) {
+							throw createError(
+								"INVALID_MOVE",
+								"Only batsmen can use Invulnerability power-up",
+							);
+						}
+						socketEmissionMode =
+							gameStateManager.handleInvulnerabilityPowerUp(
+								gameState,
+								playerId,
+							);
+						break;
+
+					case "Frozen Hands":
+						if (!isBatting) {
+							throw createError(
+								"INVALID_MOVE",
+								"Only batsmen can use Frozen Hands power-up",
+							);
+						}
+						socketEmissionMode =
+							gameStateManager.handleFrozenHandsPowerUp(
+								gameState,
+								playerId,
+							);
+						break;
+
+					default:
+						throw createError(
+							"INVALID_MOVE",
+							`Unknown power-up: ${powerUp}`,
+						);
+				}
+
+				// Emit updated game state based on emission mode
+				switch (socketEmissionMode) {
+					case SocketEmissionMode.TO_ALL_IN_ROOM:
+						io.to(roomId).emit("game_updated", gameState);
+						break;
+					case SocketEmissionMode.TO_OTHERS_IN_ROOM:
+						socket.to(roomId).emit("game_updated", gameState);
+						break;
+					case SocketEmissionMode.TO_SELF:
+						socket.emit("game_updated", gameState);
+						break;
+					case SocketEmissionMode.TO_NONE:
+					default:
+						// Do nothing
+						break;
+				}
+				return;
+			} catch (error) {
+				handleSocketError(socket, error);
+			}
 		},
 	);
 

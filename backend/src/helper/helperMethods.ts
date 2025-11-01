@@ -122,3 +122,133 @@ export function evaluateBatsmanChoice(
 			throw createError("INVALID_MOVE", "Invalid batsman choice");
 	}
 }
+
+/**
+ * Validates if a power-up can be used
+ */
+export function validatePowerUpUse(
+	gameState: GameState,
+	playerId: string,
+	powerUp: string,
+): void {
+	// Check if player is either batting or fielding
+	const isBatting = gameState.playerBatting === playerId;
+	const isFielding = gameState.playerFielding === playerId;
+
+	if (!isBatting && !isFielding) {
+		throw createError(
+			"INVALID_MOVE",
+			"Only active players can use power-ups",
+		);
+	}
+
+	// Get the relevant power-up lists based on player role
+	const activeList = isBatting
+		? gameState.batsmanPowerupsActive
+		: gameState.fielderPowerupsActive;
+	const usedList = isBatting
+		? gameState.batsmanUsedPowerups
+		: gameState.fielderUsedPowerups;
+	const unusedList = isBatting
+		? gameState.batsmanUnusedPowerups
+		: gameState.fielderUnusedPowerups;
+
+	// Check if power-up has been used
+	if (usedList.includes(powerUp)) {
+		throw createError("INVALID_MOVE", "Power-up has already been used");
+	}
+
+	// Check if power-up is available
+	if (!unusedList.includes(powerUp)) {
+		throw createError("INVALID_MOVE", "Power-up is not available");
+	}
+}
+
+/**
+ * Validates if the Third Man power-up modification is legal
+ */
+export function validateThirdManModification(
+	gameState: GameState,
+	presetChosen: number,
+	newWicketIndex: number,
+): void {
+	// Get the current preset
+	const currentPreset = gameState.modifiedPresets[presetChosen];
+	if (!currentPreset) {
+		throw createError("INVALID_MOVE", "Invalid preset chosen");
+	}
+
+	// Verify that the new wicket index is valid
+	if (newWicketIndex < 0 || newWicketIndex >= currentPreset.length) {
+		throw createError("INVALID_MOVE", "Invalid wicket index");
+	}
+}
+
+/**
+ * Validates if the Field Shift power-up modification is legal
+ */
+export function validateFieldShiftModification(
+	gameState: GameState,
+	presetChosen: number,
+	newPreset: string[],
+): void {
+	// Get the original preset
+	const originalPreset = gameState.originalPresets[presetChosen];
+	if (!originalPreset) {
+		throw createError("INVALID_MOVE", "Invalid preset chosen");
+	}
+
+	// Sort both arrays to compare contents without caring about order
+	const sortedOriginal = [...originalPreset].sort();
+	const sortedNew = [...newPreset].sort();
+
+	// Check if all values from original preset exist in new preset
+	if (sortedOriginal.join(",") !== sortedNew.join(",")) {
+		throw createError(
+			"INVALID_MOVE",
+			"Field Shift must maintain all original values",
+		);
+	}
+}
+
+/**
+ * Checks if the innings is over based on current game state
+ * @param gameState
+ * @returns
+ */
+export function isInningsOver(gameState: GameState): boolean {
+	return (
+		gameState.currentBall === gameState.totalBalls ||
+		(gameState.innings === 1
+			? gameState.inningsOneWicketCurrentCount >= gameState.totalWickets
+			: gameState.inningsTwoWicketCurrentCount >= gameState.totalWickets)
+	);
+}
+
+/**
+ * Manages power-up context by clearing all contexts except Frozen Hands
+ */
+export function managePowerUpContext(
+	gameState: GameState,
+	playerId: string,
+): void {
+	// Store Frozen Hands context if it exists
+	const frozenHandsValue: number | undefined =
+		gameState.powerUpContext["Frozen Hands"];
+
+	// Clear all power-up context
+	gameState.powerUpContext = {};
+
+	const isBatting = gameState.playerBatting === playerId;
+
+	// Restore Frozen Hands context if it was set by the batter
+	// because the context needs to persist during the next field setup
+	// No need to persist the context if the innings is over
+	if (
+		isBatting &&
+		frozenHandsValue !== undefined &&
+		!isInningsOver(gameState)
+	) {
+		gameState.powerUpContext["Frozen Hands"] = frozenHandsValue;
+	}
+}
