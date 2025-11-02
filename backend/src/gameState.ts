@@ -551,6 +551,14 @@ export class GameStateManager {
 		gameState.currentBallBatsmanChoice = undefined;
 		gameState.gamePhase = "setting field";
 
+		// move the active batter power-ups to used power-ups
+		gameState.batsmanUsedPowerups.push(...gameState.batsmanPowerupsActive);
+		gameState.batsmanPowerupsActive = [];
+
+		// move the active fielder power-ups to used power-ups
+		gameState.fielderUsedPowerups.push(...gameState.fielderPowerupsActive);
+		gameState.fielderPowerupsActive = [];
+
 		return gameState;
 	}
 

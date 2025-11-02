@@ -62,8 +62,8 @@ export function recordDelivery(
 				: gameState.inningsTwoRuns,
 		presetChosen: presetIndex,
 		modifiedPreset: presetForThisDelivery,
-		fielderPowerUpUsed: gameState.fielderPowerupsActive,
-		batsmanPowerUpUsed: gameState.batsmanPowerupsActive,
+		fielderPowerUpUsed: [...gameState.fielderPowerupsActive],
+		batsmanPowerUpUsed: [...gameState.batsmanPowerupsActive],
 	};
 
 	gameState.deliveryHistory.push(delivery);
