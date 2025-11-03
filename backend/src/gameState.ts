@@ -4,6 +4,7 @@ import {
 	isInningsOver,
 	recordDelivery,
 	shuffle,
+	updatePowerUpsAfterUse,
 	validateFieldShiftModification,
 	validatePowerUpUse,
 	validateThirdManModification,
@@ -25,8 +26,8 @@ export function createStartingGameState(): GameState {
 		modifiedPresets: [], // modified presets during the innings
 		presetChosen: 0, // index of preset chosen for current delivery
 
-		fielderPowerupsActive: [], // currently active powerup for fielding side
-		batsmanPowerupsActive: [], // currently active powerup for batting side
+		fielderActivePowerups: [], // currently active powerup for fielding side
+		batsmanActivePowerups: [], // currently active powerup for batting side
 		fielderUsedPowerups: [], // used powerups for fielding side
 		batsmanUsedPowerups: [], // used powerups for batting side
 		fielderUnusedPowerups: [...fielderPowerUpNames], // unused should be initialized with all powerups
@@ -87,7 +88,7 @@ export class GameStateManager {
 		// If no modification, just add the power-up to active list and add extra wicket
 		if (!modification) {
 			// Add to active list and remove from unused
-			gameState.fielderPowerupsActive.push("Third Man");
+			gameState.fielderActivePowerups.push("Third Man");
 			gameState.fielderUnusedPowerups =
 				gameState.fielderUnusedPowerups.filter(
 					(p) => p !== "Third Man",
@@ -161,7 +162,7 @@ export class GameStateManager {
 
 		if (!modification) {
 			// Just activate the power-up
-			gameState.fielderPowerupsActive.push("Field Shift");
+			gameState.fielderActivePowerups.push("Field Shift");
 			gameState.fielderUnusedPowerups =
 				gameState.fielderUnusedPowerups.filter(
 					(p) => p !== "Field Shift",
@@ -190,7 +191,7 @@ export class GameStateManager {
 		validatePowerUpUse(gameState, playerId, "Mirror Field");
 
 		// Add to active and remove from unused
-		gameState.fielderPowerupsActive.push("Mirror Field");
+		gameState.fielderActivePowerups.push("Mirror Field");
 		gameState.fielderUnusedPowerups =
 			gameState.fielderUnusedPowerups.filter((p) => p !== "Mirror Field");
 
@@ -219,7 +220,7 @@ export class GameStateManager {
 
 		if (!modification) {
 			// Just activate the power-up
-			gameState.batsmanPowerupsActive.push("Scout Report");
+			gameState.batsmanActivePowerups.push("Scout Report");
 			gameState.batsmanUnusedPowerups =
 				gameState.batsmanUnusedPowerups.filter(
 					(p) => p !== "Scout Report",
@@ -250,7 +251,7 @@ export class GameStateManager {
 		validatePowerUpUse(gameState, playerId, "Invulnerability");
 
 		// Add to active and remove from unused
-		gameState.batsmanPowerupsActive.push("Invulnerability");
+		gameState.batsmanActivePowerups.push("Invulnerability");
 		gameState.batsmanUnusedPowerups =
 			gameState.batsmanUnusedPowerups.filter(
 				(p) => p !== "Invulnerability",
@@ -278,7 +279,7 @@ export class GameStateManager {
 		validatePowerUpUse(gameState, playerId, "Frozen Hands");
 
 		// Add to active and remove from unused
-		gameState.batsmanPowerupsActive.push("Frozen Hands");
+		gameState.batsmanActivePowerups.push("Frozen Hands");
 		gameState.batsmanUnusedPowerups =
 			gameState.batsmanUnusedPowerups.filter((p) => p !== "Frozen Hands");
 
@@ -494,10 +495,10 @@ export class GameStateManager {
 		// Reset the presets early for next delivery
 		// Because they might get modified during delivery evaluation
 		gameState.presetChosen = 0; // reset to default preset
-		gameState.fielderUsedPowerups.push(...gameState.fielderPowerupsActive);
-		gameState.batsmanUsedPowerups.push(...gameState.batsmanPowerupsActive);
-		gameState.fielderPowerupsActive = [];
-		gameState.batsmanPowerupsActive = [];
+		gameState.fielderUsedPowerups.push(...gameState.fielderActivePowerups);
+		gameState.batsmanUsedPowerups.push(...gameState.batsmanActivePowerups);
+		gameState.fielderActivePowerups = [];
+		gameState.batsmanActivePowerups = [];
 		gameState.modifiedPresets = gameState.originalPresets.map((preset) => [
 			...preset,
 		]); // no reference to originalPresets nested lists
@@ -521,10 +522,12 @@ export class GameStateManager {
 		// Check for end of innings or game
 		// If currentBall exceeds totalBalls OR all wickets are down
 		const inningsOver = isInningsOver(gameState);
+		const gameOver = gameState.innings === 2 && inningsOver;
 
 		// If all balls are bowled or all wickets are down, end or switch innings
-		if (inningsOver && gameState.innings === 2) {
+		if (gameOver) {
 			gameState.gamePhase = "finished";
+			updatePowerUpsAfterUse(gameState, gameOver, inningsOver);
 			return gameState;
 		} else if (inningsOver) {
 			// Start second innings
@@ -551,13 +554,7 @@ export class GameStateManager {
 		gameState.currentBallBatsmanChoice = undefined;
 		gameState.gamePhase = "setting field";
 
-		// move the active batter power-ups to used power-ups
-		gameState.batsmanUsedPowerups.push(...gameState.batsmanPowerupsActive);
-		gameState.batsmanPowerupsActive = [];
-
-		// move the active fielder power-ups to used power-ups
-		gameState.fielderUsedPowerups.push(...gameState.fielderPowerupsActive);
-		gameState.fielderPowerupsActive = [];
+		updatePowerUpsAfterUse(gameState, gameOver, inningsOver);
 
 		return gameState;
 	}

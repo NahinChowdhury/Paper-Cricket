@@ -49,3 +49,9 @@ Display power ups and allow usage in frontend
 Power ups backend logic has been written. Looks good.
 Next we should implement the frontend. We should start off with displaying the power ups for everyone. They should not do anything.
 Then we implement the UI for each. Starting off with the power ups that don't provide any powerupcontext. Then implement the frozen hands power up and then finally implement the draggable shuffle power ups.
+
+## 3rd November, 2025
+Created powerUpCircles component.
+Mirror Field works for fielderview, but Third man and Field Shift power ups still need local usestates (or reuse setgameState where possible) to keep track of newWicketIndex and modified presets.
+We also need to create the draggable shuffle board for Third Man and Field Shift power ups.
+Need to revisit the handling of modifications in the backend and sync it with what's being sent from the frontend.

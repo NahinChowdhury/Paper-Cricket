@@ -1,7 +1,12 @@
 // Helper methods
 import { RoomManager } from "../roomManager";
 import { GameStateManager } from "../gameState";
-import { DeliveryRecord, GameState } from "../types";
+import {
+	batsmanPowerUpNames,
+	DeliveryRecord,
+	fielderPowerUpNames,
+	GameState,
+} from "../types";
 import { createError } from "../errors/AppError";
 
 export function verifyUserisActivePlayerInAGame(
@@ -62,8 +67,8 @@ export function recordDelivery(
 				: gameState.inningsTwoRuns,
 		presetChosen: presetIndex,
 		modifiedPreset: presetForThisDelivery,
-		fielderPowerUpUsed: [...gameState.fielderPowerupsActive],
-		batsmanPowerUpUsed: [...gameState.batsmanPowerupsActive],
+		fielderPowerUpUsed: [...gameState.fielderActivePowerups],
+		batsmanPowerUpUsed: [...gameState.batsmanActivePowerups],
 	};
 
 	gameState.deliveryHistory.push(delivery);
@@ -143,24 +148,13 @@ export function validatePowerUpUse(
 	}
 
 	// Get the relevant power-up lists based on player role
-	const activeList = isBatting
-		? gameState.batsmanPowerupsActive
-		: gameState.fielderPowerupsActive;
 	const usedList = isBatting
 		? gameState.batsmanUsedPowerups
 		: gameState.fielderUsedPowerups;
-	const unusedList = isBatting
-		? gameState.batsmanUnusedPowerups
-		: gameState.fielderUnusedPowerups;
 
 	// Check if power-up has been used
 	if (usedList.includes(powerUp)) {
 		throw createError("INVALID_MOVE", "Power-up has already been used");
-	}
-
-	// Check if power-up is available
-	if (!unusedList.includes(powerUp)) {
-		throw createError("INVALID_MOVE", "Power-up is not available");
 	}
 }
 
@@ -251,4 +245,38 @@ export function managePowerUpContext(
 	) {
 		gameState.powerUpContext["Frozen Hands"] = frozenHandsValue;
 	}
+}
+
+export function updatePowerUpsAfterUse(
+	gameState: GameState,
+	gameOver: boolean,
+	inningsOver: boolean,
+): void {
+	if (gameOver) {
+		// empty all power-up lists at game over
+		gameState.fielderUnusedPowerups = [];
+		gameState.batsmanUnusedPowerups = [];
+		gameState.fielderActivePowerups = [];
+		gameState.batsmanActivePowerups = [];
+		gameState.fielderUsedPowerups = [];
+		gameState.batsmanUsedPowerups = [];
+		return;
+	} else if (inningsOver) {
+		// At the end of innings, reset to default power-ups setup
+		gameState.batsmanActivePowerups = [];
+		gameState.fielderActivePowerups = [];
+		gameState.fielderUnusedPowerups = [...fielderPowerUpNames];
+		gameState.batsmanUnusedPowerups = [...batsmanPowerUpNames];
+		gameState.batsmanUsedPowerups = [];
+		gameState.fielderUsedPowerups = [];
+		return;
+	}
+
+	gameState.batsmanUsedPowerups.push(...gameState.batsmanActivePowerups);
+	gameState.batsmanActivePowerups = [];
+
+	gameState.fielderUsedPowerups.push(...gameState.fielderActivePowerups);
+	gameState.fielderActivePowerups = [];
+
+	return;
 }

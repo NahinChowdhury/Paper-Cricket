@@ -1,3 +1,5 @@
+export type PowerUpStatus = "used" | "unused" | "active";
+
 export interface User {
 	id: string;
 	roomId: string;
@@ -14,8 +16,8 @@ export interface GameState {
 	modifiedPresets: string[][]; // modified presets during the innings
 	presetChosen: number; // index of preset chosen for current delivery
 
-	fielderPowerupsActive: string[]; // currently active powerup for fielding side
-	batsmanPowerupsActive: string[]; // currently active powerup for batting side
+	fielderActivePowerups: string[]; // currently active powerup for fielding side
+	batsmanActivePowerups: string[]; // currently active powerup for batting side
 	fielderUsedPowerups: string[]; // used powerups for fielding side
 	batsmanUsedPowerups: string[]; // used powerups for batting side
 	fielderUnusedPowerups: string[]; // unused powerups for fielding side

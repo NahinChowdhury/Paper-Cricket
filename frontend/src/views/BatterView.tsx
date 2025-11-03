@@ -159,6 +159,7 @@ const BatterView: React.FC = () => {
 			presetChosen,
 			recapState.isRecapping,
 			isBattingTurn,
+			modifiedPresets,
 		],
 	);
 

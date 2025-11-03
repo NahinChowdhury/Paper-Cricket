@@ -6,7 +6,7 @@ const ErrorOverlay: React.FC = () => {
 
 	useEffect(() => {
 		if (!error) return;
-		const timer = setTimeout(() => setError(null), 5000);
+		const timer = setTimeout(() => setError(null), 3000);
 		return () => clearTimeout(timer);
 	}, [error, setError]);
 

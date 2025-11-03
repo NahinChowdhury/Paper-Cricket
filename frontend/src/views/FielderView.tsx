@@ -3,6 +3,8 @@ import { useSocket } from "../contexts/SocketContext";
 import { useGame } from "../contexts/GameContext";
 import LiveScorecard from "../components/LiveScorecard";
 import FielderPresets from "../components/FielderPresets";
+import PowerUpCircles from "../components/PowerUpCircles";
+import { PowerUpStatus, fielderPowerUpNames } from "../types";
 
 // Color mapping for different outcomes
 const colorsMap: Record<string, string> = {
@@ -42,6 +44,16 @@ const FielderView: React.FC = () => {
 		displayState.currentBallBatsmanChoice !== undefined
 			? displayState.currentBallBatsmanChoice
 			: null;
+
+	const usedPowerUps: string[] = displayState.fielderUsedPowerups;
+	const unusedPowerUps: string[] = displayState.fielderUnusedPowerups;
+	const activePowerUps: string[] = displayState.fielderActivePowerups;
+
+	const powerUpsStatusMap: Map<string, PowerUpStatus> = new Map([
+		...usedPowerUps.map((p: string) => [p, "used" as PowerUpStatus]),
+		...unusedPowerUps.map((p: string) => [p, "unused" as PowerUpStatus]),
+		...activePowerUps.map((p: string) => [p, "active" as PowerUpStatus]),
+	] as [string, PowerUpStatus][]);
 
 	// 🔹 Handle surrender
 	const handleSurrender = () => {
@@ -89,7 +101,7 @@ const FielderView: React.FC = () => {
 				ctx.restore();
 			});
 		},
-		[shotSelected],
+		[shotSelected, displayState.modifiedPresets, localPresetChoice],
 	);
 
 	const normalizeRotation = (r: number) =>
@@ -224,6 +236,34 @@ const FielderView: React.FC = () => {
 		);
 	};
 
+	const handlePowerUpUsed = (powerUpKey: string) => {
+		if (!socket || !user) return;
+		console.log(`Using power-up: ${powerUpKey}`);
+
+		const modifications: Record<string, any> = {};
+
+		if (displayState.fielderActivePowerups.includes(powerUpKey)) {
+			// send modifications if the server has been notified about the power-up activation
+			switch (powerUpKey) {
+				case "Third Man":
+					modifications.presetChosen = localPresetChoice;
+					modifications.newWicketIndex = 1; // TODO: should be tracked by some useState
+					break;
+				case "Field Shift":
+					modifications.presetChosen = localPresetChoice;
+					modifications.preset =
+						displayState.modifiedPresets[localPresetChoice]; // TODO: should be tracked by some useState for modified preset or use setGameState directly
+					break;
+				// Add more cases as needed for different power-ups
+				case "Mirror Field":
+				default:
+					break;
+			}
+		}
+
+		socket.emit("power_up_used", user.id, user.roomId, powerUpKey);
+	};
+
 	return (
 		<div
 			style={{
@@ -250,6 +290,23 @@ const FielderView: React.FC = () => {
 				{/* Scorecard should be updated immediately even if recap is playing*/}
 				<LiveScorecard
 					gameState={gameState ? gameState : displayState}
+				/>
+			</div>
+
+			{/* 🔹 Power Up Circles (left side, vertically centered) */}
+			<div
+				style={{
+					position: "absolute",
+					left: "20px",
+					top: "50%",
+					transform: "translateY(-50%)",
+					zIndex: 5,
+				}}
+			>
+				<PowerUpCircles
+					powerUpNames={fielderPowerUpNames}
+					powerUps={powerUpsStatusMap}
+					onClick={handlePowerUpUsed}
 				/>
 			</div>
 
