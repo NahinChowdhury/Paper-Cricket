@@ -4,7 +4,8 @@ import { useGame } from "../contexts/GameContext";
 import LiveScorecard from "../components/LiveScorecard";
 import FielderPresets from "../components/FielderPresets";
 import PowerUpCircles from "../components/PowerUpCircles";
-import { PowerUpStatus, fielderPowerUpNames } from "../types";
+import { DraggableList } from "../components/DraggableList";
+import { GameState, PowerUpStatus, fielderPowerUpNames } from "../types";
 
 // Color mapping for different outcomes
 const colorsMap: Record<string, string> = {
@@ -22,7 +23,7 @@ const SPINNER_RADIUS = 150;
 
 const FielderView: React.FC = () => {
 	const { socket } = useSocket();
-	const { gameState, recapState, user } = useGame();
+	const { gameState, setGameState, recapState, user } = useGame();
 
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
 	const [rotation, setRotation] = useState(0);
@@ -328,6 +329,46 @@ const FielderView: React.FC = () => {
 			>
 				Surrender
 			</button>
+
+			{/* DraggableList on the right side */}
+			<div
+				style={{
+					position: "absolute",
+					right: "20px",
+					top: "50%",
+					transform: "translateY(-50%)",
+					width: "200px",
+					backgroundColor: "white",
+					padding: "10px",
+					borderRadius: "8px",
+					boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+					zIndex: 5,
+				}}
+			>
+				<DraggableList
+					items={
+						displayState.modifiedPresets[localPresetChoice] || []
+					}
+					onReorder={(newItems) => {
+						console.log("Reordering items:", newItems);
+						setGameState((prev: GameState | null) => {
+							if (!prev) return prev; // or return null safely
+							// get the entire modifiedPresets array
+							const newPresets = [...prev.modifiedPresets];
+							// update only the selected preset
+							newPresets[localPresetChoice] = [...newItems];
+							return { ...prev, modifiedPresets: newPresets };
+						});
+						// use handlePowerUpUsed to notify server about the change
+						// TODO: think about how thirdman and field shift interact with this. field shift is a superset of thirdman
+					}}
+					renderItem={(item) => (
+						<span style={{ color: colorsMap[item] || "#000000" }}>
+							{item}
+						</span>
+					)}
+				/>
+			</div>
 
 			{/* 🎯 Dynamic message based on phase */}
 			<h2 style={{ marginBottom: "10px" }}>🧤 Fielder View</h2>
