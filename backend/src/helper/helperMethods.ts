@@ -186,14 +186,18 @@ export function validateFieldShiftModification(
 	presetChosen: number,
 	newPreset: string[],
 ): void {
-	// Get the original preset
-	const originalPreset = gameState.originalPresets[presetChosen];
-	if (!originalPreset) {
+	// Get the relevant preset
+	// If Third Man is active, compare against modified preset because it adds a new wicket position to the preset
+	const relevantPreset = gameState.fielderActivePowerups.includes("Third Man")
+		? gameState.modifiedPresets[presetChosen]
+		: gameState.originalPresets[presetChosen];
+
+	if (!relevantPreset) {
 		throw createError("INVALID_MOVE", "Invalid preset chosen");
 	}
 
 	// Sort both arrays to compare contents without caring about order
-	const sortedOriginal = [...originalPreset].sort();
+	const sortedOriginal = [...relevantPreset].sort();
 	const sortedNew = [...newPreset].sort();
 
 	// Check if all values from original preset exist in new preset

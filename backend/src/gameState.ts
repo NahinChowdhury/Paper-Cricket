@@ -629,4 +629,14 @@ export class GameStateManager {
 
 		return gameState;
 	}
+
+	getActiveGames(): Map<string, GameState> {
+		const activeGames = new Map<string, GameState>();
+		this.gameStates.forEach((gameState, roomId) => {
+			if (!["finished", "surrendered"].includes(gameState.gamePhase)) {
+				activeGames.set(roomId, gameState);
+			}
+		});
+		return activeGames;
+	}
 }

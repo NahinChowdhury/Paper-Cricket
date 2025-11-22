@@ -61,3 +61,23 @@ Dinner:
 Draggable shuffle list works but it's not connected to the power ups yet. That is the next step
 UI is garbage for mobile.
 Finish all power ups interaction.
+
+
+### 4th November, 2025
+Third Man power up somewhat works? Need to ensure the changes make sense throughout.
+Need to look into Field Shift next. I think Mirror Field just works from the get go.
+Need to clean up the code afterwards
+
+### 22nd November, 2025
+Fielder power ups work as expected.
+The shifting of pies in the list works smoothly now
+Hovering on power ups now shows description
+Fixed a small bug that made the first pie in the list to start at 90 degrees.
+Added an active games list so that anyone can join any game.
+
+TODO:
+ - Next we need to implement batter power ups. 
+ - Also need to show the power ups in the Audience view
+ - Need to also ensure power up usage during fielding is only shows to fielder. power up usage during batting is shown to all
+ - Then we clean up the code and reuse any common components.
+ - Improve front page to give context of game 

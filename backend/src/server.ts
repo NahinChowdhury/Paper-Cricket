@@ -808,6 +808,19 @@ app.get("/health", (req, res) => {
 	res.json({ status: "OK", timestamp: new Date().toISOString() });
 });
 
+// GET /games/active - return all active games
+app.get("/games/active", (req, res) => {
+	// Use GameStateManager.getActiveGames() to obtain active games
+	const activeMap = gameStateManager.getActiveGames();
+
+	const activeGames: { roomId: string; gameState: GameState }[] = [];
+	activeMap.forEach((gameState, roomId) => {
+		activeGames.push({ roomId, gameState });
+	});
+
+	return res.status(200).json(activeGames);
+});
+
 // Initialize routes
 app.use("/games", initializeGamesRouter(roomManager, gameStateManager));
 

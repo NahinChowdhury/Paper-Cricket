@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useState } from "react";
 
 interface PowerUpCirclesProps {
 	powerUpNames: string[];
@@ -70,6 +70,26 @@ const PowerUpCircles: React.FC<PowerUpCirclesProps> = ({
 		};
 	};
 
+	const [hoveredPowerUp, setHoveredPowerUp] = useState<string | null>(null);
+
+	const descriptions: Record<string, string> = {
+		// Fielder power-ups
+		"Third Man":
+			"Player can add an extra wicket on the board. Player can move this Wicket to anywhere they like.",
+		"Field Shift":
+			"Player can shuffle the field for a turn. Player can manually modify the pie order as they please. It will reset to the default field view next round",
+		"Mirror Field":
+			"Player can reverse the order of the pies for the turn.",
+
+		// Batsman power-ups
+		"Scout Report":
+			"Player can click on a pie and see what's under it before submitting the shot.",
+		Invulnerability:
+			"If the batter hits wicket, ignore the wicket for that ball",
+		"Frozen Hands":
+			"Temporarily locks the fielder's rotation for the next ball. Fielder must send the same rotation but they can change the preset",
+	};
+
 	return (
 		<div
 			style={{
@@ -96,32 +116,73 @@ const PowerUpCircles: React.FC<PowerUpCirclesProps> = ({
 			</style>
 			{powerUpNames.map((powerUpName) => {
 				const status = powerUps.get(powerUpName) || "unused";
+				const isHovered = hoveredPowerUp === powerUpName;
+
 				return (
 					<div
 						key={powerUpName}
-						style={getCircleStyle(status)}
-						onClick={() => {
-							if (status !== "used") {
-								console.log(`Clicked power-up: ${powerUpName}`);
-								onClick(powerUpName);
-							}
+						style={{
+							position: "relative",
+							display: "flex",
+							alignItems: "center",
 						}}
-						onMouseEnter={(e) => {
-							if (status !== "used") {
-								Object.assign(
-									e.currentTarget.style,
-									getHoverStyle(status),
-								);
-							}
+						onMouseEnter={() => {
+							setHoveredPowerUp(powerUpName);
 						}}
-						onMouseLeave={(e) => {
-							Object.assign(
-								e.currentTarget.style,
-								getCircleStyle(status),
-							);
+						onMouseLeave={() => {
+							if (hoveredPowerUp === powerUpName)
+								setHoveredPowerUp(null);
 						}}
 					>
-						{powerUpName.replace("powerUp", "")}
+						<div
+							style={getCircleStyle(status)}
+							onClick={() => {
+								if (status !== "used") {
+									console.log(
+										`Clicked power-up: ${powerUpName}`,
+									);
+									onClick(powerUpName);
+								}
+							}}
+							onMouseEnter={(e) => {
+								if (status !== "used") {
+									Object.assign(
+										e.currentTarget.style,
+										getHoverStyle(status),
+									);
+								}
+							}}
+							onMouseLeave={(e) => {
+								Object.assign(
+									e.currentTarget.style,
+									getCircleStyle(status),
+								);
+							}}
+						>
+							{powerUpName.replace("powerUp", "")}
+						</div>
+
+						{isHovered && (
+							<div
+								style={{
+									position: "absolute",
+									left: "60px",
+									top: "50%",
+									transform: "translateY(-50%)",
+									background: "rgba(0,0,0,0.85)",
+									color: "#fff",
+									padding: "6px 8px",
+									borderRadius: "4px",
+									whiteSpace: "nowrap",
+									fontSize: "12px",
+									boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+									zIndex: 100,
+								}}
+							>
+								{descriptions[powerUpName] ||
+									"Power-up description not found."}
+							</div>
+						)}
 					</div>
 				);
 			})}

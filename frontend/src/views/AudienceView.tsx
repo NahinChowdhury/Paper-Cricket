@@ -60,7 +60,8 @@ const AudienceView: React.FC = () => {
 			const cy = ctx.canvas.height / 2;
 
 			currentPreset.forEach((outcome, i) => {
-				const start = i * sliceAngle + rotation;
+				// Subtract Math.PI/2 because canvas 0 radians points right (3 o’clock), but our pie’s first slice is visually at the top (12 o’clock)
+				const start = i * sliceAngle + rotation - Math.PI / 2;
 				const end = start + sliceAngle;
 				const radius =
 					shotSelected === i ? SPINNER_RADIUS + 10 : SPINNER_RADIUS;

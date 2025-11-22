@@ -47,7 +47,8 @@ const PresetWheel: React.FC<PresetWheelProps> = ({
 
 			// Draw each slice
 			preset.forEach((outcome, i) => {
-				const start = i * sliceAngle;
+				// Subtract Math.PI/2 because canvas 0 radians points right (3 o’clock), but our pie’s first slice is visually at the top (12 o’clock)
+				const start = i * sliceAngle - Math.PI / 2;
 				const end = start + sliceAngle;
 
 				ctx.beginPath();

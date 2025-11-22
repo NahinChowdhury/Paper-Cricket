@@ -30,6 +30,7 @@ const FielderView: React.FC = () => {
 	const [isDragging, setIsDragging] = useState(false);
 	const [startAngle, setStartAngle] = useState(0);
 	const [localPresetChoice, setLocalPresetChoice] = useState<number>(0);
+	const [specialIndex, setSpecialIndex] = useState<number | null>(null);
 
 	// ✅ Choose which state to display
 	const displayState =
@@ -79,7 +80,8 @@ const FielderView: React.FC = () => {
 			const currentPreset =
 				displayState.modifiedPresets[localPresetChoice];
 			currentPreset.forEach((outcome, i) => {
-				const start = i * sliceAngle + rotationAngle;
+				// Subtract Math.PI/2 because canvas 0 radians points right (3 o’clock), but our pie’s first slice is visually at the top (12 o’clock)
+				const start = i * sliceAngle + rotationAngle - Math.PI / 2;
 				const end = start + sliceAngle;
 
 				const radius =
@@ -193,6 +195,7 @@ const FielderView: React.FC = () => {
 			displayState.modifiedPresets[index],
 		);
 		setLocalPresetChoice(index);
+
 		// Reset rotation when preset is changed
 		setRotation(0);
 
@@ -237,33 +240,83 @@ const FielderView: React.FC = () => {
 		);
 	};
 
-	const handlePowerUpUsed = (powerUpKey: string) => {
-		if (!socket || !user) return;
-		console.log(`Using power-up: ${powerUpKey}`);
-
-		const modifications: Record<string, any> = {};
-
-		if (displayState.fielderActivePowerups.includes(powerUpKey)) {
-			// send modifications if the server has been notified about the power-up activation
-			switch (powerUpKey) {
-				case "Third Man":
-					modifications.presetChosen = localPresetChoice;
-					modifications.newWicketIndex = 1; // TODO: should be tracked by some useState
-					break;
-				case "Field Shift":
-					modifications.presetChosen = localPresetChoice;
-					modifications.preset =
-						displayState.modifiedPresets[localPresetChoice]; // TODO: should be tracked by some useState for modified preset or use setGameState directly
-					break;
-				// Add more cases as needed for different power-ups
-				case "Mirror Field":
-				default:
-					break;
-			}
+	// Add useEffect for tracking Third Man power-up index
+	useEffect(() => {
+		if (!displayState.powerUpContext?.["Third Man"]) {
+			setSpecialIndex(null);
+			return;
 		}
+		setSpecialIndex(
+			displayState.powerUpContext["Third Man"][localPresetChoice],
+		);
+	}, [displayState.powerUpContext, localPresetChoice]);
 
-		socket.emit("power_up_used", user.id, user.roomId, powerUpKey);
-	};
+	const handlePowerUpUsed = useCallback(
+		(powerUpKey: string, modifications: Record<string, any> = {}) => {
+			if (!socket || !user) return;
+			console.log(`Using power-up: ${powerUpKey}`);
+
+			if (displayState.fielderActivePowerups.includes(powerUpKey)) {
+				// send modifications if the server has been notified about the power-up activation
+				switch (powerUpKey) {
+					case "Third Man":
+						console.log("Third Man power-up used:", modifications);
+						// Ensure modifications has presetChosen and newWicketIndex
+						if (
+							modifications.presetChosen === null ||
+							modifications.newWicketIndex === null
+						) {
+							console.error(
+								"Third Man power-up used without necessary modifications.",
+							);
+							return;
+						}
+						break;
+					case "Field Shift":
+						console.log(
+							"Field Shift power-up used:",
+							modifications,
+						);
+						// Ensure modifications has presetChosen and newPreset
+						if (
+							modifications.presetChosen === null ||
+							!modifications.newPreset
+						) {
+							console.error(
+								"Field Shift power-up used without necessary modifications.",
+							);
+							return;
+						}
+						break;
+					// Add more cases as needed for different power-ups
+					case "Mirror Field":
+					default:
+						break;
+				}
+			}
+
+			console.log("Modifications:", modifications);
+			if (Object.keys(modifications).length > 0) {
+				socket.emit(
+					"power_up_used",
+					user.id,
+					user.roomId,
+					powerUpKey,
+					modifications,
+				);
+				return;
+			}
+			socket.emit("power_up_used", user.id, user.roomId, powerUpKey);
+		},
+		[
+			socket,
+			user,
+			displayState.fielderActivePowerups,
+			displayState.modifiedPresets,
+			localPresetChoice,
+			specialIndex,
+		],
+	);
 
 	return (
 		<div
@@ -331,44 +384,137 @@ const FielderView: React.FC = () => {
 			</button>
 
 			{/* DraggableList on the right side */}
-			<div
-				style={{
-					position: "absolute",
-					right: "20px",
-					top: "50%",
-					transform: "translateY(-50%)",
-					width: "200px",
-					backgroundColor: "white",
-					padding: "10px",
-					borderRadius: "8px",
-					boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-					zIndex: 5,
-				}}
-			>
-				<DraggableList
-					items={
-						displayState.modifiedPresets[localPresetChoice] || []
-					}
-					onReorder={(newItems) => {
-						console.log("Reordering items:", newItems);
-						setGameState((prev: GameState | null) => {
-							if (!prev) return prev; // or return null safely
-							// get the entire modifiedPresets array
-							const newPresets = [...prev.modifiedPresets];
-							// update only the selected preset
-							newPresets[localPresetChoice] = [...newItems];
-							return { ...prev, modifiedPresets: newPresets };
-						});
-						// use handlePowerUpUsed to notify server about the change
-						// TODO: think about how thirdman and field shift interact with this. field shift is a superset of thirdman
-					}}
-					renderItem={(item) => (
-						<span style={{ color: colorsMap[item] || "#000000" }}>
-							{item}
-						</span>
-					)}
-				/>
-			</div>
+			{displayState.gamePhase === "setting field" &&
+				recapState.isRecapping === false &&
+				(displayState.fielderActivePowerups.includes("Field Shift") ||
+					displayState.fielderActivePowerups.includes(
+						"Third Man",
+					)) && (
+					<div
+						style={{
+							position: "absolute",
+							right: "20px",
+							top: "50%",
+							transform: "translateY(-50%)",
+							width: "200px",
+							backgroundColor: "white",
+							padding: "10px",
+							borderRadius: "8px",
+							boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+							zIndex: 5,
+						}}
+					>
+						<DraggableList
+							items={
+								displayState.modifiedPresets[
+									localPresetChoice
+								] || []
+							}
+							specialIndex={
+								displayState.fielderActivePowerups.includes(
+									"Field Shift", // need this so that we can move all pies when field shift is enabled even if third man is enabled too
+								)
+									? null
+									: specialIndex
+							}
+							onReorder={(newItems, specialIndex) => {
+								console.log("Reordering items:", newItems);
+								setGameState((prev: GameState | null) => {
+									if (!prev) return prev; // or return null safely
+									// get the entire modifiedPresets array
+									const newPresets = [
+										...prev.modifiedPresets,
+									];
+									// update only the selected preset
+									newPresets[localPresetChoice] = [
+										...newItems,
+									];
+									// Update special index if needed
+									if (
+										specialIndex !== undefined &&
+										specialIndex !== null
+									) {
+										if (
+											!prev.powerUpContext?.["Third Man"]
+										) {
+											return prev;
+										}
+										const newPowerUpContext = {
+											...prev.powerUpContext,
+											"Third Man": {
+												...prev.powerUpContext[
+													"Third Man"
+												],
+												[localPresetChoice]:
+													specialIndex,
+											},
+										};
+										console.log(
+											"Setting new powerUpContext:",
+											newPowerUpContext,
+										);
+										return {
+											...prev,
+											modifiedPresets: newPresets,
+											powerUpContext: newPowerUpContext,
+										};
+									}
+
+									console.log(
+										"Setting new presets:",
+										newPresets,
+									);
+									return {
+										...prev,
+										modifiedPresets: newPresets,
+									};
+								});
+
+								// if thirdman, then set special index
+
+								// use handlePowerUpUsed to notify server about the change
+								// TODO: think about how thirdman and field shift interact with this. field shift is a superset of thirdman
+								if (
+									displayState.fielderActivePowerups.includes(
+										"Field Shift",
+									)
+								) {
+									const modifications = {
+										presetChosen: localPresetChoice,
+										newPreset: newItems,
+									};
+									handlePowerUpUsed(
+										"Field Shift",
+										modifications,
+									);
+								}
+								if (
+									displayState.fielderActivePowerups.includes(
+										"Third Man",
+									)
+								) {
+									const modifications = {
+										presetChosen: localPresetChoice,
+										newWicketIndex: specialIndex,
+									};
+									handlePowerUpUsed(
+										"Third Man",
+										modifications,
+									);
+								}
+							}}
+							renderItem={(item) => (
+								<span
+									style={{
+										color: colorsMap[item] || "#000000",
+									}}
+								>
+									{item}
+								</span>
+							)}
+						/>
+					</div>
+				)}
 
 			{/* 🎯 Dynamic message based on phase */}
 			<h2 style={{ marginBottom: "10px" }}>🧤 Fielder View</h2>

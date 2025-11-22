@@ -71,7 +71,8 @@ const BatterView: React.FC = () => {
 		if (distance > SPINNER_RADIUS) return; // outside wheel
 
 		const fullCircle = 2 * Math.PI;
-		const angle = Math.atan2(dy, dx) - rotation;
+		// Subtract Math.PI/2 because canvas 0 radians points right (3 o’clock), but our pie’s first slice is visually at the top (12 o’clock)
+		const angle = Math.atan2(dy, dx) - rotation + Math.PI / 2;
 		const normalized = ((angle % fullCircle) + fullCircle) % fullCircle;
 		const currentPreset = modifiedPresets[presetChosen];
 		const sliceAngle = fullCircle / currentPreset.length;
@@ -117,7 +118,7 @@ const BatterView: React.FC = () => {
 			const cy = ctx.canvas.height / 2;
 
 			currentPreset.forEach((outcome, i) => {
-				const start = i * sliceAngle + rotation;
+				const start = i * sliceAngle + rotation - Math.PI / 2;
 				const end = start + sliceAngle;
 				const radius =
 					shotSelected === i ? SPINNER_RADIUS + 10 : SPINNER_RADIUS;
