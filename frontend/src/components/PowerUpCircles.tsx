@@ -4,12 +4,14 @@ interface PowerUpCirclesProps {
 	powerUpNames: string[];
 	powerUps: Map<string, "used" | "active" | "unused">;
 	onClick: (powerUpKey: string) => void;
+	disabled?: boolean;
 }
 
 const PowerUpCircles: React.FC<PowerUpCirclesProps> = ({
 	powerUpNames,
 	powerUps,
 	onClick,
+	disabled = false,
 }) => {
 	const getCircleStyle = (
 		status: "used" | "active" | "unused",
@@ -19,7 +21,7 @@ const PowerUpCircles: React.FC<PowerUpCirclesProps> = ({
 			height: "50px",
 			borderRadius: "50%",
 			margin: "5px 0",
-			cursor: status === "used" ? "default" : "pointer",
+			cursor: status === "used" || disabled ? "default" : "pointer",
 			transition: "all 0.2s ease-in-out",
 			display: "flex",
 			alignItems: "center",
@@ -100,6 +102,8 @@ const PowerUpCircles: React.FC<PowerUpCirclesProps> = ({
 				backgroundColor: "rgba(255, 255, 255, 0.9)",
 				borderRadius: "8px",
 				boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+				opacity: disabled ? 0.6 : 1,
+				filter: disabled ? "grayscale(100%)" : undefined,
 			}}
 		>
 			<style>
@@ -127,7 +131,7 @@ const PowerUpCircles: React.FC<PowerUpCirclesProps> = ({
 							alignItems: "center",
 						}}
 						onMouseEnter={() => {
-							setHoveredPowerUp(powerUpName);
+							if (!disabled) setHoveredPowerUp(powerUpName);
 						}}
 						onMouseLeave={() => {
 							if (hoveredPowerUp === powerUpName)
@@ -137,7 +141,7 @@ const PowerUpCircles: React.FC<PowerUpCirclesProps> = ({
 						<div
 							style={getCircleStyle(status)}
 							onClick={() => {
-								if (status !== "used") {
+								if (status !== "used" && !disabled) {
 									console.log(
 										`Clicked power-up: ${powerUpName}`,
 									);
@@ -145,7 +149,7 @@ const PowerUpCircles: React.FC<PowerUpCirclesProps> = ({
 								}
 							}}
 							onMouseEnter={(e) => {
-								if (status !== "used") {
+								if (status !== "used" && !disabled) {
 									Object.assign(
 										e.currentTarget.style,
 										getHoverStyle(status),

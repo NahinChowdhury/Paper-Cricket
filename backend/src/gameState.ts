@@ -284,7 +284,7 @@ export class GameStateManager {
 			gameState.batsmanUnusedPowerups.filter((p) => p !== "Frozen Hands");
 
 		// Add entry to context with current delivery number
-		gameState.powerUpContext["Frozen Hands"] = gameState.currentBall;
+		gameState.powerUpContext["Frozen Hands"] = gameState.currentBall + 1;
 		return SocketEmissionMode.TO_ALL_IN_ROOM;
 	}
 

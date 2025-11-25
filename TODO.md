@@ -81,3 +81,15 @@ TODO:
  - Need to also ensure power up usage during fielding is only shows to fielder. power up usage during batting is shown to all
  - Then we clean up the code and reuse any common components.
  - Improve front page to give context of game 
+
+
+### 24nd November, 2025
+Done:
+Batter power ups working
+Show presets in batter view
+
+TODO:
+Show power up circles and usage in audience view
+Show opponent's power ups and usage in batter and fielder view
+Disable power up usage if player is not actively making the move
+Do remaining above TODOs from 22nd November, 2025

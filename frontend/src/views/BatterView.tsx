@@ -2,6 +2,9 @@ import React, { useRef, useEffect, useState, useCallback } from "react";
 import { useSocket } from "../contexts/SocketContext";
 import { useGame } from "../contexts/GameContext";
 import LiveScorecard from "../components/LiveScorecard";
+import { batsmanPowerUpNames, PowerUpStatus } from "../types";
+import PowerUpCircles from "../components/PowerUpCircles";
+import FielderPresets from "../components/FielderPresets";
 
 // Color mapping for different outcomes
 const colorsMap: Record<string, string> = {
@@ -40,13 +43,24 @@ const BatterView: React.FC = () => {
 		modifiedPresets,
 		gamePhase,
 		playerBatting,
-		surrenderedBy,
-		inningsOneRuns,
-		inningsTwoRuns,
+		powerUpContext,
 	} = displayState;
 
+	const usedPowerUps: string[] = displayState.batsmanUsedPowerups;
+	const unusedPowerUps: string[] = displayState.batsmanUnusedPowerups;
+	const activePowerUps: string[] = displayState.batsmanActivePowerups;
+
+	const powerUpsStatusMap: Map<string, PowerUpStatus> = new Map([
+		...usedPowerUps.map((p: string) => [p, "used" as PowerUpStatus]),
+		...unusedPowerUps.map((p: string) => [p, "unused" as PowerUpStatus]),
+		...activePowerUps.map((p: string) => [p, "active" as PowerUpStatus]),
+	] as [string, PowerUpStatus][]);
+
 	const rotation = currentBallRotation || 0;
-	const isBattingTurn = playerBatting === user.id && gamePhase === "batting";
+	const isBattingTurn =
+		playerBatting === user.id &&
+		gamePhase === "batting" &&
+		!recapState.isRecapping;
 
 	// 🎯 Handle surrender
 	const handleSurrender = () => {
@@ -58,7 +72,7 @@ const BatterView: React.FC = () => {
 
 	// 🎯 Handle shot selection
 	const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-		if (!isBattingTurn || recapState.isRecapping) return; // disable during recap
+		if (!isBattingTurn) return; // disable during recap
 		const canvas = canvasRef.current;
 		if (!canvas) return;
 		const rect = canvas.getBoundingClientRect();
@@ -79,6 +93,14 @@ const BatterView: React.FC = () => {
 		const index =
 			Math.floor(normalized / sliceAngle) % currentPreset.length;
 		setShotSelected(index);
+
+		if (
+			activePowerUps.includes("Scout Report") &&
+			!("Scout Report" in (powerUpContext ?? {}))
+		) {
+			handlePowerUpUsed("Scout Report", { pieIndex: index });
+			return;
+		}
 
 		if (socket && user?.roomId) {
 			socket.emit("shot_selection_hover", user.id, index);
@@ -129,7 +151,13 @@ const BatterView: React.FC = () => {
 				ctx.closePath();
 
 				// Only use color when recapping, otherwise use black/grey
-				if (recapState.isRecapping) {
+				const revealPie =
+					recapState.isRecapping ||
+					(activePowerUps.includes("Scout Report") &&
+						"Scout Report" in (powerUpContext ?? {}) &&
+						i === powerUpContext["Scout Report"]);
+
+				if (revealPie) {
 					ctx.fillStyle = colorsMap[outcome] || "#000000";
 				} else {
 					ctx.fillStyle = isBattingTurn ? "#000000" : "#808080";
@@ -142,7 +170,7 @@ const BatterView: React.FC = () => {
 				ctx.stroke();
 
 				// Only show labels during recap
-				if (recapState.isRecapping) {
+				if (revealPie) {
 					ctx.save();
 					ctx.translate(cx, cy);
 					ctx.rotate(start + sliceAngle / 2);
@@ -174,6 +202,50 @@ const BatterView: React.FC = () => {
 	}, [rotation, shotSelected, drawPie]);
 
 	const unableToSubmitShot = shotSelected === null || recapState.isRecapping;
+
+	const handlePowerUpUsed = useCallback(
+		(powerUpKey: string, modifications: Record<string, any> = {}) => {
+			if (!socket || !user) return;
+			console.log(`Using power-up: ${powerUpKey}`);
+
+			if (activePowerUps.includes(powerUpKey)) {
+				// send modifications if the server has been notified about the power-up activation
+				switch (powerUpKey) {
+					case "Scout Report":
+						console.log(
+							"Scout Report power-up used:",
+							modifications,
+						);
+						// Ensure modifications has presetChosen and newWicketIndex
+						if (modifications.pieIndex === null) {
+							console.error(
+								"Scout Report power-up used without necessary modifications.",
+							);
+							return;
+						}
+						break;
+					default:
+						break;
+				}
+			}
+
+			console.log("Modifications:", modifications);
+			if (Object.keys(modifications).length > 0) {
+				socket.emit(
+					"power_up_used",
+					user.id,
+					user.roomId,
+					powerUpKey,
+					modifications,
+				);
+				return;
+			}
+
+			socket.emit("power_up_used", user.id, user.roomId, powerUpKey);
+		},
+		[socket, user, activePowerUps, shotSelected],
+	);
+
 	// =========================
 	//  UI RENDER
 	// =========================
@@ -203,6 +275,24 @@ const BatterView: React.FC = () => {
 				{/* Scorecard should be updated immediately even if recap is playing*/}
 				<LiveScorecard
 					gameState={gameState ? gameState : displayState}
+				/>
+			</div>
+
+			{/* 🔹 Power Up Circles (left side, vertically centered) */}
+			<div
+				style={{
+					position: "absolute",
+					left: "20px",
+					top: "50%",
+					transform: "translateY(-50%)",
+					zIndex: 5,
+				}}
+			>
+				<PowerUpCircles
+					powerUpNames={batsmanPowerUpNames}
+					powerUps={powerUpsStatusMap}
+					onClick={handlePowerUpUsed}
+					disabled={!isBattingTurn}
 				/>
 			</div>
 
@@ -276,6 +366,15 @@ const BatterView: React.FC = () => {
 					</div>
 				)}
 			</div>
+
+			{/* 🔹 Preset Selection */}
+			<FielderPresets
+				modifiedPresets={displayState.originalPresets}
+				style={{
+					pointerEvents: "none",
+					cursor: "not-allowed",
+				}}
+			/>
 
 			{/* 🔹 Submit Shot Button */}
 			<div style={{ marginTop: "30px" }}>

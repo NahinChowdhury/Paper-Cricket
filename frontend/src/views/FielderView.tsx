@@ -33,15 +33,22 @@ const FielderView: React.FC = () => {
 	const [specialIndex, setSpecialIndex] = useState<number | null>(null);
 
 	// ✅ Choose which state to display
-	const displayState =
+	const displayState: GameState | null =
 		recapState.isRecapping && recapState.frozenState
 			? recapState.frozenState
 			: gameState;
 
 	if (!displayState || !user) return null;
 
-	const canRotate =
-		displayState.gamePhase === "setting field" && !recapState.isRecapping;
+	const isFieldingTurn =
+		displayState.playerFielding === user.id &&
+		displayState.gamePhase === "setting field" &&
+		!recapState.isRecapping;
+
+	const frozenHandsPowerUpUsed: boolean =
+		displayState.powerUpContext?.["Frozen Hands"] ===
+		displayState.currentBall;
+
 	const shotSelected: number | null =
 		displayState.currentBallBatsmanChoice !== undefined
 			? displayState.currentBallBatsmanChoice
@@ -119,7 +126,7 @@ const FielderView: React.FC = () => {
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
 		drawPie(ctx, rotation, localPresetChoice);
 
-		if (!canRotate) {
+		if (!isFieldingTurn) {
 			ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
 			ctx.beginPath();
 			ctx.arc(
@@ -131,7 +138,7 @@ const FielderView: React.FC = () => {
 			);
 			ctx.fill();
 		}
-	}, [rotation, drawPie, canRotate, localPresetChoice]);
+	}, [rotation, drawPie, isFieldingTurn, localPresetChoice]);
 
 	useEffect(() => {
 		// Reset rotation when entering "setting field"
@@ -140,7 +147,7 @@ const FielderView: React.FC = () => {
 				"Entering field setting phase. presetChosen:",
 				displayState.presetChosen,
 			);
-			setRotation(0);
+			setRotation(displayState.currentBallRotation || 0);
 			setLocalPresetChoice(displayState.presetChosen || 0);
 		}
 	}, [displayState.gamePhase]);
@@ -159,7 +166,7 @@ const FielderView: React.FC = () => {
 
 	// 🔹 Drag logic
 	const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-		if (!canRotate) return;
+		if (!isFieldingTurn || frozenHandsPowerUpUsed) return;
 
 		// Disable scrolling while dragging
 		document.body.style.overflow = "hidden";
@@ -174,7 +181,7 @@ const FielderView: React.FC = () => {
 	};
 
 	const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-		if (!isDragging || !canRotate) return;
+		if (!isDragging || !isFieldingTurn || frozenHandsPowerUpUsed) return;
 		const rect = canvasRef.current!.getBoundingClientRect();
 		const cx = rect.left + rect.width / 2;
 		const cy = rect.top + rect.height / 2;
@@ -225,7 +232,7 @@ const FielderView: React.FC = () => {
 
 	// 🔹 Submit rotation
 	const handleSubmitRotation = () => {
-		if (!socket || !user || !canRotate) return;
+		if (!socket || !user || !isFieldingTurn) return;
 		console.log("Submitting field setup:", {
 			rotation,
 			presetIndex: localPresetChoice,
@@ -361,6 +368,7 @@ const FielderView: React.FC = () => {
 					powerUpNames={fielderPowerUpNames}
 					powerUps={powerUpsStatusMap}
 					onClick={handlePowerUpUsed}
+					disabled={!isFieldingTurn}
 				/>
 			</div>
 
@@ -384,8 +392,7 @@ const FielderView: React.FC = () => {
 			</button>
 
 			{/* DraggableList on the right side */}
-			{displayState.gamePhase === "setting field" &&
-				recapState.isRecapping === false &&
+			{isFieldingTurn &&
 				(displayState.fielderActivePowerups.includes("Field Shift") ||
 					displayState.fielderActivePowerups.includes(
 						"Third Man",
@@ -537,12 +544,14 @@ const FielderView: React.FC = () => {
 					style={{
 						border: "2px solid #ddd",
 						borderRadius: "50%",
-						cursor: canRotate
-							? isDragging
-								? "grabbing"
-								: "grab"
+						cursor: isFieldingTurn
+							? frozenHandsPowerUpUsed
+								? "not-allowed"
+								: isDragging
+									? "grabbing"
+									: "grab"
 							: "not-allowed",
-						opacity: canRotate ? 1 : 0.5,
+						opacity: isFieldingTurn ? 1 : 0.5, // no need to do anything else for frozenHandsPowerUpUsed
 						transition: "opacity 0.3s ease",
 						// 🧱 Important interaction rules:
 						touchAction: "none", // disable browser scrolling + pinch zoom on canvas
@@ -587,17 +596,17 @@ const FielderView: React.FC = () => {
 			<FielderPresets
 				modifiedPresets={displayState.modifiedPresets}
 				selectedPreset={localPresetChoice}
-				onPresetClick={canRotate ? handlePresetClick : undefined}
+				onPresetClick={isFieldingTurn ? handlePresetClick : undefined}
 				style={{
-					opacity: canRotate ? 1 : 0.5,
+					opacity: isFieldingTurn ? 1 : 0.5,
 					transition: "opacity 0.3s ease",
-					pointerEvents: canRotate ? "auto" : "none",
-					cursor: canRotate ? "pointer" : "not-allowed",
+					pointerEvents: isFieldingTurn ? "auto" : "none",
+					cursor: isFieldingTurn ? "pointer" : "not-allowed",
 				}}
 			/>
 
 			{/* 🔹 Submit button */}
-			{canRotate && (
+			{isFieldingTurn && (
 				<button
 					onClick={handleSubmitRotation}
 					style={{
