@@ -116,6 +116,66 @@ export function DraggableList<T>({
 	};
 
 	// -----------------------
+	// Touch Handlers (mobile)
+	// -----------------------
+	// Simulate drag & drop using touch events so dragging works on phones.
+	// Note: avoid calling preventDefault on React touch events (passive listeners).
+	// We use CSS touch-action on the container to disable scrolling while dragging.
+	const handleTouchStart = (e: React.TouchEvent, originalIndex: number) => {
+		if (!canDrag(originalIndex)) return;
+		setDraggedIndex(originalIndex);
+	};
+
+	const handleTouchMove = (e: React.TouchEvent) => {
+		if (draggedIndex === null) return;
+		// Do NOT call e.preventDefault() here because many browsers use passive touch listeners.
+		// We rely on the container's `touch-action: none` while dragging to prevent scrolling.
+		const touch = e.touches[0];
+		if (!touch) return;
+		// element currently under the finger
+		const el = document.elementFromPoint(
+			touch.clientX,
+			touch.clientY,
+		) as HTMLElement | null;
+		if (!el) return;
+		const target = el.closest(
+			"[data-original-index]",
+		) as HTMLElement | null;
+		if (!target) return;
+		const targetIndexAttr = target.getAttribute("data-original-index");
+		if (!targetIndexAttr) return;
+		const targetIndex = Number(targetIndexAttr);
+		if (!Number.isNaN(targetIndex)) {
+			handleDragEnter(targetIndex);
+		}
+	};
+
+	const handleTouchEnd = () => {
+		if (draggedIndex === null) return;
+		handleDrop();
+		setDraggedIndex(null);
+	};
+
+	// -----------------------
+	// Prevent page scroll while touch-dragging (use non-passive native listener)
+	// -----------------------
+	// Some mobile browsers ignore preventDefault on passive React listeners.
+	// Add a native listener with { passive: false } while an item is being dragged.
+	useEffect(() => {
+		const preventScroll = (e: TouchEvent) => {
+			if (draggedIndex !== null) {
+				e.preventDefault();
+			}
+		};
+
+		document.addEventListener("touchmove", preventScroll, {
+			passive: false,
+		});
+
+		return () => document.removeEventListener("touchmove", preventScroll);
+	}, [draggedIndex]);
+
+	// -----------------------
 	// Button move helpers
 	// -----------------------
 
@@ -150,6 +210,8 @@ export function DraggableList<T>({
 			onDragOver={(e) => e.preventDefault()}
 			onDrop={handleDrop}
 			onDragEnd={handleDragEnd}
+			// While an item is being dragged (touch), prevent page scrolling.
+			// style={{ touchAction: draggedIndex !== null ? "none" : undefined }}
 		>
 			{displayOrder.map((originalIndex, idx) => {
 				const item = items[originalIndex];
@@ -183,9 +245,13 @@ export function DraggableList<T>({
 				return (
 					<div
 						key={originalIndex}
+						data-original-index={originalIndex}
 						draggable={canDrag(originalIndex)}
 						onDragStart={(e) => handleDragStart(e, originalIndex)}
 						onDragEnter={() => handleDragEnter(originalIndex)}
+						onTouchStart={(e) => handleTouchStart(e, originalIndex)}
+						onTouchMove={handleTouchMove}
+						onTouchEnd={handleTouchEnd}
 						style={{
 							padding: "10px",
 							margin: "5px 0",
@@ -214,6 +280,7 @@ export function DraggableList<T>({
 									onClick={() =>
 										moveItem(originalIndex, "up")
 									}
+									onTouchStart={(e) => e.stopPropagation()}
 									disabled={originalIndex === 0}
 									style={{ marginRight: "5px" }}
 								>
@@ -224,6 +291,7 @@ export function DraggableList<T>({
 									onClick={() =>
 										moveItem(originalIndex, "down")
 									}
+									onTouchStart={(e) => e.stopPropagation()}
 									disabled={
 										originalIndex === items.length - 1
 									}

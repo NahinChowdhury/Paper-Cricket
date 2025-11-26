@@ -1,10 +1,15 @@
-import React, { useRef, useEffect, useState, useCallback } from "react";
+import React, { useRef, useEffect, useState, useCallback, act } from "react";
 import { useSocket } from "../contexts/SocketContext";
 import { useGame } from "../contexts/GameContext";
 import LiveScorecard from "../components/LiveScorecard";
-import { batsmanPowerUpNames, PowerUpStatus } from "../types";
+import {
+	batsmanPowerUpNames,
+	fielderPowerUpNames,
+	PowerUpStatus,
+} from "../types";
 import PowerUpCircles from "../components/PowerUpCircles";
 import FielderPresets from "../components/FielderPresets";
+import { buildPowerUpStatusMap } from "../utils/helperFunctions";
 
 // Color mapping for different outcomes
 const colorsMap: Record<string, string> = {
@@ -46,15 +51,19 @@ const BatterView: React.FC = () => {
 		powerUpContext,
 	} = displayState;
 
-	const usedPowerUps: string[] = displayState.batsmanUsedPowerups;
-	const unusedPowerUps: string[] = displayState.batsmanUnusedPowerups;
-	const activePowerUps: string[] = displayState.batsmanActivePowerups;
+	const usedPowerUps: string[] = displayState.batsmanUsedPowerups || [];
+	const unusedPowerUps: string[] = displayState.batsmanUnusedPowerups || [];
+	const activePowerUps: string[] = displayState.batsmanActivePowerups || [];
 
-	const powerUpsStatusMap: Map<string, PowerUpStatus> = new Map([
-		...usedPowerUps.map((p: string) => [p, "used" as PowerUpStatus]),
-		...unusedPowerUps.map((p: string) => [p, "unused" as PowerUpStatus]),
-		...activePowerUps.map((p: string) => [p, "active" as PowerUpStatus]),
-	] as [string, PowerUpStatus][]);
+	const batsmanPowerUpsStatusMap: Map<string, PowerUpStatus> =
+		buildPowerUpStatusMap(usedPowerUps, unusedPowerUps, activePowerUps);
+
+	const fielderPowerUpsStatusMap: Map<string, PowerUpStatus> =
+		buildPowerUpStatusMap(
+			displayState.fielderUsedPowerups || [],
+			displayState.fielderUnusedPowerups || [],
+			displayState.fielderActivePowerups || [],
+		);
 
 	const rotation = currentBallRotation || 0;
 	const isBattingTurn =
@@ -75,6 +84,7 @@ const BatterView: React.FC = () => {
 		if (!isBattingTurn) return; // disable during recap
 		const canvas = canvasRef.current;
 		if (!canvas) return;
+
 		const rect = canvas.getBoundingClientRect();
 		const cx = rect.left + rect.width / 2;
 		const cy = rect.top + rect.height / 2;
@@ -92,15 +102,16 @@ const BatterView: React.FC = () => {
 		const sliceAngle = fullCircle / currentPreset.length;
 		const index =
 			Math.floor(normalized / sliceAngle) % currentPreset.length;
-		setShotSelected(index);
 
 		if (
 			activePowerUps.includes("Scout Report") &&
 			!("Scout Report" in (powerUpContext ?? {}))
 		) {
 			handlePowerUpUsed("Scout Report", { pieIndex: index });
-			return;
+			return; // do not select shot if power-up is being used
 		}
+
+		setShotSelected(index);
 
 		if (socket && user?.roomId) {
 			socket.emit("shot_selection_hover", user.id, index);
@@ -189,6 +200,7 @@ const BatterView: React.FC = () => {
 			recapState.isRecapping,
 			isBattingTurn,
 			modifiedPresets,
+			activePowerUps,
 		],
 	);
 
@@ -290,9 +302,40 @@ const BatterView: React.FC = () => {
 			>
 				<PowerUpCircles
 					powerUpNames={batsmanPowerUpNames}
-					powerUps={powerUpsStatusMap}
+					powerUps={batsmanPowerUpsStatusMap}
 					onClick={handlePowerUpUsed}
 					disabled={!isBattingTurn}
+				/>
+			</div>
+
+			{/* 🔹 Power Up Circles (bottom-left, horizontal) */}
+			<div
+				style={{
+					position: "absolute",
+					left: "20px",
+					bottom: "20px",
+					zIndex: 5,
+					display: "flex",
+					flexDirection: "column",
+					alignItems: "flex-start",
+					gap: "6px",
+				}}
+			>
+				<div
+					style={{
+						fontSize: "0.85rem",
+						color: "#333",
+						fontWeight: 600,
+					}}
+				>
+					Fielder's power ups
+				</div>
+				<PowerUpCircles
+					powerUpNames={fielderPowerUpNames}
+					powerUps={fielderPowerUpsStatusMap}
+					onClick={() => {}}
+					disabled={true}
+					horizontal={true}
 				/>
 			</div>
 

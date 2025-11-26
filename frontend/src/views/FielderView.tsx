@@ -5,7 +5,13 @@ import LiveScorecard from "../components/LiveScorecard";
 import FielderPresets from "../components/FielderPresets";
 import PowerUpCircles from "../components/PowerUpCircles";
 import { DraggableList } from "../components/DraggableList";
-import { GameState, PowerUpStatus, fielderPowerUpNames } from "../types";
+import {
+	GameState,
+	PowerUpStatus,
+	batsmanPowerUpNames,
+	fielderPowerUpNames,
+} from "../types";
+import { buildPowerUpStatusMap } from "../utils/helperFunctions";
 
 // Color mapping for different outcomes
 const colorsMap: Record<string, string> = {
@@ -54,15 +60,19 @@ const FielderView: React.FC = () => {
 			? displayState.currentBallBatsmanChoice
 			: null;
 
-	const usedPowerUps: string[] = displayState.fielderUsedPowerups;
-	const unusedPowerUps: string[] = displayState.fielderUnusedPowerups;
-	const activePowerUps: string[] = displayState.fielderActivePowerups;
+	const fielderPowerUpsStatusMap: Map<string, PowerUpStatus> =
+		buildPowerUpStatusMap(
+			displayState.fielderUsedPowerups || [],
+			displayState.fielderUnusedPowerups || [],
+			displayState.fielderActivePowerups || [],
+		);
 
-	const powerUpsStatusMap: Map<string, PowerUpStatus> = new Map([
-		...usedPowerUps.map((p: string) => [p, "used" as PowerUpStatus]),
-		...unusedPowerUps.map((p: string) => [p, "unused" as PowerUpStatus]),
-		...activePowerUps.map((p: string) => [p, "active" as PowerUpStatus]),
-	] as [string, PowerUpStatus][]);
+	const batsmanPowerUpsStatusMap: Map<string, PowerUpStatus> =
+		buildPowerUpStatusMap(
+			displayState.batsmanUsedPowerups || [],
+			displayState.batsmanUnusedPowerups || [],
+			displayState.batsmanActivePowerups || [],
+		);
 
 	// 🔹 Handle surrender
 	const handleSurrender = () => {
@@ -366,9 +376,40 @@ const FielderView: React.FC = () => {
 			>
 				<PowerUpCircles
 					powerUpNames={fielderPowerUpNames}
-					powerUps={powerUpsStatusMap}
+					powerUps={fielderPowerUpsStatusMap}
 					onClick={handlePowerUpUsed}
 					disabled={!isFieldingTurn}
+				/>
+			</div>
+
+			{/* 🔹 Power Up Circles (bottom-left, horizontal) */}
+			<div
+				style={{
+					position: "absolute",
+					left: "20px",
+					bottom: "20px",
+					zIndex: 5,
+					display: "flex",
+					flexDirection: "column",
+					alignItems: "flex-start",
+					gap: "6px",
+				}}
+			>
+				<div
+					style={{
+						fontSize: "0.85rem",
+						color: "#333",
+						fontWeight: 600,
+					}}
+				>
+					Batsmans's power ups
+				</div>
+				<PowerUpCircles
+					powerUpNames={batsmanPowerUpNames}
+					powerUps={batsmanPowerUpsStatusMap}
+					onClick={() => {}}
+					disabled={true}
+					horizontal={true}
 				/>
 			</div>
 

@@ -5,6 +5,14 @@ import PreGameJoiningView from "./PreGameJoiningView";
 import PreGameDecisionMakerView from "./PreGameDecisionMakerView";
 import PreGameDecisionSpectatorView from "./PreGameDecisionSpectatorView";
 import LiveScorecard from "../components/LiveScorecard";
+import PowerUpCircles from "../components/PowerUpCircles";
+import {
+	PowerUpStatus,
+	batsmanPowerUpNames,
+	fielderPowerUpNames,
+} from "../types";
+import { buildPowerUpStatusMap } from "../utils/helperFunctions";
+import FielderPresets from "../components/FielderPresets";
 
 // Color mapping for different outcomes
 const colorsMap: Record<string, string> = {
@@ -41,13 +49,24 @@ const AudienceView: React.FC = () => {
 		gamePhase,
 		tossSelector,
 		modifiedPresets,
-		inningsOneRuns,
-		inningsTwoRuns,
-		playerBatting,
-		playerFielding,
 	} = displayState;
 
 	const shotSelected = currentBallBatsmanChoice ?? null;
+
+	// Build power-up status map (read-only for audience)
+	const fielderPowerUpsStatusMap: Map<string, PowerUpStatus> =
+		buildPowerUpStatusMap(
+			displayState.fielderUsedPowerups || [],
+			displayState.fielderUnusedPowerups || [],
+			displayState.fielderActivePowerups || [],
+		);
+
+	const batsmanPowerUpsStatusMap: Map<string, PowerUpStatus> =
+		buildPowerUpStatusMap(
+			displayState.batsmanUsedPowerups || [],
+			displayState.batsmanUnusedPowerups || [],
+			displayState.batsmanActivePowerups || [],
+		);
 
 	// =========================
 	//  DRAWING LOGIC
@@ -161,6 +180,62 @@ const AudienceView: React.FC = () => {
 				</div>
 			)}
 
+			{/* 🔹 Fielder Power Up Circles (left-side) */}
+			<div
+				style={{
+					position: "absolute",
+					left: "20px",
+					top: "50%",
+					transform: "translateY(-50%)",
+					zIndex: 5,
+				}}
+			>
+				<div
+					style={{
+						fontSize: "0.85rem",
+						color: "#333",
+						fontWeight: 600,
+					}}
+				>
+					Fielder's power ups
+				</div>
+				<PowerUpCircles
+					powerUpNames={fielderPowerUpNames}
+					powerUps={fielderPowerUpsStatusMap}
+					onClick={() => {}}
+					disabled={true}
+					// horizontal={true}
+				/>
+			</div>
+
+			{/* 🔹 Batsman Power Up Circles (right-side) */}
+			<div
+				style={{
+					position: "absolute",
+					right: "20px",
+					top: "50%",
+					transform: "translateY(-50%)",
+					zIndex: 5,
+				}}
+			>
+				<div
+					style={{
+						fontSize: "0.85rem",
+						color: "#333",
+						fontWeight: 600,
+					}}
+				>
+					Batsman's power ups
+				</div>
+				<PowerUpCircles
+					powerUpNames={batsmanPowerUpNames}
+					powerUps={batsmanPowerUpsStatusMap}
+					onClick={() => {}}
+					disabled={true}
+					position="right"
+				/>
+			</div>
+
 			<h2 style={{ marginBottom: "10px" }}>🎟️ Audience View</h2>
 			<p style={{ fontSize: "1.2rem", marginBottom: "20px" }}>
 				{recapState.isRecapping
@@ -206,6 +281,15 @@ const AudienceView: React.FC = () => {
 					</div>
 				)}
 			</div>
+
+			{/* 🔹 Preset Selection */}
+			<FielderPresets
+				modifiedPresets={displayState.originalPresets}
+				style={{
+					pointerEvents: "none",
+					cursor: "not-allowed",
+				}}
+			/>
 		</div>
 	);
 };

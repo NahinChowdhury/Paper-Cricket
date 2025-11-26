@@ -83,13 +83,30 @@ TODO:
  - Improve front page to give context of game 
 
 
-### 24nd November, 2025
+### 24th November, 2025
 Done:
-Batter power ups working
-Show presets in batter view
+- Batter power ups working
+- Show presets in batter view
 
 TODO:
-Show power up circles and usage in audience view
-Show opponent's power ups and usage in batter and fielder view
-Disable power up usage if player is not actively making the move
-Do remaining above TODOs from 22nd November, 2025
+- Show power up circles and usage in audience view
+- Show opponent's power ups and usage in batter and fielder view
+- Disable power up usage if player is not actively making the move
+- Do remaining above TODOs from 22nd November, 2025
+
+### 25th November, 2025
+- Made draggable list work with mobile touch
+- Showed power up circles in audience view
+- Showed opponent's power ups
+- Showed preset in audience view
+- Disabled power up usage if player is not actively making the move
+- Clicking on a tile while scout report is on does not select the tile for a shot
+
+TODO:
+- Work on hiding what power up is being used by the fielder to batter and audience. Batter power up usage should be shown to all instantly
+- Add disconnect button to Audience view. Which just send them to the home page and removes them from the audience list
+- Improve the UI to that it's properly scaled on phone horizontal view
+- Clean up the code to use common components. It's best to have unique views for batter, fielder and audience view. But they should extensively use common components and have custom styles.
+- Add a copy link to game button somewhere in the game UI
+- Add names for players instead of just UUIDs
+- Do remaining above TODOs from 22nd November, 2025

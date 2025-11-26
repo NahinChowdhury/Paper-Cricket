@@ -5,6 +5,8 @@ interface PowerUpCirclesProps {
 	powerUps: Map<string, "used" | "active" | "unused">;
 	onClick: (powerUpKey: string) => void;
 	disabled?: boolean;
+	horizontal?: boolean;
+	position?: "left" | "right";
 }
 
 const PowerUpCircles: React.FC<PowerUpCirclesProps> = ({
@@ -12,6 +14,8 @@ const PowerUpCircles: React.FC<PowerUpCirclesProps> = ({
 	powerUps,
 	onClick,
 	disabled = false,
+	horizontal = false,
+	position = "left",
 }) => {
 	const getCircleStyle = (
 		status: "used" | "active" | "unused",
@@ -20,7 +24,7 @@ const PowerUpCircles: React.FC<PowerUpCirclesProps> = ({
 			width: "50px",
 			height: "50px",
 			borderRadius: "50%",
-			margin: "5px 0",
+			margin: horizontal ? "0 5px" : "5px 0",
 			cursor: status === "used" || disabled ? "default" : "pointer",
 			transition: "all 0.2s ease-in-out",
 			display: "flex",
@@ -96,7 +100,7 @@ const PowerUpCircles: React.FC<PowerUpCirclesProps> = ({
 		<div
 			style={{
 				display: "flex",
-				flexDirection: "column",
+				flexDirection: horizontal ? "row" : "column",
 				alignItems: "center",
 				padding: "10px",
 				backgroundColor: "rgba(255, 255, 255, 0.9)",
@@ -131,7 +135,7 @@ const PowerUpCircles: React.FC<PowerUpCirclesProps> = ({
 							alignItems: "center",
 						}}
 						onMouseEnter={() => {
-							if (!disabled) setHoveredPowerUp(powerUpName);
+							setHoveredPowerUp(powerUpName);
 						}}
 						onMouseLeave={() => {
 							if (hoveredPowerUp === powerUpName)
@@ -170,9 +174,28 @@ const PowerUpCircles: React.FC<PowerUpCirclesProps> = ({
 							<div
 								style={{
 									position: "absolute",
-									left: "60px",
-									top: "50%",
-									transform: "translateY(-50%)",
+									...(horizontal
+										? {
+												/* show above circle when horizontal */
+												bottom: "60px",
+												left: "50%",
+												transform: "translateX(-5%)",
+											}
+										: position === "right"
+											? {
+													/* for right-side container, show tooltip to the left */
+													right: "60px",
+													top: "50%",
+													transform:
+														"translateY(-50%)",
+												}
+											: {
+													/* default: show tooltip to the right */
+													left: "60px",
+													top: "50%",
+													transform:
+														"translateY(-50%)",
+												}),
 									background: "rgba(0,0,0,0.85)",
 									color: "#fff",
 									padding: "6px 8px",
