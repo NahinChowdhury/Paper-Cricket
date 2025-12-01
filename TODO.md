@@ -116,3 +116,6 @@ The grid kind of works, but it's chunking the presets in smaller views. work on 
 
 ## 30th November, 2025
 UI is somewhat usable in landscapre mode on phone
+
+TODO:
+When you drag element up in draggable list, it should scroll the list up till the top
