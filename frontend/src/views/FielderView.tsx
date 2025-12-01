@@ -289,6 +289,15 @@ const FielderView: React.FC = () => {
 							);
 							return;
 						}
+
+						// if there is an entry in power up context for third man, then return
+						if (displayState.powerUpContext?.["Third Man"]) {
+							console.error(
+								"Third Man power-up has been registered as active. No need to send again.",
+							);
+							return;
+						}
+
 						break;
 					case "Field Shift":
 						console.log(
@@ -332,6 +341,58 @@ const FielderView: React.FC = () => {
 			displayState.fielderActivePowerups,
 			displayState.modifiedPresets,
 			localPresetChoice,
+			specialIndex,
+		],
+	);
+
+	const handleReorder = useCallback(
+		(newItems: string[], newSpecialIndex?: number | null) => {
+			console.log("Reordering items:", newItems);
+			setGameState((prev: GameState | null) => {
+				if (!prev) return prev;
+				const newPresets = [...prev.modifiedPresets];
+				newPresets[localPresetChoice] = [...newItems];
+				if (newSpecialIndex !== undefined && newSpecialIndex !== null) {
+					if (!prev.powerUpContext?.["Third Man"]) return prev;
+					const newPowerUpContext = {
+						...prev.powerUpContext,
+						"Third Man": {
+							...prev.powerUpContext["Third Man"],
+							[localPresetChoice]: newSpecialIndex,
+						},
+					};
+					return {
+						...prev,
+						modifiedPresets: newPresets,
+						powerUpContext: newPowerUpContext,
+					};
+				}
+				return {
+					...prev,
+					modifiedPresets: newPresets,
+				};
+			});
+
+			if (displayState.fielderActivePowerups.includes("Field Shift")) {
+				const modifications = {
+					presetChosen: localPresetChoice,
+					newPreset: newItems,
+				};
+				handlePowerUpUsed("Field Shift", modifications);
+			}
+			if (displayState.fielderActivePowerups.includes("Third Man")) {
+				const modifications = {
+					presetChosen: localPresetChoice,
+					newWicketIndex: newSpecialIndex ?? specialIndex,
+				};
+				handlePowerUpUsed("Third Man", modifications);
+			}
+		},
+		[
+			setGameState,
+			localPresetChoice,
+			displayState.fielderActivePowerups,
+			handlePowerUpUsed,
 			specialIndex,
 		],
 	);
@@ -539,85 +600,7 @@ const FielderView: React.FC = () => {
 											? null
 											: specialIndex
 									}
-									onReorder={(newItems, specialIndex) => {
-										console.log(
-											"Reordering items:",
-											newItems,
-										);
-										setGameState(
-											(prev: GameState | null) => {
-												if (!prev) return prev;
-												const newPresets = [
-													...prev.modifiedPresets,
-												];
-												newPresets[localPresetChoice] =
-													[...newItems];
-												if (
-													specialIndex !==
-														undefined &&
-													specialIndex !== null
-												) {
-													if (
-														!prev.powerUpContext?.[
-															"Third Man"
-														]
-													)
-														return prev;
-													const newPowerUpContext = {
-														...prev.powerUpContext,
-														"Third Man": {
-															...prev
-																.powerUpContext[
-																"Third Man"
-															],
-															[localPresetChoice]:
-																specialIndex,
-														},
-													};
-													return {
-														...prev,
-														modifiedPresets:
-															newPresets,
-														powerUpContext:
-															newPowerUpContext,
-													};
-												}
-												return {
-													...prev,
-													modifiedPresets: newPresets,
-												};
-											},
-										);
-
-										if (
-											displayState.fielderActivePowerups.includes(
-												"Field Shift",
-											)
-										) {
-											const modifications = {
-												presetChosen: localPresetChoice,
-												newPreset: newItems,
-											};
-											handlePowerUpUsed(
-												"Field Shift",
-												modifications,
-											);
-										}
-										if (
-											displayState.fielderActivePowerups.includes(
-												"Third Man",
-											)
-										) {
-											const modifications = {
-												presetChosen: localPresetChoice,
-												newWicketIndex: specialIndex,
-											};
-											handlePowerUpUsed(
-												"Third Man",
-												modifications,
-											);
-										}
-									}}
+									onReorder={handleReorder}
 									renderItem={(item) => (
 										<span
 											style={{
