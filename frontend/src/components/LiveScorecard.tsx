@@ -29,10 +29,12 @@ const LiveScorecard: React.FC<LiveScorecardProps> = ({
 				backgroundColor: "rgba(0,0,0,0.7)",
 				color: "#fff",
 				borderRadius: "10px",
-				padding: "12px 16px",
-				minWidth: "280px",
-				fontFamily: "sans-serif",
+				padding: "clamp(8px, 1.6vmin, 16px)",
+				minWidth: "clamp(200px, 18vmin, 320px)",
+				fontFamily:
+					"Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
 				boxShadow: "0 2px 6px rgba(0,0,0,0.4)",
+				fontSize: "clamp(0.65rem, 1.2vmin, 0.85rem)",
 			}}
 		>
 			{[1, 2]
@@ -88,7 +90,6 @@ const LiveScorecard: React.FC<LiveScorecardProps> = ({
 									justifyContent: "space-between",
 									alignItems: "center",
 									marginBottom: "6px",
-									fontSize: "0.9rem",
 								}}
 							>
 								<strong>Innings {inn}</strong>
@@ -119,7 +120,6 @@ const LiveScorecard: React.FC<LiveScorecardProps> = ({
 												marginLeft: "10px",
 												color: "#9ad4d6",
 												fontWeight: 600,
-												fontSize: "0.8rem",
 											}}
 										>
 											• {currentBall}/{totalBalls} balls
@@ -141,8 +141,9 @@ const LiveScorecard: React.FC<LiveScorecardProps> = ({
 									<span
 										style={{
 											color: "#aaa",
-											fontSize: "1rem",
-											marginRight: "2px",
+											fontSize:
+												"clamp(0.9rem, 1.8vmin, 1.1rem)",
+											marginRight: "6px",
 										}}
 									>
 										...
@@ -161,15 +162,16 @@ const LiveScorecard: React.FC<LiveScorecardProps> = ({
 											<div
 												key={i}
 												style={{
-													width: "24px",
-													height: "24px",
+													width: "clamp(18px, 3.6vmin, 28px)",
+													height: "clamp(18px, 3.6vmin, 28px)",
 													borderRadius: "50%",
 													backgroundColor: sliceColor,
 													display: "flex",
 													alignItems: "center",
 													justifyContent: "center",
 													fontWeight: "bold",
-													fontSize: "0.8rem",
+													fontSize:
+														"clamp(0.6rem, 1.2vmin, 0.9rem)",
 												}}
 												title={`Ball ${i + 1}: ${value}`}
 											>
@@ -180,7 +182,8 @@ const LiveScorecard: React.FC<LiveScorecardProps> = ({
 								) : (
 									<div
 										style={{
-											fontSize: "0.8rem",
+											fontSize:
+												"clamp(0.7rem, 1.2vmin, 0.9rem)",
 											color: "#ccc",
 											fontStyle: "italic",
 										}}
@@ -199,7 +202,6 @@ const LiveScorecard: React.FC<LiveScorecardProps> = ({
 						marginTop: "8px",
 						paddingTop: "8px",
 						borderTop: "1px solid rgba(255,255,255,0.2)",
-						fontSize: "0.9rem",
 					}}
 				>
 					<strong>Target: </strong>

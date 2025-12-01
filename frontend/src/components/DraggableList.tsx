@@ -21,6 +21,8 @@ export function DraggableList<T>({
 		number | null
 	>(null);
 	const highlightTimeoutRef = useRef<number | null>(null);
+	const containerRef = useRef<HTMLDivElement | null>(null);
+	const [canScroll, setCanScroll] = useState(false);
 
 	// keep in sync after reorder
 	useEffect(() => {
@@ -38,6 +40,32 @@ export function DraggableList<T>({
 			}
 		};
 	}, []);
+
+	// Track whether the list container is scrollable (used to show small scroll buttons)
+	useEffect(() => {
+		const el = containerRef.current;
+		if (!el) return;
+		const update = () => setCanScroll(el.scrollHeight > el.clientHeight);
+		update();
+
+		// ResizeObserver to watch for content/size changes
+		let ro: ResizeObserver | null = null;
+		if (typeof ResizeObserver !== "undefined") {
+			ro = new ResizeObserver(update);
+			ro.observe(el);
+		}
+
+		window.addEventListener("resize", update);
+		// Also watch for DOM changes that may affect scrollHeight (simple mutation observer)
+		const mo = new MutationObserver(update);
+		mo.observe(el, { childList: true, subtree: true, attributes: true });
+
+		return () => {
+			window.removeEventListener("resize", update);
+			if (ro) ro.disconnect();
+			mo.disconnect();
+		};
+	}, [items]);
 
 	const canDrag = (i: number) => specialIndex === null || i === specialIndex;
 
@@ -200,109 +228,233 @@ export function DraggableList<T>({
 		[items, specialIndex, onReorder],
 	);
 
+	// Small helper scroll functions for when the list overflows on small screens
+	const scrollAmount = 80; // px per click (responsive feel)
+	const scrollUp = () => {
+		const el = containerRef.current;
+		if (!el) return;
+		el.scrollBy({ top: -scrollAmount, behavior: "smooth" });
+	};
+	const scrollDown = () => {
+		const el = containerRef.current;
+		if (!el) return;
+		el.scrollBy({ top: scrollAmount, behavior: "smooth" });
+	};
+
 	// -----------------------
 	// Render
 	// -----------------------
 
 	return (
 		<div
-			className="draggable-list"
-			onDragOver={(e) => e.preventDefault()}
-			onDrop={handleDrop}
-			onDragEnd={handleDragEnd}
-			// While an item is being dragged (touch), prevent page scrolling.
-			// style={{ touchAction: draggedIndex !== null ? "none" : undefined }}
+			style={{
+				display: "flex",
+				flexDirection: "column",
+				width: "100%",
+				alignItems: "center",
+			}}
 		>
-			{displayOrder.map((originalIndex, idx) => {
-				const item = items[originalIndex];
-				const isDragged = draggedIndex === originalIndex;
-				const isSpecial = originalIndex === specialIndex;
-				const isRecentlyMoved =
-					recentlyMovedPosition === idx && specialIndex === null;
+			{/* Top scroll control */}
+			{canScroll && (
+				<button
+					onClick={scrollUp}
+					aria-label="Scroll up"
+					style={{
+						marginBottom: 6,
+						width: 40,
+						height: 32,
+						borderRadius: 6,
+						fontSize: "14px",
+						padding: 0,
+						background: "rgba(255,255,255,0.95)",
+						border: "1px solid rgba(0,0,0,0.08)",
+						boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
+						cursor: "pointer",
+					}}
+				>
+					▲
+				</button>
+			)}
 
-				const showControls =
-					draggedIndex === null && canDrag(originalIndex);
+			<div
+				ref={containerRef}
+				className="draggable-list"
+				onDragOver={(e) => e.preventDefault()}
+				onDrop={handleDrop}
+				onDragEnd={handleDragEnd}
+				// While an item is being dragged (touch), prevent page scrolling.
+				style={{
+					width: "100%",
+					maxHeight: "min(40vmin, 420px)",
+					overflowY: "auto",
+					touchAction: draggedIndex !== null ? "none" : "auto",
+					fontSize: "clamp(12px, 1.4vmin, 14px)",
+				}}
+			>
+				{displayOrder.map((originalIndex, idx) => {
+					const item = items[originalIndex];
+					const isDragged = draggedIndex === originalIndex;
+					const isSpecial = originalIndex === specialIndex;
+					const isRecentlyMoved =
+						recentlyMovedPosition === idx && specialIndex === null;
 
-				// Inline UI styles preserved exactly
-				const cursor = specialIndex
-					? isSpecial
-						? isDragged
+					const showControls = canDrag(originalIndex);
+					const controlsVisible =
+						draggedIndex === null && canDrag(originalIndex);
+
+					// Inline UI styles preserved exactly
+					const cursor = specialIndex
+						? isSpecial
+							? isDragged
+								? "grabbing"
+								: "grab"
+							: "not-allowed"
+						: isDragged
 							? "grabbing"
-							: "grab"
-						: "not-allowed"
-					: isDragged
-						? "grabbing"
-						: "grab";
+							: "grab";
 
-				const backgroundColor = isDragged
-					? "#cfeeff"
-					: isRecentlyMoved
+					const backgroundColor = isDragged
 						? "#cfeeff"
-						: isSpecial
-							? "#ffd0eb"
-							: "#f5f5f5";
+						: isRecentlyMoved
+							? "#cfeeff"
+							: isSpecial
+								? "#ffd0eb"
+								: "#f5f5f5";
 
-				return (
-					<div
-						key={originalIndex}
-						data-original-index={originalIndex}
-						draggable={canDrag(originalIndex)}
-						onDragStart={(e) => handleDragStart(e, originalIndex)}
-						onDragEnter={() => handleDragEnter(originalIndex)}
-						onTouchStart={(e) => handleTouchStart(e, originalIndex)}
-						onTouchMove={handleTouchMove}
-						onTouchEnd={handleTouchEnd}
-						style={{
-							padding: "10px",
-							margin: "5px 0",
-							cursor,
-							opacity: isDragged ? 0.9 : 1,
-							backgroundColor,
-							border: isDragged
-								? "3px dotted #1f6feb"
-								: "1px solid #ddd",
-							borderRadius: isDragged ? "6px" : "4px",
-							boxShadow: isDragged
-								? "0 10px 30px rgba(31,111,235,0.18)"
-								: "none",
-							display: "flex",
-							alignItems: "center",
-							justifyContent: "space-between",
-							transition:
-								"background-color 0.15s ease, opacity 0.08s ease, box-shadow 0.12s ease",
-						}}
-					>
-						<div style={{ flex: 1 }}>{renderItem(item)}</div>
-
-						{showControls && (
-							<div>
-								<button
-									onClick={() =>
-										moveItem(originalIndex, "up")
-									}
-									onTouchStart={(e) => e.stopPropagation()}
-									disabled={originalIndex === 0}
-									style={{ marginRight: "5px" }}
-								>
-									↑
-								</button>
-
-								<button
-									onClick={() =>
-										moveItem(originalIndex, "down")
-									}
-									onTouchStart={(e) => e.stopPropagation()}
-									disabled={
-										originalIndex === items.length - 1
-									}
-								>
-									↓
-								</button>
+					return (
+						<div
+							key={originalIndex}
+							data-original-index={originalIndex}
+							draggable={canDrag(originalIndex)}
+							onDragStart={(e) =>
+								handleDragStart(e, originalIndex)
+							}
+							onDragEnter={() => handleDragEnter(originalIndex)}
+							onTouchStart={(e) =>
+								handleTouchStart(e, originalIndex)
+							}
+							onTouchMove={handleTouchMove}
+							onTouchEnd={handleTouchEnd}
+							style={{
+								padding: "clamp(6px, 1.2vmin, 10px)",
+								margin: "clamp(4px, 0.8vmin, 6px) 0",
+								cursor,
+								opacity: isDragged ? 0.95 : 1,
+								backgroundColor,
+								border: isDragged
+									? "2px dashed #1f6feb"
+									: "1px solid #e6e6e6",
+								borderRadius: "6px",
+								boxShadow: isDragged
+									? "0 8px 20px rgba(31,111,235,0.14)"
+									: "none",
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "space-between",
+								gap: "8px",
+								transition:
+									"background-color 0.15s ease, opacity 0.08s ease, box-shadow 0.12s ease, transform 0.12s ease",
+								transform: isDragged
+									? "scale(1.02)"
+									: "scale(1)",
+							}}
+						>
+							<div style={{ flex: 1, minWidth: 0 }}>
+								{renderItem(item)}
 							</div>
-						)}
-					</div>
-				);
-			})}
+
+							{/* Reserve space for controls so the row height stays constant while dragging.
+								controlsVisible toggles opacity + pointer events so layout doesn't shift. */}
+							{showControls && (
+								<div
+									style={{
+										display: "flex",
+										flexDirection: "row",
+										alignItems: "center",
+										gap: "6px",
+										whiteSpace: "nowrap",
+										flexShrink: 0,
+										minWidth: "72px",
+										justifyContent: "flex-end",
+										opacity: controlsVisible ? 1 : 0,
+										transition: "opacity 0.12s ease",
+										pointerEvents: controlsVisible
+											? "auto"
+											: "none",
+									}}
+								>
+									<button
+										onClick={() =>
+											moveItem(originalIndex, "up")
+										}
+										onTouchStart={(e) =>
+											e.stopPropagation()
+										}
+										disabled={originalIndex === 0}
+										style={{
+											marginRight: 0,
+											fontSize:
+												"clamp(11px,1.2vmin,12px)",
+											padding: "4px 6px",
+											minWidth: "28px",
+											height: "28px",
+											lineHeight: 1,
+											borderRadius: "4px",
+										}}
+									>
+										↑
+									</button>
+
+									<button
+										onClick={() =>
+											moveItem(originalIndex, "down")
+										}
+										onTouchStart={(e) =>
+											e.stopPropagation()
+										}
+										disabled={
+											originalIndex === items.length - 1
+										}
+										style={{
+											fontSize:
+												"clamp(11px,1.2vmin,12px)",
+											padding: "4px 6px",
+											minWidth: "28px",
+											height: "28px",
+											lineHeight: 1,
+											borderRadius: "4px",
+										}}
+									>
+										↓
+									</button>
+								</div>
+							)}
+						</div>
+					);
+				})}
+			</div>
+
+			{/* Bottom scroll control */}
+			{canScroll && (
+				<button
+					onClick={scrollDown}
+					aria-label="Scroll down"
+					style={{
+						marginTop: 6,
+						width: 40,
+						height: 32,
+						borderRadius: 6,
+						fontSize: "14px",
+						padding: 0,
+						background: "rgba(255,255,255,0.95)",
+						border: "1px solid rgba(0,0,0,0.08)",
+						boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
+						cursor: "pointer",
+					}}
+				>
+					▼
+				</button>
+			)}
 		</div>
 	);
 }

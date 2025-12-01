@@ -20,20 +20,25 @@ const PowerUpCircles: React.FC<PowerUpCirclesProps> = ({
 	const getCircleStyle = (
 		status: "used" | "active" | "unused",
 	): React.CSSProperties => {
+		// Use responsive sizing so circles scale down on small screens.
 		const baseStyle: React.CSSProperties = {
-			width: "50px",
-			height: "50px",
+			width: "clamp(32px, 5.5vmin, 50px)",
+			height: "clamp(32px, 5.5vmin, 50px)",
 			borderRadius: "50%",
-			margin: horizontal ? "0 5px" : "5px 0",
+			margin: horizontal
+				? "0 clamp(4px,1vmin,8px)"
+				: "clamp(4px,0.8vmin,6px) 0",
 			cursor: status === "used" || disabled ? "default" : "pointer",
-			transition: "all 0.2s ease-in-out",
+			transition: "all 0.18s ease-in-out",
 			display: "flex",
 			alignItems: "center",
 			justifyContent: "center",
-			fontSize: "12px",
+			fontSize: "clamp(10px, 1.6vmin, 14px)",
 			fontWeight: "bold",
 			color: "white",
 			userSelect: "none",
+			boxSizing: "border-box",
+			flexShrink: 0,
 		};
 
 		switch (status) {
@@ -177,21 +182,21 @@ const PowerUpCircles: React.FC<PowerUpCirclesProps> = ({
 									...(horizontal
 										? {
 												/* show above circle when horizontal */
-												bottom: "60px",
+												bottom: "clamp(40px,6vmin,80px)",
 												left: "50%",
-												transform: "translateX(-5%)",
+												transform: "translateX(-50%)",
 											}
 										: position === "right"
 											? {
 													/* for right-side container, show tooltip to the left */
-													right: "60px",
+													right: "clamp(46px,6vmin,80px)",
 													top: "50%",
 													transform:
 														"translateY(-50%)",
 												}
 											: {
 													/* default: show tooltip to the right */
-													left: "60px",
+													left: "clamp(46px,6vmin,80px)",
 													top: "50%",
 													transform:
 														"translateY(-50%)",
@@ -201,7 +206,10 @@ const PowerUpCircles: React.FC<PowerUpCirclesProps> = ({
 									padding: "6px 8px",
 									borderRadius: "4px",
 									whiteSpace: "nowrap",
-									fontSize: "12px",
+									fontSize: "clamp(11px,1.6vmin,14px)",
+									maxWidth: "min(36vmin, 360px)",
+									overflow: "hidden",
+									textOverflow: "ellipsis",
 									boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
 									zIndex: 100,
 								}}

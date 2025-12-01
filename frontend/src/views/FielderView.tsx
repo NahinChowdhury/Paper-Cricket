@@ -12,6 +12,7 @@ import {
 	fielderPowerUpNames,
 } from "../types";
 import { buildPowerUpStatusMap } from "../utils/helperFunctions";
+import "./views-common.css";
 
 // Color mapping for different outcomes
 const colorsMap: Record<string, string> = {
@@ -336,335 +337,326 @@ const FielderView: React.FC = () => {
 	);
 
 	return (
-		<div
-			style={{
-				display: "flex",
-				flexDirection: "column",
-				alignItems: "center",
-				justifyContent: "center",
-				height: "100vh",
-				textAlign: "center",
-				position: "relative",
-				backgroundColor: "#fafafa",
-				fontFamily: "sans-serif",
-			}}
-		>
-			{/* 🏏 Live Scorecard (top-left) */}
-			<div
-				style={{
-					position: "absolute",
-					top: "20px",
-					left: "20px",
-					zIndex: 5,
-				}}
-			>
-				{/* Scorecard should be updated immediately even if recap is playing*/}
-				<LiveScorecard
-					gameState={gameState ? gameState : displayState}
-				/>
-			</div>
-
-			{/* 🔹 Power Up Circles (left side, vertically centered) */}
-			<div
-				style={{
-					position: "absolute",
-					left: "20px",
-					top: "50%",
-					transform: "translateY(-50%)",
-					zIndex: 5,
-				}}
-			>
-				<PowerUpCircles
-					powerUpNames={fielderPowerUpNames}
-					powerUps={fielderPowerUpsStatusMap}
-					onClick={handlePowerUpUsed}
-					disabled={!isFieldingTurn}
-				/>
-			</div>
-
-			{/* 🔹 Power Up Circles (bottom-left, horizontal) */}
-			<div
-				style={{
-					position: "absolute",
-					left: "20px",
-					bottom: "20px",
-					zIndex: 5,
-					display: "flex",
-					flexDirection: "column",
-					alignItems: "flex-start",
-					gap: "6px",
-				}}
-			>
+		<div className="view-root">
+			{/* LEFT COLUMN: Scorecard, vertical fielder powerups, batsman's horizontal powerups */}
+			<div className="left-col">
+				{/* Top: Live scorecard */}
 				<div
 					style={{
-						fontSize: "0.85rem",
-						color: "#333",
-						fontWeight: 600,
+						justifyItems: "start",
+						alignSelf: "center",
+						gridRow: "1",
+						width: "fit-content",
 					}}
 				>
-					Batsmans's power ups
+					<LiveScorecard
+						gameState={gameState ? gameState : displayState}
+					/>
 				</div>
-				<PowerUpCircles
-					powerUpNames={batsmanPowerUpNames}
-					powerUps={batsmanPowerUpsStatusMap}
-					onClick={() => {}}
-					disabled={true}
-					horizontal={true}
-				/>
-			</div>
 
-			{/* 🔹 Surrender Button */}
-			<button
-				onClick={handleSurrender}
-				style={{
-					position: "absolute",
-					top: "20px",
-					right: "20px",
-					padding: "8px 14px",
-					backgroundColor: "#e53935",
-					color: "white",
-					fontWeight: 600,
-					border: "none",
-					borderRadius: "6px",
-					cursor: "pointer",
-				}}
-			>
-				Surrender
-			</button>
-
-			{/* DraggableList on the right side */}
-			{isFieldingTurn &&
-				(displayState.fielderActivePowerups.includes("Field Shift") ||
-					displayState.fielderActivePowerups.includes(
-						"Third Man",
-					)) && (
-					<div
-						style={{
-							position: "absolute",
-							right: "20px",
-							top: "50%",
-							transform: "translateY(-50%)",
-							width: "200px",
-							backgroundColor: "white",
-							padding: "10px",
-							borderRadius: "8px",
-							boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-							zIndex: 5,
-						}}
-					>
-						<DraggableList
-							items={
-								displayState.modifiedPresets[
-									localPresetChoice
-								] || []
-							}
-							specialIndex={
-								displayState.fielderActivePowerups.includes(
-									"Field Shift", // need this so that we can move all pies when field shift is enabled even if third man is enabled too
-								)
-									? null
-									: specialIndex
-							}
-							onReorder={(newItems, specialIndex) => {
-								console.log("Reordering items:", newItems);
-								setGameState((prev: GameState | null) => {
-									if (!prev) return prev; // or return null safely
-									// get the entire modifiedPresets array
-									const newPresets = [
-										...prev.modifiedPresets,
-									];
-									// update only the selected preset
-									newPresets[localPresetChoice] = [
-										...newItems,
-									];
-									// Update special index if needed
-									if (
-										specialIndex !== undefined &&
-										specialIndex !== null
-									) {
-										if (
-											!prev.powerUpContext?.["Third Man"]
-										) {
-											return prev;
-										}
-										const newPowerUpContext = {
-											...prev.powerUpContext,
-											"Third Man": {
-												...prev.powerUpContext[
-													"Third Man"
-												],
-												[localPresetChoice]:
-													specialIndex,
-											},
-										};
-										console.log(
-											"Setting new powerUpContext:",
-											newPowerUpContext,
-										);
-										return {
-											...prev,
-											modifiedPresets: newPresets,
-											powerUpContext: newPowerUpContext,
-										};
-									}
-
-									console.log(
-										"Setting new presets:",
-										newPresets,
-									);
-									return {
-										...prev,
-										modifiedPresets: newPresets,
-									};
-								});
-
-								// if thirdman, then set special index
-
-								// use handlePowerUpUsed to notify server about the change
-								// TODO: think about how thirdman and field shift interact with this. field shift is a superset of thirdman
-								if (
-									displayState.fielderActivePowerups.includes(
-										"Field Shift",
-									)
-								) {
-									const modifications = {
-										presetChosen: localPresetChoice,
-										newPreset: newItems,
-									};
-									handlePowerUpUsed(
-										"Field Shift",
-										modifications,
-									);
-								}
-								if (
-									displayState.fielderActivePowerups.includes(
-										"Third Man",
-									)
-								) {
-									const modifications = {
-										presetChosen: localPresetChoice,
-										newWicketIndex: specialIndex,
-									};
-									handlePowerUpUsed(
-										"Third Man",
-										modifications,
-									);
-								}
-							}}
-							renderItem={(item) => (
-								<span
-									style={{
-										color: colorsMap[item] || "#000000",
-									}}
-								>
-									{item}
-								</span>
-							)}
-						/>
-					</div>
-				)}
-
-			{/* 🎯 Dynamic message based on phase */}
-			<h2 style={{ marginBottom: "10px" }}>🧤 Fielder View</h2>
-			<p style={{ fontSize: "1.2rem", marginBottom: "20px" }}>
-				{recapState.isRecapping
-					? "Recap in progress — replaying the last delivery..."
-					: displayState.gamePhase === "setting field"
-						? "Set your field rotation!"
-						: displayState.gamePhase === "batting"
-							? "Waiting for batter to play the shot..."
-							: ""}
-			</p>
-
-			{/* 🔹 Canvas */}
-			<div style={{ position: "relative", display: "inline-block" }}>
-				<canvas
-					ref={canvasRef}
-					width={400}
-					height={400}
+				{/* Middle: vertical fielder powerups */}
+				<div
 					style={{
-						border: "2px solid #ddd",
-						borderRadius: "50%",
-						cursor: isFieldingTurn
-							? frozenHandsPowerUpUsed
-								? "not-allowed"
-								: isDragging
-									? "grabbing"
-									: "grab"
-							: "not-allowed",
-						opacity: isFieldingTurn ? 1 : 0.5, // no need to do anything else for frozenHandsPowerUpUsed
-						transition: "opacity 0.3s ease",
-						// 🧱 Important interaction rules:
-						touchAction: "none", // disable browser scrolling + pinch zoom on canvas
-						userSelect: "none", // prevent text/image selection
-					}}
-					onMouseDown={handleMouseDown}
-					onMouseMove={handleMouseMove}
-					onMouseUp={handleMouseUp}
-					onMouseLeave={handleMouseUp}
-					onTouchStart={(e) => handleMouseDown(e.touches[0] as any)}
-					onTouchMove={(e) => handleMouseMove(e.touches[0] as any)}
-					onTouchEnd={handleMouseUp}
-				/>
-
-				{/* 🔹 Recap banner only */}
-				{recapState.isRecapping && (
-					<div
-						style={{
-							position: "absolute",
-							top: "50%",
-							left: "50%",
-							transform: "translate(-50%, -50%)",
-							color: "white",
-							fontSize: "1.6rem",
-							fontWeight: "bold",
-							textShadow: "0 0 8px rgba(0,0,0,0.7)",
-							backgroundColor: "rgba(0,0,0,0.6)",
-							padding: "12px 24px",
-							borderRadius: "8px",
-						}}
-					>
-						Batter chose{" "}
-						<span style={{ color: "#ffd166" }}>
-							{recapState.recapChoice ?? "?"}{" "}
-							{/* recapChoice is already the value string */}
-						</span>
-					</div>
-				)}
-			</div>
-
-			{/* 🔹 Preset Selection */}
-			<FielderPresets
-				modifiedPresets={displayState.modifiedPresets}
-				selectedPreset={localPresetChoice}
-				onPresetClick={isFieldingTurn ? handlePresetClick : undefined}
-				style={{
-					opacity: isFieldingTurn ? 1 : 0.5,
-					transition: "opacity 0.3s ease",
-					pointerEvents: isFieldingTurn ? "auto" : "none",
-					cursor: isFieldingTurn ? "pointer" : "not-allowed",
-				}}
-			/>
-
-			{/* 🔹 Submit button */}
-			{isFieldingTurn && (
-				<button
-					onClick={handleSubmitRotation}
-					style={{
-						marginTop: "20px",
-						padding: "10px 20px",
-						fontSize: "16px",
-						backgroundColor: "#4CAF50",
-						color: "white",
-						border: "none",
-						borderRadius: "6px",
-						cursor: "pointer",
-						fontWeight: 600,
+						justifyItems: "start",
+						alignSelf: "center",
+						gridRow: "2",
+						width: "fit-content",
 					}}
 				>
-					Submit Rotation
-				</button>
-			)}
+					<PowerUpCircles
+						powerUpNames={fielderPowerUpNames}
+						powerUps={fielderPowerUpsStatusMap}
+						onClick={handlePowerUpUsed}
+						disabled={!isFieldingTurn}
+					/>
+				</div>
+
+				{/* Bottom: batsman's horizontal powerups */}
+				<div
+					style={{
+						justifyItems: "start",
+						alignSelf: "center",
+						gridRow: "3",
+						width: "fit-content",
+					}}
+				>
+					<div
+						style={{
+							fontSize: "clamp(11px, 1.2vmin, 14px)",
+							color: "#333",
+							fontWeight: 600,
+							marginBottom: 6,
+						}}
+					>
+						Batsman's power ups
+					</div>
+					<PowerUpCircles
+						powerUpNames={batsmanPowerUpNames}
+						powerUps={batsmanPowerUpsStatusMap}
+						onClick={() => {}}
+						disabled={true}
+						horizontal={true}
+					/>
+				</div>
+			</div>
+
+			{/* CENTER COLUMN: header, canvas wheel, submit button - always centered */}
+			<div className="center-col">
+				<div
+					className="view-header"
+					style={{ gridRow: "1", textAlign: "center" }}
+				>
+					<h2 className="view-title">🧤 Fielder View</h2>
+					<p className="view-subtitle">
+						{recapState.isRecapping
+							? "Recap in progress — replaying the last delivery..."
+							: displayState.gamePhase === "setting field"
+								? "Set your field rotation!"
+								: displayState.gamePhase === "batting"
+									? "Waiting for batter to play the shot..."
+									: ""}
+					</p>
+				</div>
+
+				{/* Canvas wrapper - fixed center */}
+				<div>
+					<div
+						style={{
+							width: "clamp(220px, 36vmin, 420px)",
+							height: "clamp(220px, 36vmin, 420px)",
+							display: "flex",
+							alignItems: "center",
+							justifyContent: "center",
+						}}
+					>
+						<canvas
+							ref={canvasRef}
+							width={400}
+							height={400}
+							style={{
+								width: "100%",
+								height: "100%",
+								border: "2px solid #ddd",
+								borderRadius: "50%",
+								boxSizing: "border-box",
+								cursor: isFieldingTurn
+									? frozenHandsPowerUpUsed
+										? "not-allowed"
+										: isDragging
+											? "grabbing"
+											: "grab"
+									: "not-allowed",
+								opacity: isFieldingTurn ? 1 : 0.5,
+								transition: "opacity 0.3s ease",
+								touchAction: "none",
+								userSelect: "none",
+								background: "white",
+							}}
+							onMouseDown={handleMouseDown}
+							onMouseMove={handleMouseMove}
+							onMouseUp={handleMouseUp}
+							onMouseLeave={handleMouseUp}
+							onTouchStart={(e) =>
+								handleMouseDown(e.touches[0] as any)
+							}
+							onTouchMove={(e) =>
+								handleMouseMove(e.touches[0] as any)
+							}
+							onTouchEnd={handleMouseUp}
+						/>
+
+						{recapState.isRecapping && (
+							<div className="recap-banner">
+								Batter chose{" "}
+								<span className="recap-choice">
+									{recapState.recapChoice ?? "?"}
+								</span>
+							</div>
+						)}
+					</div>
+				</div>
+
+				{/* Submit button centered */}
+				{isFieldingTurn && (
+					<button
+						onClick={handleSubmitRotation}
+						className="submit-btn"
+					>
+						Submit Rotation
+					</button>
+				)}
+			</div>
+
+			{/* RIGHT COLUMN: surrender, draggable list, presets */}
+			<div className="right-col">
+				{/* Top: surrender */}
+				<div
+					style={{
+						justifySelf: "end",
+						gridRow: "1",
+						width: "fit-content",
+					}}
+				>
+					<button onClick={handleSurrender} className="surrender-btn">
+						Surrender
+					</button>
+				</div>
+
+				{/* Middle: DraggableList when active */}
+				<div
+					style={{
+						justifySelf: "end",
+						alignSelf: "center",
+						gridRow: "2",
+						width: "fit-content",
+					}}
+				>
+					{isFieldingTurn &&
+						(displayState.fielderActivePowerups.includes(
+							"Field Shift",
+						) ||
+							displayState.fielderActivePowerups.includes(
+								"Third Man",
+							)) && (
+							<div
+								style={{
+									backgroundColor: "white",
+									padding: "10px",
+									borderRadius: "8px",
+									boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
+								}}
+							>
+								<DraggableList
+									items={
+										displayState.modifiedPresets[
+											localPresetChoice
+										] || []
+									}
+									specialIndex={
+										displayState.fielderActivePowerups.includes(
+											"Field Shift",
+										)
+											? null
+											: specialIndex
+									}
+									onReorder={(newItems, specialIndex) => {
+										console.log(
+											"Reordering items:",
+											newItems,
+										);
+										setGameState(
+											(prev: GameState | null) => {
+												if (!prev) return prev;
+												const newPresets = [
+													...prev.modifiedPresets,
+												];
+												newPresets[localPresetChoice] =
+													[...newItems];
+												if (
+													specialIndex !==
+														undefined &&
+													specialIndex !== null
+												) {
+													if (
+														!prev.powerUpContext?.[
+															"Third Man"
+														]
+													)
+														return prev;
+													const newPowerUpContext = {
+														...prev.powerUpContext,
+														"Third Man": {
+															...prev
+																.powerUpContext[
+																"Third Man"
+															],
+															[localPresetChoice]:
+																specialIndex,
+														},
+													};
+													return {
+														...prev,
+														modifiedPresets:
+															newPresets,
+														powerUpContext:
+															newPowerUpContext,
+													};
+												}
+												return {
+													...prev,
+													modifiedPresets: newPresets,
+												};
+											},
+										);
+
+										if (
+											displayState.fielderActivePowerups.includes(
+												"Field Shift",
+											)
+										) {
+											const modifications = {
+												presetChosen: localPresetChoice,
+												newPreset: newItems,
+											};
+											handlePowerUpUsed(
+												"Field Shift",
+												modifications,
+											);
+										}
+										if (
+											displayState.fielderActivePowerups.includes(
+												"Third Man",
+											)
+										) {
+											const modifications = {
+												presetChosen: localPresetChoice,
+												newWicketIndex: specialIndex,
+											};
+											handlePowerUpUsed(
+												"Third Man",
+												modifications,
+											);
+										}
+									}}
+									renderItem={(item) => (
+										<span
+											style={{
+												color:
+													colorsMap[item] ||
+													"#000000",
+											}}
+										>
+											{item}
+										</span>
+									)}
+								/>
+							</div>
+						)}
+				</div>
+
+				{/* Bottom: presets */}
+				<div
+					style={{
+						justifySelf: "end",
+						gridRow: "3",
+					}}
+				>
+					<FielderPresets
+						modifiedPresets={displayState.modifiedPresets}
+						selectedPreset={localPresetChoice}
+						onPresetClick={
+							isFieldingTurn ? handlePresetClick : undefined
+						}
+						style={{
+							opacity: isFieldingTurn ? 1 : 0.5,
+							transition: "opacity 0.3s ease",
+							pointerEvents: isFieldingTurn ? "auto" : "none",
+							cursor: isFieldingTurn ? "pointer" : "not-allowed",
+							width: "fit-content",
+						}}
+					/>
+				</div>
+			</div>
 		</div>
 	);
 };

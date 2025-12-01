@@ -152,144 +152,165 @@ const AudienceView: React.FC = () => {
 	//  IN-GAME DISPLAY (READ-ONLY)
 	// =========================
 	return (
-		<div
-			style={{
-				display: "flex",
-				flexDirection: "column",
-				alignItems: "center",
-				justifyContent: "center",
-				height: "100vh",
-				textAlign: "center",
-				backgroundColor: "#fafafa",
-				fontFamily: "sans-serif",
-				position: "relative",
-			}}
-		>
-			{/* 🏏 Live Scorecard (top-left) */}
-			{gameState && (
-				<div
-					style={{
-						position: "absolute",
-						top: "20px",
-						left: "20px",
-						zIndex: 5,
-					}}
-				>
-					{/* Scorecard should be updated immediately even if recap is playing*/}
-					<LiveScorecard gameState={gameState} />
-				</div>
-			)}
-
-			{/* 🔹 Fielder Power Up Circles (left-side) */}
-			<div
-				style={{
-					position: "absolute",
-					left: "20px",
-					top: "50%",
-					transform: "translateY(-50%)",
-					zIndex: 5,
-				}}
-			>
-				<div
-					style={{
-						fontSize: "0.85rem",
-						color: "#333",
-						fontWeight: 600,
-					}}
-				>
-					Fielder's power ups
-				</div>
-				<PowerUpCircles
-					powerUpNames={fielderPowerUpNames}
-					powerUps={fielderPowerUpsStatusMap}
-					onClick={() => {}}
-					disabled={true}
-					// horizontal={true}
-				/>
-			</div>
-
-			{/* 🔹 Batsman Power Up Circles (right-side) */}
-			<div
-				style={{
-					position: "absolute",
-					right: "20px",
-					top: "50%",
-					transform: "translateY(-50%)",
-					zIndex: 5,
-				}}
-			>
-				<div
-					style={{
-						fontSize: "0.85rem",
-						color: "#333",
-						fontWeight: 600,
-					}}
-				>
-					Batsman's power ups
-				</div>
-				<PowerUpCircles
-					powerUpNames={batsmanPowerUpNames}
-					powerUps={batsmanPowerUpsStatusMap}
-					onClick={() => {}}
-					disabled={true}
-					position="right"
-				/>
-			</div>
-
-			<h2 style={{ marginBottom: "10px" }}>🎟️ Audience View</h2>
-			<p style={{ fontSize: "1.2rem", marginBottom: "20px" }}>
-				{recapState.isRecapping
-					? "Replay in progress — watch how the last delivery unfolded!"
-					: gamePhase === "setting field"
-						? "The fielder is setting up their formation — let's see the strategy unfold."
-						: gamePhase === "batting"
-							? "The batter is preparing their shot — tension's in the air!"
-							: "You're watching the match live — the field updates in real time!"}
-			</p>
-
-			{/* 🔹 Read-only wheel */}
-			<div style={{ position: "relative", display: "inline-block" }}>
-				<canvas
-					ref={canvasRef}
-					width={400}
-					height={400}
-					style={{
-						border: "2px solid #ddd",
-						borderRadius: "50%",
-						cursor: "not-allowed",
-					}}
-				/>
-
-				{/* 🔹 Recap banner overlay */}
-				{recapState.isRecapping && (
+		<div className="view-root">
+			{/* LEFT COLUMN: LiveScore, fielder powerups (vertical), batsman horizontal powerups */}
+			<div className="left-col">
+				{/* Top: Live scorecard */}
+				{gameState && (
 					<div
 						style={{
-							position: "absolute",
-							top: "50%",
-							left: "50%",
-							transform: "translate(-50%, -50%)",
-							color: "white",
-							fontSize: "1.5rem",
-							fontWeight: "bold",
-							textShadow: "0 0 10px rgba(0,0,0,0.7)",
+							justifyItems: "start",
+							alignSelf: "center",
+							gridRow: "1",
 						}}
 					>
-						User chose{" "}
-						<span style={{ color: "#ffd166" }}>
-							{recapState.recapChoice ?? "?"}
-						</span>
+						<LiveScorecard gameState={gameState} />
 					</div>
 				)}
+
+				{/* Middle: fielder powerups (vertical, read-only) */}
+				<div
+					style={{
+						justifySelf: "start",
+						alignSelf: "center",
+						gridRow: "2",
+						width: "fit-content",
+					}}
+				>
+					<div style={{ textAlign: "center" }}>
+						<div
+							style={{
+								fontSize: "clamp(11px,1.2vmin,14px)",
+								color: "#333",
+								fontWeight: 600,
+								marginBottom: 6,
+							}}
+						>
+							Fielder's power ups
+						</div>
+						<PowerUpCircles
+							powerUpNames={fielderPowerUpNames}
+							powerUps={fielderPowerUpsStatusMap}
+							onClick={() => {}}
+							disabled={true}
+						/>
+					</div>
+				</div>
+
+				{/* Bottom: batsman's horizontal powerups (read-only) */}
+				<div
+					style={{
+						justifyItems: "start",
+						alignSelf: "center",
+						gridRow: "3",
+						width: "fit-content",
+					}}
+				>
+					<div
+						style={{
+							fontSize: "clamp(11px,1.2vmin,14px)",
+							color: "#333",
+							fontWeight: 600,
+							marginBottom: 6,
+						}}
+					>
+						Batsman's power ups
+					</div>
+					<PowerUpCircles
+						powerUpNames={batsmanPowerUpNames}
+						powerUps={batsmanPowerUpsStatusMap}
+						onClick={() => {}}
+						disabled={true}
+						horizontal={true}
+					/>
+				</div>
 			</div>
 
-			{/* 🔹 Preset Selection */}
-			<FielderPresets
-				modifiedPresets={displayState.originalPresets}
-				style={{
-					pointerEvents: "none",
-					cursor: "not-allowed",
-				}}
-			/>
+			{/* CENTER COLUMN: header, canvas (read-only), recap banner */}
+			<div className="center-col">
+				<div
+					className="view-header"
+					style={{ gridRow: "1", textAlign: "center" }}
+				>
+					<h2 className="view-title">🎟️ Audience View</h2>
+					<p className="view-subtitle">
+						{recapState.isRecapping
+							? "Replay in progress — watch how the last delivery unfolded!"
+							: gamePhase === "setting field"
+								? "The fielder is setting up their formation — let's see the strategy unfold."
+								: gamePhase === "batting"
+									? "The batter is preparing their shot — tension's in the air!"
+									: "You're watching the match live — the field updates in real time!"}
+					</p>
+				</div>
+
+				{/* Read-only wheel */}
+				<div>
+					<div
+						style={{
+							width: "clamp(220px,36vmin,420px)",
+							height: "clamp(220px,36vmin,420px)",
+							display: "flex",
+							alignItems: "center",
+							justifyContent: "center",
+						}}
+					>
+						<canvas
+							ref={canvasRef}
+							width={400}
+							height={400}
+							style={{
+								width: "100%",
+								height: "100%",
+								border: "2px solid #ddd",
+								borderRadius: "50%",
+								cursor: "not-allowed",
+								background: "white",
+								boxSizing: "border-box",
+							}}
+						/>
+
+						{recapState.isRecapping && (
+							<div className="recap-banner">
+								User chose{" "}
+								<span className="recap-choice">
+									{recapState.recapChoice ?? "?"}
+								</span>
+							</div>
+						)}
+					</div>
+				</div>
+
+				{/* Audience has no submit controls (read-only) */}
+			</div>
+
+			{/* RIGHT COLUMN: presets (bottom) and spare space */}
+			<div className="right-col">
+				{/* Top: spacer (reserved for small widgets) */}
+				<div
+					style={{
+						justifySelf: "end",
+						gridRow: "1",
+					}}
+				/>
+
+				{/* Bottom: presets (read-only) */}
+				<div
+					style={{
+						justifySelf: "end",
+						gridRow: "3",
+					}}
+				>
+					<FielderPresets
+						modifiedPresets={displayState.originalPresets}
+						style={{
+							pointerEvents: "none",
+							cursor: "not-allowed",
+							boxSizing: "border-box",
+						}}
+					/>
+				</div>
+			</div>
 		</div>
 	);
 };

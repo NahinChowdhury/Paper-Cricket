@@ -1,3 +1,4 @@
+import dotenv from "dotenv";
 import express from "express";
 import { createServer } from "http";
 import { Server as SocketIOServer, Socket } from "socket.io";
@@ -23,10 +24,14 @@ import { createError, handleSocketError } from "./errors/AppError";
 const app = express();
 const server = createServer(app);
 
+dotenv.config();
+
 // Enable CORS for frontend-backend communication
 app.use(
 	cors({
-		origin: process.env.FRONTEND_URL || "http://localhost:3000",
+		origin: process.env.DEBUG
+			? "*"
+			: process.env.FRONTEND_URL || "http://localhost:3000",
 		credentials: true,
 	}),
 );
@@ -34,7 +39,9 @@ app.use(
 // Socket.IO server (simplified typing for now)
 const io = new SocketIOServer(server, {
 	cors: {
-		origin: process.env.FRONTEND_URL || "http://localhost:3000",
+		origin: process.env.DEBUG
+			? "*"
+			: process.env.FRONTEND_URL || "http://localhost:3000",
 		methods: ["GET", "POST"],
 	},
 });

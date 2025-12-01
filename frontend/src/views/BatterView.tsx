@@ -10,6 +10,7 @@ import {
 import PowerUpCircles from "../components/PowerUpCircles";
 import FielderPresets from "../components/FielderPresets";
 import { buildPowerUpStatusMap } from "../utils/helperFunctions";
+import "./views-common.css";
 
 // Color mapping for different outcomes
 const colorsMap: Record<string, string> = {
@@ -259,185 +260,172 @@ const BatterView: React.FC = () => {
 	);
 
 	// =========================
-	//  UI RENDER
+	//  UI RENDER (grid-based, reusing shared styles)
 	// =========================
 	return (
-		<div
-			style={{
-				display: "flex",
-				flexDirection: "column",
-				alignItems: "center",
-				justifyContent: "center",
-				height: "100vh",
-				textAlign: "center",
-				position: "relative",
-				backgroundColor: "#fafafa",
-				fontFamily: "sans-serif",
-			}}
-		>
-			{/* 🏏 Live Scorecard (top-left) */}
-			<div
-				style={{
-					position: "absolute",
-					top: "20px",
-					left: "20px",
-					zIndex: 5,
-				}}
-			>
-				{/* Scorecard should be updated immediately even if recap is playing*/}
-				<LiveScorecard
-					gameState={gameState ? gameState : displayState}
-				/>
-			</div>
-
-			{/* 🔹 Power Up Circles (left side, vertically centered) */}
-			<div
-				style={{
-					position: "absolute",
-					left: "20px",
-					top: "50%",
-					transform: "translateY(-50%)",
-					zIndex: 5,
-				}}
-			>
-				<PowerUpCircles
-					powerUpNames={batsmanPowerUpNames}
-					powerUps={batsmanPowerUpsStatusMap}
-					onClick={handlePowerUpUsed}
-					disabled={!isBattingTurn}
-				/>
-			</div>
-
-			{/* 🔹 Power Up Circles (bottom-left, horizontal) */}
-			<div
-				style={{
-					position: "absolute",
-					left: "20px",
-					bottom: "20px",
-					zIndex: 5,
-					display: "flex",
-					flexDirection: "column",
-					alignItems: "flex-start",
-					gap: "6px",
-				}}
-			>
+		<div className="view-root">
+			{/* LEFT COLUMN: Scorecard, vertical batsman powerups, fielder horizontal powerups */}
+			<div className="left-col">
+				{/* Top: Live scorecard */}
 				<div
 					style={{
-						fontSize: "0.85rem",
-						color: "#333",
-						fontWeight: 600,
+						justifyItems: "start",
+						alignSelf: "center",
+						gridRow: "1",
+						width: "fit-content",
 					}}
 				>
-					Fielder's power ups
+					<LiveScorecard
+						gameState={gameState ? gameState : displayState}
+					/>
 				</div>
-				<PowerUpCircles
-					powerUpNames={fielderPowerUpNames}
-					powerUps={fielderPowerUpsStatusMap}
-					onClick={() => {}}
-					disabled={true}
-					horizontal={true}
-				/>
-			</div>
 
-			{/* 🔹 Surrender Button */}
-			<button
-				onClick={handleSurrender}
-				style={{
-					position: "absolute",
-					top: "20px",
-					right: "20px",
-					padding: "8px 14px",
-					backgroundColor: "#e53935",
-					color: "white",
-					fontWeight: 600,
-					border: "none",
-					borderRadius: "6px",
-					cursor: "pointer",
-				}}
-			>
-				Surrender
-			</button>
-
-			{/* 🎯 Dynamic message based on phase */}
-			<h2 style={{ marginBottom: "10px" }}>🏏 Batter View</h2>
-			<p style={{ fontSize: "1.2rem", marginBottom: "20px" }}>
-				{recapState.isRecapping
-					? "Recap in progress — reviewing the last ball..."
-					: gamePhase === "setting field"
-						? "Opponent is setting their field..."
-						: gamePhase === "batting"
-							? "Field is ready — pick your shot carefully!"
-							: "Waiting for next phase..."}
-			</p>
-
-			{/* 🔹 Pie + Mask */}
-			<div style={{ position: "relative", display: "inline-block" }}>
-				<canvas
-					ref={canvasRef}
-					width={400}
-					height={400}
+				{/* Middle: vertical batsman powerups */}
+				<div
 					style={{
-						border: "2px solid #ddd",
-						borderRadius: "50%",
-						cursor:
-							isBattingTurn && !recapState.isRecapping
-								? "pointer"
-								: "not-allowed",
+						justifyItems: "start",
+						alignSelf: "center",
+						gridRow: "2",
+						width: "fit-content",
 					}}
-					onClick={handleClick}
-				/>
+				>
+					<PowerUpCircles
+						powerUpNames={batsmanPowerUpNames}
+						powerUps={batsmanPowerUpsStatusMap}
+						onClick={handlePowerUpUsed}
+						disabled={!isBattingTurn}
+					/>
+				</div>
 
-				{/* 🔹 Recap banner */}
-				{recapState.isRecapping && (
+				{/* Bottom: fielder's horizontal powerups */}
+				<div
+					style={{
+						justifyItems: "start",
+						alignSelf: "center",
+						gridRow: "3",
+						width: "fit-content",
+					}}
+				>
 					<div
 						style={{
-							position: "absolute",
-							top: "50%",
-							left: "50%",
-							transform: "translate(-50%, -50%)",
-							color: "white",
-							fontSize: "1.5rem",
-							fontWeight: "bold",
-							textShadow: "0 0 10px rgba(0,0,0,0.7)",
+							fontSize: "clamp(11px, 1.2vmin, 14px)",
+							color: "#333",
+							fontWeight: 600,
+							marginBottom: 6,
 						}}
 					>
-						User chose{" "}
-						<span style={{ color: "#ffd166" }}>
-							{recapState.recapChoice ?? "?"}{" "}
-							{/* recapChoice is already the value string */}
-						</span>
+						Fielder's power ups
 					</div>
+					<PowerUpCircles
+						powerUpNames={fielderPowerUpNames}
+						powerUps={fielderPowerUpsStatusMap}
+						onClick={() => {}}
+						disabled={true}
+						horizontal={true}
+					/>
+				</div>
+			</div>
+
+			{/* CENTER COLUMN: header, canvas wheel, submit button - centered */}
+			<div className="center-col">
+				<div
+					className="view-header"
+					style={{ gridRow: "1", textAlign: "center" }}
+				>
+					<h2 className="view-title">🏏 Batter View</h2>
+					<p className="view-subtitle">
+						{recapState.isRecapping
+							? "Recap in progress — reviewing the last ball..."
+							: gamePhase === "setting field"
+								? "Opponent is setting their field..."
+								: gamePhase === "batting"
+									? "Field is ready — pick your shot carefully!"
+									: "Waiting for next phase..."}
+					</p>
+				</div>
+
+				{/* Canvas wrapper - fixed center */}
+				<div>
+					<div
+						style={{
+							width: "clamp(220px, 36vmin, 420px)",
+							height: "clamp(220px, 36vmin, 420px)",
+							display: "flex",
+							alignItems: "center",
+							justifyContent: "center",
+						}}
+					>
+						<canvas
+							ref={canvasRef}
+							width={400}
+							height={400}
+							style={{
+								width: "100%",
+								height: "100%",
+								border: "2px solid #ddd",
+								borderRadius: "50%",
+								boxSizing: "border-box",
+								cursor:
+									isBattingTurn && !recapState.isRecapping
+										? "pointer"
+										: "not-allowed",
+							}}
+							onClick={handleClick}
+						/>
+
+						{recapState.isRecapping && (
+							<div className="recap-banner">
+								User chose{" "}
+								<span className="recap-choice">
+									{recapState.recapChoice ?? "?"}
+								</span>
+							</div>
+						)}
+					</div>
+				</div>
+
+				{/* Submit button centered */}
+				{isBattingTurn && (
+					<button
+						onClick={handleSubmitShot}
+						className="submit-btn"
+						disabled={unableToSubmitShot}
+					>
+						Submit Shot
+					</button>
 				)}
 			</div>
 
-			{/* 🔹 Preset Selection */}
-			<FielderPresets
-				modifiedPresets={displayState.originalPresets}
-				style={{
-					pointerEvents: "none",
-					cursor: "not-allowed",
-				}}
-			/>
-
-			{/* 🔹 Submit Shot Button */}
-			<div style={{ marginTop: "30px" }}>
-				<button
-					onClick={handleSubmitShot}
-					disabled={unableToSubmitShot}
+			{/* RIGHT COLUMN: surrender top, spacer middle, presets bottom */}
+			<div className="right-col">
+				{/* Top: surrender */}
+				<div
 					style={{
-						padding: "12px 24px",
-						fontSize: "16px",
-						backgroundColor: unableToSubmitShot
-							? "#ccc"
-							: "#4CAF50",
-						color: "white",
-						border: "none",
-						borderRadius: "5px",
-						cursor: unableToSubmitShot ? "not-allowed" : "pointer",
+						justifySelf: "end",
+						gridRow: "1",
 					}}
 				>
-					Submit Shot
-				</button>
+					<button onClick={handleSurrender} className="surrender-btn">
+						Surrender
+					</button>
+				</div>
+
+				{/* Bottom: presets */}
+				<div
+					style={{
+						justifySelf: "end",
+						gridRow: "3",
+					}}
+				>
+					<FielderPresets
+						modifiedPresets={displayState.originalPresets}
+						style={{
+							pointerEvents: "none",
+							cursor: "not-allowed",
+							boxSizing: "border-box",
+						}}
+					/>
+				</div>
 			</div>
 		</div>
 	);

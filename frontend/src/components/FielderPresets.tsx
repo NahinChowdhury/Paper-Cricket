@@ -12,9 +12,6 @@ const colorsMap: Record<string, string> = {
 	WD: "#9b9b9b",
 };
 
-const WHEEL_SIZE = 60; // Even smaller size for the preset wheels
-const WHEEL_SPACING = 10; // Smaller spacing between wheels
-
 type PresetArray = string[];
 type ModifiedPresets = PresetArray[];
 
@@ -30,24 +27,28 @@ const PresetWheel: React.FC<PresetWheelProps> = ({
 	onClick,
 }) => {
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
+	const containerRef = useRef<HTMLDivElement | null>(null);
 
 	const drawWheel = useCallback(
 		(ctx: CanvasRenderingContext2D) => {
-			const sliceAngle = (2 * Math.PI) / preset.length;
-			const cx = ctx.canvas.width / 2;
-			const cy = ctx.canvas.height / 2;
-			const radius = WHEEL_SIZE / 2;
+			const dpr = window.devicePixelRatio || 1;
+			const cssWidth = ctx.canvas.width / dpr;
+			const cssHeight = ctx.canvas.height / dpr;
+			const sliceAngle = (2 * Math.PI) / Math.max(1, preset.length);
+			const cx = cssWidth / 2;
+			const cy = cssHeight / 2;
+			const radius = Math.min(cssWidth, cssHeight) / 2;
 
-			ctx.save();
+			// Clear (in CSS pixels; context already scaled)
+			ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
 			// Slightly dim if not selected
 			if (!selected) {
-				ctx.globalAlpha = 0.5; // adjust between 0.4–0.7 to taste
+				ctx.globalAlpha = 0.6;
 			}
 
 			// Draw each slice
 			preset.forEach((outcome, i) => {
-				// Subtract Math.PI/2 because canvas 0 radians points right (3 o’clock), but our pie’s first slice is visually at the top (12 o’clock)
 				const start = i * sliceAngle - Math.PI / 2;
 				const end = start + sliceAngle;
 
@@ -58,53 +59,83 @@ const PresetWheel: React.FC<PresetWheelProps> = ({
 				ctx.fillStyle = colorsMap[outcome] || "#000000";
 				ctx.fill();
 
-				// Draw outcome label
+				// Draw outcome label (scale font with radius, cap for small screens)
 				ctx.save();
 				ctx.translate(cx, cy);
 				ctx.rotate(start + sliceAngle / 2);
 				ctx.textAlign = "right";
+				// Compute a responsive font size: use a smaller scale to keep labels compact on all screens
+				const computedFontSize = Math.max(
+					6,
+					Math.min(Math.round(radius * 0.12), 20), // smaller multiplier and lower max
+				);
 				ctx.fillStyle = "white";
-				ctx.font = "8px sans-serif";
-				ctx.fillText(outcome, radius - 5, 2);
+				ctx.font = `${computedFontSize}px sans-serif`;
+				// Position offsets that scale with radius.
+				// For small wheels, reduce the radius offset so labels sit closer to the edge.
+				const labelRadiusOffset =
+					radius < 28
+						? Math.max(3, Math.round(radius * 0.08))
+						: Math.max(6, Math.round(radius * 0.12));
+				// Slightly smaller vertical offset on tiny wheels
+				const labelYAxisOffset =
+					radius < 28
+						? Math.max(1, Math.round(radius * 0.03))
+						: Math.max(2, Math.round(radius * 0.04));
+				ctx.fillText(
+					outcome,
+					radius - labelRadiusOffset,
+					labelYAxisOffset,
+				);
 				ctx.restore();
 			});
 
-			ctx.restore(); // restore alpha to 1.0 before applying glow
+			// restore alpha
+			ctx.globalAlpha = 1;
 
 			// Draw selection indicator if selected
 			if (selected) {
-				// Outer glow halo (soft background ring)
 				const gradient = ctx.createRadialGradient(
 					cx,
 					cy,
-					radius - 10,
+					Math.max(0, radius - 8),
 					cx,
 					cy,
-					radius + 15,
+					radius + 12,
 				);
 				gradient.addColorStop(0, "rgba(255, 215, 0, 0)");
-				gradient.addColorStop(0.8, "rgba(255, 215, 0, 0.4)");
+				gradient.addColorStop(0.75, "rgba(255, 215, 0, 0.35)");
 				gradient.addColorStop(1, "rgba(255, 215, 0, 0)");
 				ctx.fillStyle = gradient;
 				ctx.beginPath();
-				ctx.arc(cx, cy, radius + 15, 0, 2 * Math.PI);
+				ctx.arc(cx, cy, radius + 12, 0, 2 * Math.PI);
 				ctx.fill();
 
-				// Outer ring — bright gold
-				ctx.shadowBlur = 20;
+				ctx.shadowBlur = 12;
 				ctx.shadowColor = "#ffcc00";
 				ctx.strokeStyle = "#ffcc00";
-				ctx.lineWidth = 6;
+				ctx.lineWidth = Math.max(2, radius * 0.12);
 				ctx.beginPath();
-				ctx.arc(cx, cy, radius + 4, 0, 2 * Math.PI);
+				ctx.arc(
+					cx,
+					cy,
+					radius + Math.max(2, radius * 0.06),
+					0,
+					2 * Math.PI,
+				);
 				ctx.stroke();
 
-				// Inner ring — crisp white for clarity
 				ctx.shadowBlur = 0;
 				ctx.strokeStyle = "#ffffff";
-				ctx.lineWidth = 3;
+				ctx.lineWidth = Math.max(1, radius * 0.06);
 				ctx.beginPath();
-				ctx.arc(cx, cy, radius - 1, 0, 2 * Math.PI);
+				ctx.arc(
+					cx,
+					cy,
+					radius - Math.max(1, radius * 0.03),
+					0,
+					2 * Math.PI,
+				);
 				ctx.stroke();
 			}
 		},
@@ -112,45 +143,76 @@ const PresetWheel: React.FC<PresetWheelProps> = ({
 	);
 
 	useEffect(() => {
-		const canvas = canvasRef.current;
-		if (!canvas) return;
+		const resize = () => {
+			const canvas = canvasRef.current;
+			const container = containerRef.current;
+			if (!canvas || !container) return;
+			const rect = container.getBoundingClientRect();
+			const dpr = window.devicePixelRatio || 1;
+			const cssW = Math.max(8, Math.floor(rect.width));
+			const cssH = Math.max(8, Math.floor(rect.height));
+			// set CSS size
+			canvas.style.width = `${cssW}px`;
+			canvas.style.height = `${cssH}px`;
+			// set internal pixel buffer for crisp rendering
+			canvas.width = Math.floor(cssW * dpr);
+			canvas.height = Math.floor(cssH * dpr);
+			const ctx = canvas.getContext("2d");
+			if (!ctx) return;
+			// reset transform and scale for device pixel ratio
+			ctx.setTransform(1, 0, 0, 1, 0, 0);
+			ctx.scale(dpr, dpr);
+			drawWheel(ctx);
+		};
 
-		const ctx = canvas.getContext("2d");
-		if (!ctx) return;
-
-		ctx.clearRect(0, 0, canvas.width, canvas.height);
-		drawWheel(ctx);
+		resize();
+		const ro = new ResizeObserver(resize);
+		if (containerRef.current) ro.observe(containerRef.current);
+		window.addEventListener("resize", resize);
+		return () => {
+			ro.disconnect();
+			window.removeEventListener("resize", resize);
+		};
 	}, [drawWheel]);
 
+	const sizeStyle: React.CSSProperties = {
+		width: "clamp(28px, 5.2vmin, 60px)",
+		height: "clamp(28px, 5.2vmin, 60px)",
+		margin: "clamp(4px, 1vmin, 8px)",
+		display: "inline-block",
+		boxSizing: "border-box",
+		verticalAlign: "middle",
+	};
+
 	return (
-		<canvas
-			ref={canvasRef}
-			width={WHEEL_SIZE}
-			height={WHEEL_SIZE}
-			onClick={() => {
-				console.log("Clicked wheel with preset:", preset);
-				onClick?.();
-			}}
-			style={{
-				cursor: onClick ? "pointer" : "default",
-				border: "1px solid #ddd",
-				borderRadius: "50%",
-				margin: `0 ${WHEEL_SPACING / 2}px`,
-				backgroundColor: selected
-					? "rgba(255, 215, 0, 0.1)"
-					: "transparent",
-				boxShadow: selected
-					? "0 0 10px rgba(255, 215, 0, 0.3)"
-					: "none",
-				transform: selected ? "scale(1.05)" : "scale(1)",
-				transition: "all 0.2s ease-in-out",
-			}}
-		/>
+		<div ref={containerRef} style={sizeStyle} onClick={onClick}>
+			<canvas
+				ref={canvasRef}
+				width={60}
+				height={60}
+				style={{
+					width: "100%",
+					height: "100%",
+					cursor: onClick ? "pointer" : "default",
+					border: "1px solid #ddd",
+					borderRadius: "50%",
+					backgroundColor: selected
+						? "rgba(255,215,0,0.06)"
+						: "transparent",
+					boxShadow: selected
+						? "0 0 8px rgba(255,215,0,0.22)"
+						: "none",
+					transition: "transform 0.16s ease-in-out",
+					transform: selected ? "scale(1.05)" : "scale(1)",
+					display: "block",
+				}}
+			/>
+		</div>
 	);
 };
 
 interface FielderPresetsProps {
-	modifiedPresets: ModifiedPresets; // More explicit about the type being string[][]
+	modifiedPresets: ModifiedPresets;
 	selectedPreset?: number;
 	onPresetClick?: (index: number) => void;
 	style?: React.CSSProperties;
@@ -165,16 +227,17 @@ const FielderPresets: React.FC<FielderPresetsProps> = ({
 	return (
 		<div
 			style={{
-				position: "absolute",
-				bottom: "20px",
-				right: "20px",
-				display: "flex",
-				alignItems: "center",
-				backgroundColor: "rgba(255, 255, 255, 0.9)",
-				padding: "10px",
+				// Make the presets flow inline so parent layout (grid/flex) controls placement.
+				// display: "flex",
+				// alignItems: "center",
+				// justifyContent: "end",
+				backgroundColor: "rgba(255,255,255,0.9)",
+				padding: "clamp(6px,1.2vmin,10px)",
 				borderRadius: "8px",
-				boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
-				gap: WHEEL_SPACING,
+				boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
+				gap: "clamp(6px, 1.2vmin, 12px)",
+				// Allow horizontal scrolling if there are many presets
+				overflowX: "auto",
 				...style,
 			}}
 		>

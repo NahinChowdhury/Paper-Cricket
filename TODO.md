@@ -63,12 +63,12 @@ UI is garbage for mobile.
 Finish all power ups interaction.
 
 
-### 4th November, 2025
+## 4th November, 2025
 Third Man power up somewhat works? Need to ensure the changes make sense throughout.
 Need to look into Field Shift next. I think Mirror Field just works from the get go.
 Need to clean up the code afterwards
 
-### 22nd November, 2025
+## 22nd November, 2025
 Fielder power ups work as expected.
 The shifting of pies in the list works smoothly now
 Hovering on power ups now shows description
@@ -83,7 +83,7 @@ TODO:
  - Improve front page to give context of game 
 
 
-### 24th November, 2025
+## 24th November, 2025
 Done:
 - Batter power ups working
 - Show presets in batter view
@@ -94,7 +94,7 @@ TODO:
 - Disable power up usage if player is not actively making the move
 - Do remaining above TODOs from 22nd November, 2025
 
-### 25th November, 2025
+## 25th November, 2025
 - Made draggable list work with mobile touch
 - Showed power up circles in audience view
 - Showed opponent's power ups
@@ -105,8 +105,14 @@ TODO:
 TODO:
 - Work on hiding what power up is being used by the fielder to batter and audience. Batter power up usage should be shown to all instantly
 - Add disconnect button to Audience view. Which just send them to the home page and removes them from the audience list
-- Improve the UI to that it's properly scaled on phone horizontal view
+- Improve the UI to that it's properly scaled on phone horizontal view. Use grid layout
 - Clean up the code to use common components. It's best to have unique views for batter, fielder and audience view. But they should extensively use common components and have custom styles.
 - Add a copy link to game button somewhere in the game UI
 - Add names for players instead of just UUIDs
 - Do remaining above TODOs from 22nd November, 2025
+
+## 28th November, 2025
+The grid kind of works, but it's chunking the presets in smaller views. work on them and fix the UI. The goal is to have the same non-scrolling UI in desktop and phone
+
+## 30th November, 2025
+UI is somewhat usable in landscapre mode on phone
