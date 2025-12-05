@@ -19,7 +19,7 @@ interface LiveScorecardProps {
 
 const LiveScorecard: React.FC<LiveScorecardProps> = ({
 	gameState,
-	maxBallsToShow = 10,
+	maxBallsToShow = 7,
 }) => {
 	if (!gameState) return null;
 
@@ -30,7 +30,7 @@ const LiveScorecard: React.FC<LiveScorecardProps> = ({
 				color: "#fff",
 				borderRadius: "10px",
 				padding: "clamp(8px, 1.6vmin, 16px)",
-				minWidth: "clamp(200px, 18vmin, 320px)",
+				minWidth: "clamp(180px, 18vmin, 320px)",
 				fontFamily:
 					"Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
 				boxShadow: "0 2px 6px rgba(0,0,0,0.4)",
@@ -87,13 +87,17 @@ const LiveScorecard: React.FC<LiveScorecardProps> = ({
 							<div
 								style={{
 									display: "flex",
-									justifyContent: "space-between",
-									alignItems: "center",
+									flexDirection: "column",
+									// justifyContent: "space-between",
+									alignItems: "start",
 									marginBottom: "6px",
 								}}
 							>
-								<strong>Innings {inn}</strong>
-								<span>
+								<div>
+									<strong>Innings {inn}</strong>
+								</div>
+
+								<div>
 									<span
 										style={{
 											color: "#FFD166",
@@ -117,15 +121,15 @@ const LiveScorecard: React.FC<LiveScorecardProps> = ({
 									{isCurrentInnings && (
 										<span
 											style={{
-												marginLeft: "10px",
 												color: "#9ad4d6",
 												fontWeight: 600,
 											}}
 										>
-											• {currentBall}/{totalBalls} balls
+											{" • "}
+											{currentBall}/{totalBalls} balls
 										</span>
 									)}
-								</span>
+								</div>
 							</div>
 
 							{/* Delivery bubbles */}
@@ -143,7 +147,6 @@ const LiveScorecard: React.FC<LiveScorecardProps> = ({
 											color: "#aaa",
 											fontSize:
 												"clamp(0.9rem, 1.8vmin, 1.1rem)",
-											marginRight: "6px",
 										}}
 									>
 										...

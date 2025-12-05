@@ -23,6 +23,9 @@ export function DraggableList<T>({
 	const highlightTimeoutRef = useRef<number | null>(null);
 	const containerRef = useRef<HTMLDivElement | null>(null);
 	const [canScroll, setCanScroll] = useState(false);
+	const scrollIntervalRef = useRef<number | null>(null);
+	const SCROLL_SPEED = 3; // pixels per frame
+	const SCROLL_THRESHOLD = 50; // pixels from edge to start scrolling
 
 	// keep in sync after reorder
 	useEffect(() => {
@@ -31,13 +34,14 @@ export function DraggableList<T>({
 		}
 	}, [items, draggedIndex]);
 
-	// cleanup highlight timeout on unmount
+	// cleanup highlight timeout and scroll interval on unmount
 	useEffect(() => {
 		return () => {
 			if (highlightTimeoutRef.current) {
 				window.clearTimeout(highlightTimeoutRef.current);
 				highlightTimeoutRef.current = null;
 			}
+			stopAutoScroll();
 		};
 	}, []);
 
@@ -68,6 +72,43 @@ export function DraggableList<T>({
 	}, [items]);
 
 	const canDrag = (i: number) => specialIndex === null || i === specialIndex;
+
+	const startAutoScroll = (direction: "up" | "down") => {
+		if (scrollIntervalRef.current) return; // Already scrolling
+
+		scrollIntervalRef.current = window.setInterval(() => {
+			const container = containerRef.current;
+			if (!container) return;
+
+			const scrollAmount =
+				direction === "up" ? -SCROLL_SPEED : SCROLL_SPEED;
+			container.scrollBy({ top: scrollAmount, behavior: "auto" });
+		}, 16); // ~60fps
+	};
+
+	const stopAutoScroll = () => {
+		if (scrollIntervalRef.current) {
+			window.clearInterval(scrollIntervalRef.current);
+			scrollIntervalRef.current = null;
+		}
+	};
+
+	const checkAutoScroll = (clientY: number) => {
+		const container = containerRef.current;
+		if (!container || !canScroll) return;
+
+		const rect = container.getBoundingClientRect();
+		const topThreshold = rect.top + SCROLL_THRESHOLD;
+		const bottomThreshold = rect.bottom - SCROLL_THRESHOLD;
+
+		if (clientY < topThreshold) {
+			startAutoScroll("up");
+		} else if (clientY > bottomThreshold) {
+			startAutoScroll("down");
+		} else {
+			stopAutoScroll();
+		}
+	};
 
 	const reorderDisplay = (fromIdx: number, toIdx: number) => {
 		setDisplayOrder((prev) => {
@@ -137,10 +178,12 @@ export function DraggableList<T>({
 		onReorder(newItems, movedSpecial ?? null);
 
 		setDraggedIndex(null);
+		stopAutoScroll();
 	};
 
 	const handleDragEnd = () => {
 		setDraggedIndex(null);
+		stopAutoScroll();
 	};
 
 	// -----------------------
@@ -160,6 +203,10 @@ export function DraggableList<T>({
 		// We rely on the container's `touch-action: none` while dragging to prevent scrolling.
 		const touch = e.touches[0];
 		if (!touch) return;
+
+		// Check for auto-scrolling
+		checkAutoScroll(touch.clientY);
+
 		// element currently under the finger
 		const el = document.elementFromPoint(
 			touch.clientX,
@@ -182,6 +229,7 @@ export function DraggableList<T>({
 		if (draggedIndex === null) return;
 		handleDrop();
 		setDraggedIndex(null);
+		stopAutoScroll();
 	};
 
 	// -----------------------
@@ -279,13 +327,18 @@ export function DraggableList<T>({
 			<div
 				ref={containerRef}
 				className="draggable-list"
-				onDragOver={(e) => e.preventDefault()}
+				onDragOver={(e) => {
+					e.preventDefault();
+					if (draggedIndex !== null) {
+						checkAutoScroll(e.clientY);
+					}
+				}}
 				onDrop={handleDrop}
 				onDragEnd={handleDragEnd}
 				// While an item is being dragged (touch), prevent page scrolling.
 				style={{
 					width: "100%",
-					maxHeight: "min(40vmin, 420px)",
+					maxHeight: "40vh",
 					overflowY: "auto",
 					touchAction: draggedIndex !== null ? "none" : "auto",
 					fontSize: "clamp(12px, 1.4vmin, 14px)",

@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useCallback } from "react";
 import GameWaitingView from "./GameWaitingView";
 import { useGame } from "../contexts/GameContext";
+import { useSocket } from "../contexts/SocketContext";
 import PreGameJoiningView from "./PreGameJoiningView";
 import PreGameDecisionMakerView from "./PreGameDecisionMakerView";
 import PreGameDecisionSpectatorView from "./PreGameDecisionSpectatorView";
@@ -13,6 +14,7 @@ import {
 } from "../types";
 import { buildPowerUpStatusMap } from "../utils/helperFunctions";
 import FielderPresets from "../components/FielderPresets";
+import "./views-common.css";
 
 // Color mapping for different outcomes
 const colorsMap: Record<string, string> = {
@@ -29,6 +31,7 @@ const colorsMap: Record<string, string> = {
 const SPINNER_RADIUS = 150;
 
 const AudienceView: React.FC = () => {
+	const { socket } = useSocket();
 	const { gameState, recapState, user } = useGame();
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -52,6 +55,17 @@ const AudienceView: React.FC = () => {
 	} = displayState;
 
 	const shotSelected = currentBallBatsmanChoice ?? null;
+
+	// Handle disconnect
+	const handleDisconnect = () => {
+		if (!socket || !user) return;
+		const confirm = window.confirm(
+			"Are you sure you want to leave the room?",
+		);
+		if (!confirm) return;
+		socket.emit("leave_room", user.id);
+		window.location.href = "/";
+	};
 
 	// Build power-up status map (read-only for audience)
 	const fielderPowerUpsStatusMap: Map<string, PowerUpStatus> =
@@ -286,13 +300,20 @@ const AudienceView: React.FC = () => {
 
 			{/* RIGHT COLUMN: presets (bottom) and spare space */}
 			<div className="right-col">
-				{/* Top: spacer (reserved for small widgets) */}
+				{/* Top: surrender */}
 				<div
 					style={{
 						justifySelf: "end",
 						gridRow: "1",
 					}}
-				/>
+				>
+					<button
+						onClick={handleDisconnect}
+						className="surrender-btn"
+					>
+						Disconnect
+					</button>
+				</div>
 
 				{/* Bottom: presets (read-only) */}
 				<div

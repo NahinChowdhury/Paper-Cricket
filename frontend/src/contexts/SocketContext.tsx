@@ -85,10 +85,8 @@ export const SocketProvider: React.FC<{ children: ReactNode }> = ({
 			setRedirectPath("/");
 		});
 
-		s.on("user_left", (playerId: string) => {
-			console.warn("User left:", playerId);
-			setError("A player has left the match. The game cannot continue.");
-			setRedirectPath("/");
+		s.on("user_left", () => {
+			// no need to do anything. We handle it in AudienceView directly
 		});
 
 		setSocket(s);

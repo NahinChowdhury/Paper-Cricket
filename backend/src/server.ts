@@ -766,7 +766,7 @@ io.on("connection", (socket: Socket<ClientEvents, ServerEvents>) => {
 				roomManager.removePlayerFromRoom(playerId);
 				gameStateManager.removeUserFromGameAudience(playerId, roomId);
 
-				socket.emit("user_left", playerId); // Client will take this and redirect the user to the main room
+				socket.emit("user_left"); // Client will take this and redirect the user to the main room
 				socket
 					.to(roomId)
 					.emit(

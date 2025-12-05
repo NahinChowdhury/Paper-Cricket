@@ -115,7 +115,22 @@ TODO:
 The grid kind of works, but it's chunking the presets in smaller views. work on them and fix the UI. The goal is to have the same non-scrolling UI in desktop and phone
 
 ## 30th November, 2025
-UI is somewhat usable in landscapre mode on phone
+UI is somewhat usable in landscape mode on phone
 
 TODO:
 When you drag element up in draggable list, it should scroll the list up till the top
+
+
+## 4th December, 2025
+Dragging up and down the draggable list also scrolls the list up and down
+LiveScorecard is more readable now
+Disconnect button added for AudienceView
+
+TODO:
+- Make a UI for the vertical view. It will have its unique view.
+- Clicking on a live scorecard should open a modal which gives us a delivery by delivery stat for each innings so far. Stuff like ball number, filder power up and batter power up used, run scored. I envision it to be one of those multi modals. you click on one tab and the stats of that tab opens
+- Replace the power up names with icons.
+- Improve the toss UI and surrender UI 
+- Add a copy link to game button somewhere in the game UI
+- Add names for players instead of just UUIDs. Make their names editable in the toss stage.
+- Show audience count to the left of surrender/disconnect buttons

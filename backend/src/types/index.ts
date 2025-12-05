@@ -145,7 +145,7 @@ export interface ClientEvents {
 		choiceIndex: number,
 	) => void;
 	surrender: (playerId: string) => void;
-	leave_room: (playerId: string, roomId: string) => void;
+	leave_room: (playerId: string) => void;
 	power_up_used: (
 		playerId: string,
 		roomId: string,
@@ -173,7 +173,7 @@ export interface ServerEvents {
 	) => void;
 	game_ended: (gameState: GameState) => void;
 	game_surrendered: (gameState: GameState) => void;
-	user_left: (playerId: string) => void;
+	user_left: () => void;
 	room_created: (roomId: string) => void;
 	play_shot: (gameState: GameState) => void;
 	set_field: (gameState: GameState) => void;
