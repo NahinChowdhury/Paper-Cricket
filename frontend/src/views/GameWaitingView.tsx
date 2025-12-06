@@ -3,6 +3,7 @@ import { useSocket } from "../contexts/SocketContext";
 import { useGame } from "../contexts/GameContext";
 import { usePlayerId } from "../hooks/usePlayerId";
 import "../views/views-common.css";
+import pregameBackground from "../assets/PreGame Background.png";
 
 const GameWaitingView: React.FC = () => {
 	const { socket, isConnected } = useSocket();
@@ -46,9 +47,11 @@ const GameWaitingView: React.FC = () => {
 				height: "100vh",
 				textAlign: "center",
 				backgroundColor: "#f9f9f9",
-				color: "#333",
 				fontFamily: "sans-serif",
 				position: "relative",
+				background: `url(${pregameBackground}) no-repeat center center fixed`,
+				backgroundSize: "cover",
+				color: "#d1cfcfff",
 			}}
 		>
 			{/* Disconnect button */}
