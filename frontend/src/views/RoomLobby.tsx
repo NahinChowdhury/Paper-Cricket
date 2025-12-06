@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { validate as uuidValidate } from "uuid";
 import { useRoom } from "../hooks/useRoom";
 import { useSocket } from "../contexts/SocketContext";
 import { usePlayerId } from "../hooks/usePlayerId";
@@ -124,7 +125,9 @@ const ActiveGameCard: React.FC<{
 			}}
 		>
 			<div>
-				<div style={{ fontWeight: 600 }}>{game.roomId}</div>
+				<div style={{ fontWeight: 600, color: "#333" }}>
+					{game.roomId}
+				</div>
 				<div style={{ fontSize: 12, color: "#666" }}>{status}</div>
 				{status === "Waiting for Players" && (
 					<div style={{ fontSize: 12, color: "#666", marginTop: 6 }}>
@@ -204,7 +207,31 @@ const RoomLobby: React.FC = () => {
 	// Callbacks
 	// -----------------------------
 	const handleJoinRoom = useCallback(() => {
-		if (inputRoomId.trim()) joinRoom(inputRoomId.trim());
+		const trimmed = inputRoomId.trim();
+		if (!trimmed) return;
+		let roomId = trimmed;
+		if (uuidValidate(roomId)) {
+			// it's a direct UUID
+		} else {
+			// try to parse as URL
+			try {
+				const url = new URL(roomId);
+				const pathSegments = url.pathname.split("/").filter(Boolean);
+				const lastSegment = pathSegments[pathSegments.length - 1];
+				if (lastSegment && uuidValidate(lastSegment)) {
+					roomId = lastSegment;
+				} else {
+					// invalid
+					alert("Invalid room ID or link");
+					return;
+				}
+			} catch {
+				// not a URL, invalid
+				alert("Invalid room ID or link");
+				return;
+			}
+		}
+		joinRoom(roomId);
 	}, [inputRoomId, joinRoom]);
 
 	const handleRejoinGame = useCallback(() => {
@@ -215,96 +242,264 @@ const RoomLobby: React.FC = () => {
 	// JSX
 	// -----------------------------
 	return (
-		<div style={{ textAlign: "center", padding: 50 }}>
-			<h1>Paper Cricket - Multiplayer</h1>
-
-			{/* Create room */}
-			<div style={{ margin: "30px 0" }}>
+		<div
+			style={{
+				minHeight: "100vh",
+				background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+				fontFamily: "Arial, sans-serif",
+			}}
+		>
+			{/* Navigation Bar */}
+			<nav
+				style={{
+					display: "flex",
+					justifyContent: "space-between",
+					alignItems: "center",
+					padding: "20px 50px",
+					background: "rgba(255, 255, 255, 0.95)",
+					boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+					backdropFilter: "blur(10px)",
+				}}
+			>
+				<h1
+					style={{
+						margin: 0,
+						color: "#333",
+						fontSize: "28px",
+						fontWeight: "bold",
+					}}
+				>
+					Paper Cricket - Multiplayer
+				</h1>
 				<button
-					onClick={createRoom}
-					disabled={isCreatingRoom}
-					style={buttonStyle("#4CAF50", isCreatingRoom)}
+					style={{
+						padding: "10px 20px",
+						background: "#667eea",
+						color: "white",
+						border: "none",
+						borderRadius: "25px",
+						cursor: "pointer",
+						fontSize: "16px",
+						fontWeight: "500",
+						transition: "all 0.3s ease",
+					}}
+					onMouseEnter={(e) =>
+						(e.currentTarget.style.background = "#5a6fd8")
+					}
+					onMouseLeave={(e) =>
+						(e.currentTarget.style.background = "#667eea")
+					}
 				>
-					{isCreatingRoom ? "Creating Game..." : "Create New Game"}
+					About
 				</button>
-			</div>
+			</nav>
 
-			{/* Join room */}
-			<div style={{ margin: "30px 0" }}>
-				<h3>Or join an existing room:</h3>
+			{/* Main Content */}
+			<div
+				style={{ textAlign: "center", padding: "50px", color: "white" }}
+			>
 				<div
 					style={{
-						display: "flex",
-						justifyContent: "center",
-						gap: 10,
-						marginTop: 15,
+						maxWidth: "1200px",
+						margin: "0 auto",
+						background: "rgba(255, 255, 255, 0.1)",
+						borderRadius: "20px",
+						padding: "40px",
+						boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
+						backdropFilter: "blur(10px)",
 					}}
 				>
-					<input
-						type="text"
-						placeholder="Enter Room ID"
-						value={inputRoomId}
-						onChange={(e) => setInputRoomId(e.target.value)}
+					<h1
 						style={{
-							padding: "10px 15px",
-							fontSize: 16,
-							border: "2px solid #ddd",
-							borderRadius: 5,
-							width: 200,
+							color: "white",
+							marginBottom: "40px",
+							fontSize: "36px",
+							fontWeight: "bold",
 						}}
-					/>
-					<button
-						onClick={handleJoinRoom}
-						disabled={!inputRoomId.trim()}
-						style={buttonStyle("#2196F3", !inputRoomId.trim())}
 					>
-						Join Room
-					</button>
-				</div>
-			</div>
+						Welcome to Paper Cricket
+					</h1>
 
-			{/* Ongoing game card */}
-			{!isLoading && ongoingGame && (
-				<OngoingGameCard
-					game={ongoingGame}
-					onRejoin={handleRejoinGame}
-				/>
-			)}
+					{/* Create room */}
+					<div style={{ margin: "40px 0" }}>
+						<button
+							onClick={createRoom}
+							disabled={isCreatingRoom}
+							style={{
+								...buttonStyle("#4CAF50", isCreatingRoom),
+								padding: "15px 30px",
+								fontSize: "18px",
+								borderRadius: "30px",
+								boxShadow: "0 4px 15px rgba(76, 175, 80, 0.3)",
+								transition: "all 0.3s ease",
+							}}
+							onMouseEnter={(e) => {
+								if (!isCreatingRoom) {
+									e.currentTarget.style.transform =
+										"translateY(-2px)";
+									e.currentTarget.style.boxShadow =
+										"0 6px 20px rgba(76, 175, 80, 0.4)";
+								}
+							}}
+							onMouseLeave={(e) => {
+								if (!isCreatingRoom) {
+									e.currentTarget.style.transform =
+										"translateY(0)";
+									e.currentTarget.style.boxShadow =
+										"0 4px 15px rgba(76, 175, 80, 0.3)";
+								}
+							}}
+						>
+							{isCreatingRoom
+								? "Creating Game..."
+								: "Create New Game"}
+						</button>
+					</div>
 
-			{/* Active games list */}
-			{activeGamesList.length > 0 && (
-				<div
-					style={{
-						marginTop: 24,
-						maxWidth: 720,
-						marginInline: "auto",
-						textAlign: "left",
-					}}
-				>
-					<h3 style={{ textAlign: "center" }}>Active Games</h3>
+					{/* Join room */}
+					<div style={{ margin: "40px 0" }}>
+						<h3
+							style={{
+								color: "white",
+								marginBottom: "20px",
+								fontSize: "24px",
+							}}
+						>
+							Or join an existing room:
+						</h3>
+						<div
+							style={{
+								display: "flex",
+								justifyContent: "center",
+								gap: 15,
+								marginTop: 20,
+								flexWrap: "wrap",
+							}}
+						>
+							<input
+								type="text"
+								placeholder="Enter Room ID (UUID) or paste game link"
+								value={inputRoomId}
+								onChange={(e) => setInputRoomId(e.target.value)}
+								style={{
+									padding: "15px 20px",
+									fontSize: 16,
+									border: "2px solid rgba(255,255,255,0.3)",
+									borderRadius: 30,
+									width: "300px",
+									maxWidth: "100%",
+									background: "rgba(255,255,255,0.9)",
+									color: "#333",
+									outline: "none",
+									transition: "border-color 0.3s ease",
+								}}
+								onFocus={(e) =>
+									(e.currentTarget.style.borderColor =
+										"#667eea")
+								}
+								onBlur={(e) =>
+									(e.currentTarget.style.borderColor =
+										"rgba(255,255,255,0.3)")
+								}
+							/>
+							<button
+								onClick={handleJoinRoom}
+								disabled={!inputRoomId.trim()}
+								style={{
+									...buttonStyle(
+										"#2196F3",
+										!inputRoomId.trim(),
+									),
+									padding: "15px 30px",
+									fontSize: "18px",
+									borderRadius: "30px",
+									boxShadow:
+										"0 4px 15px rgba(33, 150, 243, 0.3)",
+									transition: "all 0.3s ease",
+								}}
+								onMouseEnter={(e) => {
+									if (inputRoomId.trim()) {
+										e.currentTarget.style.transform =
+											"translateY(-2px)";
+										e.currentTarget.style.boxShadow =
+											"0 6px 20px rgba(33, 150, 243, 0.4)";
+									}
+								}}
+								onMouseLeave={(e) => {
+									if (inputRoomId.trim()) {
+										e.currentTarget.style.transform =
+											"translateY(0)";
+										e.currentTarget.style.boxShadow =
+											"0 4px 15px rgba(33, 150, 243, 0.3)";
+									}
+								}}
+							>
+								Join Room
+							</button>
+						</div>
+					</div>
+
+					{/* Ongoing game card */}
+					{!isLoading && ongoingGame && (
+						<OngoingGameCard
+							game={ongoingGame}
+							onRejoin={handleRejoinGame}
+						/>
+					)}
+
+					{/* Active games list */}
+					{activeGamesList.length > 0 && (
+						<div
+							style={{
+								marginTop: 40,
+								maxWidth: 800,
+								marginInline: "auto",
+								textAlign: "left",
+							}}
+						>
+							<h3
+								style={{
+									textAlign: "center",
+									color: "white",
+									marginBottom: "20px",
+									fontSize: "24px",
+								}}
+							>
+								Active Games
+							</h3>
+							<div
+								style={{
+									display: "grid",
+									gap: 15,
+									gridTemplateColumns:
+										"repeat(auto-fit, minmax(280px, 1fr))",
+								}}
+							>
+								{activeGamesList.map((g) => (
+									<ActiveGameCard
+										key={g.roomId}
+										game={g}
+										onJoin={joinRoom}
+									/>
+								))}
+							</div>
+						</div>
+					)}
+
+					{/* Footer */}
 					<div
 						style={{
-							display: "grid",
-							gap: 10,
-							gridTemplateColumns:
-								"repeat(auto-fit, minmax(240px, 1fr))",
+							marginTop: 60,
+							color: "rgba(255,255,255,0.8)",
+							fontSize: 16,
 						}}
 					>
-						{activeGamesList.map((g) => (
-							<ActiveGameCard
-								key={g.roomId}
-								game={g}
-								onJoin={joinRoom}
-							/>
-						))}
+						<p>
+							Share the room URL with a friend to start playing!
+						</p>
+						<p>Room creator always takes the first turn.</p>
 					</div>
 				</div>
-			)}
-
-			{/* Footer */}
-			<div style={{ marginTop: 40, color: "#666", fontSize: 14 }}>
-				<p>Share the room URL with a friend to start playing!</p>
-				<p>Room creator always takes the first turn.</p>
 			</div>
 		</div>
 	);

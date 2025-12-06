@@ -1,4 +1,10 @@
 import React, { useState } from "react";
+import fieldShiftImg from "../assets/Field Shift.png";
+import frozenHandsImg from "../assets/Frozen Hands.png";
+import invulnerabilityImg from "../assets/Invulnerability.png";
+import mirrorFieldImg from "../assets/Mirror Field.png";
+import scoutReportImg from "../assets/Scout Report.png";
+import thirdManImg from "../assets/Third Man.png";
 
 interface PowerUpCirclesProps {
 	powerUpNames: string[];
@@ -33,19 +39,17 @@ const PowerUpCircles: React.FC<PowerUpCirclesProps> = ({
 			display: "flex",
 			alignItems: "center",
 			justifyContent: "center",
-			fontSize: "clamp(10px, 1.6vmin, 14px)",
-			fontWeight: "bold",
-			color: "white",
 			userSelect: "none",
 			boxSizing: "border-box",
 			flexShrink: 0,
+			overflow: "hidden",
 		};
 
 		switch (status) {
 			case "used":
 				return {
 					...baseStyle,
-					backgroundColor: "#666",
+					backgroundColor: "rgb(124, 124, 124)",
 					boxShadow: "inset 0 2px 4px rgba(0, 0, 0, 0.3)",
 					transform: "translateY(1px)",
 				};
@@ -61,7 +65,7 @@ const PowerUpCircles: React.FC<PowerUpCirclesProps> = ({
 			default:
 				return {
 					...baseStyle,
-					backgroundColor: "#2196F3",
+					backgroundColor: "rgb(255, 255, 255)",
 					boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
 				};
 		}
@@ -82,6 +86,15 @@ const PowerUpCircles: React.FC<PowerUpCirclesProps> = ({
 	};
 
 	const [hoveredPowerUp, setHoveredPowerUp] = useState<string | null>(null);
+
+	const imageMap: Record<string, string> = {
+		"Field Shift": fieldShiftImg,
+		"Frozen Hands": frozenHandsImg,
+		Invulnerability: invulnerabilityImg,
+		"Mirror Field": mirrorFieldImg,
+		"Scout Report": scoutReportImg,
+		"Third Man": thirdManImg,
+	};
 
 	const descriptions: Record<string, string> = {
 		// Fielder power-ups
@@ -108,7 +121,7 @@ const PowerUpCircles: React.FC<PowerUpCirclesProps> = ({
 				flexDirection: horizontal ? "row" : "column",
 				alignItems: "center",
 				padding: "10px",
-				backgroundColor: "rgba(255, 255, 255, 0.9)",
+				backgroundColor: "rgba(255, 255, 255, 0.5)",
 				borderRadius: "8px",
 				boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
 				opacity: disabled ? 0.6 : 1,
@@ -172,7 +185,16 @@ const PowerUpCircles: React.FC<PowerUpCirclesProps> = ({
 								);
 							}}
 						>
-							{powerUpName.replace("powerUp", "")}
+							<img
+								src={imageMap[powerUpName]}
+								alt={powerUpName}
+								style={{
+									width: "100%",
+									height: "100%",
+									borderRadius: "50%",
+									objectFit: "cover",
+								}}
+							/>
 						</div>
 
 						{isHovered && (

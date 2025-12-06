@@ -1,16 +1,16 @@
 import React, { useRef, useEffect, useState, useCallback, act } from "react";
-import { useSocket } from "../contexts/SocketContext";
-import { useGame } from "../contexts/GameContext";
-import LiveScorecard from "../components/LiveScorecard";
+import { useSocket } from "../../contexts/SocketContext";
+import { useGame } from "../../contexts/GameContext";
+import LiveScorecard from "../../components/LiveScorecard";
 import {
 	batsmanPowerUpNames,
 	fielderPowerUpNames,
 	PowerUpStatus,
-} from "../types";
-import PowerUpCircles from "../components/PowerUpCircles";
-import FielderPresets from "../components/FielderPresets";
-import { buildPowerUpStatusMap } from "../utils/helperFunctions";
-import "./views-common.css";
+} from "../../types";
+import PowerUpCircles from "../../components/PowerUpCircles";
+import FielderPresets from "../../components/FielderPresets";
+import { buildPowerUpStatusMap } from "../../utils/helperFunctions";
+import "../views-common.css";
 
 // Color mapping for different outcomes
 const colorsMap: Record<string, string> = {
@@ -403,11 +403,23 @@ const BatterView: React.FC = () => {
 					style={{
 						justifySelf: "end",
 						gridRow: "1",
+						display: "flex",
+						flexDirection: "column",
+						alignItems: "end",
 					}}
 				>
 					<button onClick={handleSurrender} className="surrender-btn">
 						Surrender
 					</button>
+					<div
+						style={{
+							textAlign: "center",
+							fontSize: "14px",
+							color: "#666",
+						}}
+					>
+						👁️ {displayState.audience?.length ?? 0}
+					</div>
 				</div>
 
 				{/* Bottom: presets */}

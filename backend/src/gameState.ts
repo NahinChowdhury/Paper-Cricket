@@ -354,6 +354,10 @@ export class GameStateManager {
 			);
 		}
 
+		// remove player from audience if present
+		gameState.audience = gameState.audience.filter((p) => p !== playerId);
+
+		// Add to players list
 		gameState.players.push(playerId);
 
 		return gameState;

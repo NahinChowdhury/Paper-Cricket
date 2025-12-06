@@ -1,6 +1,8 @@
 import React, { useMemo } from "react";
-import { useSocket } from "../contexts/SocketContext";
-import { useGame } from "../contexts/GameContext";
+import { useSocket } from "../../contexts/SocketContext";
+import { useGame } from "../../contexts/GameContext";
+import "../../views/views-common.css";
+import pregameBackground from "../../assets/Pregame Background.png";
 
 const PreGameDecisionSpectatorView: React.FC = () => {
 	const { socket } = useSocket();
@@ -21,6 +23,17 @@ const PreGameDecisionSpectatorView: React.FC = () => {
 		socket.emit("surrender", user.id);
 	};
 
+	// 🔹 Handle disconnect click (for audience)
+	const handleDisconnect = () => {
+		if (!socket || !user) return;
+		const confirm = window.confirm(
+			"Are you sure you want to leave the room?",
+		);
+		if (!confirm) return;
+		socket.emit("leave_room", user.id);
+		window.location.href = "/";
+	};
+
 	// 🔹 Determine what to display based on phase
 	const content = useMemo(() => {
 		if (gamePhase === "side selection") {
@@ -28,7 +41,7 @@ const PreGameDecisionSpectatorView: React.FC = () => {
 				title: "🏏 Side Selection",
 				message:
 					tossSelector === user.id
-						? "You’re choosing to bat or field..."
+						? "You're choosing to bat or field..."
 						: "Waiting for toss winner to choose batting or fielding...",
 			};
 		}
@@ -37,7 +50,7 @@ const PreGameDecisionSpectatorView: React.FC = () => {
 			title: "🪙 Toss Spectator",
 			message:
 				tossSelector === user.id
-					? "You’re choosing heads or tails..."
+					? "You're choosing heads or tails..."
 					: "Waiting for toss selector to choose heads or tails...",
 		};
 	}, [gamePhase, tossSelector, user.id]);
@@ -54,6 +67,9 @@ const PreGameDecisionSpectatorView: React.FC = () => {
 				backgroundColor: "#fafafa",
 				fontFamily: "sans-serif",
 				position: "relative",
+				background: `url(${pregameBackground}) no-repeat center center fixed`,
+				backgroundSize: "cover",
+				color: "#d1cfcfff",
 			}}
 		>
 			{/* 🔹 Conditional surrender button (only for players) */}
@@ -77,8 +93,31 @@ const PreGameDecisionSpectatorView: React.FC = () => {
 				</button>
 			)}
 
-			<h2 style={{ marginBottom: "10px" }}>{content.title}</h2>
-			<p style={{ marginBottom: "20px", fontSize: "1.2rem" }}>
+			{/* 🔹 Disconnect button (only for audience) */}
+			{!user.isPlaying && (
+				<button
+					onClick={handleDisconnect}
+					style={{
+						position: "absolute",
+						top: "20px",
+						right: "20px",
+						padding: "8px 14px",
+						backgroundColor: "#e53935",
+						color: "white",
+						fontWeight: 600,
+						border: "none",
+						borderRadius: "6px",
+						cursor: "pointer",
+					}}
+				>
+					Disconnect
+				</button>
+			)}
+
+			<h2 className="pregame-h2" style={{ marginBottom: "10px" }}>
+				{content.title}
+			</h2>
+			<p className="pregame-p" style={{ marginBottom: "20px" }}>
 				{content.message}
 			</p>
 

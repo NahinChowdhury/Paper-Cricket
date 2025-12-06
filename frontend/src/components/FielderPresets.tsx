@@ -227,11 +227,7 @@ const FielderPresets: React.FC<FielderPresetsProps> = ({
 	return (
 		<div
 			style={{
-				// Make the presets flow inline so parent layout (grid/flex) controls placement.
-				// display: "flex",
-				// alignItems: "center",
-				// justifyContent: "end",
-				backgroundColor: "rgba(255,255,255,0.9)",
+				backgroundColor: "rgba(255,255,255,0.5)",
 				padding: "clamp(6px,1.2vmin,10px)",
 				borderRadius: "8px",
 				boxShadow: "0 2px 4px rgba(0,0,0,0.08)",

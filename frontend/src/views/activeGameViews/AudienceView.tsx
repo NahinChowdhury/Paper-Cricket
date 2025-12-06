@@ -1,20 +1,20 @@
 import React, { useRef, useEffect, useCallback } from "react";
-import GameWaitingView from "./GameWaitingView";
-import { useGame } from "../contexts/GameContext";
-import { useSocket } from "../contexts/SocketContext";
-import PreGameJoiningView from "./PreGameJoiningView";
-import PreGameDecisionMakerView from "./PreGameDecisionMakerView";
-import PreGameDecisionSpectatorView from "./PreGameDecisionSpectatorView";
-import LiveScorecard from "../components/LiveScorecard";
-import PowerUpCircles from "../components/PowerUpCircles";
+import GameWaitingView from "../GameWaitingView";
+import { useGame } from "../../contexts/GameContext";
+import { useSocket } from "../../contexts/SocketContext";
+import PreGameJoiningView from "../PreGameJoiningView";
+import PreGameDecisionMakerView from "../tossViews/PreGameDecisionMakerView";
+import PreGameDecisionSpectatorView from "../tossViews/PreGameDecisionSpectatorView";
+import LiveScorecard from "../../components/LiveScorecard";
+import PowerUpCircles from "../../components/PowerUpCircles";
 import {
 	PowerUpStatus,
 	batsmanPowerUpNames,
 	fielderPowerUpNames,
-} from "../types";
-import { buildPowerUpStatusMap } from "../utils/helperFunctions";
-import FielderPresets from "../components/FielderPresets";
-import "./views-common.css";
+} from "../../types";
+import { buildPowerUpStatusMap } from "../../utils/helperFunctions";
+import FielderPresets from "../../components/FielderPresets";
+import "../views-common.css";
 
 // Color mapping for different outcomes
 const colorsMap: Record<string, string> = {
@@ -279,7 +279,6 @@ const AudienceView: React.FC = () => {
 								border: "2px solid #ddd",
 								borderRadius: "50%",
 								cursor: "not-allowed",
-								background: "white",
 								boxSizing: "border-box",
 							}}
 						/>
@@ -305,6 +304,9 @@ const AudienceView: React.FC = () => {
 					style={{
 						justifySelf: "end",
 						gridRow: "1",
+						display: "flex",
+						flexDirection: "column",
+						alignItems: "end",
 					}}
 				>
 					<button
@@ -313,6 +315,15 @@ const AudienceView: React.FC = () => {
 					>
 						Disconnect
 					</button>
+					<div
+						style={{
+							textAlign: "center",
+							fontSize: "14px",
+							color: "#666",
+						}}
+					>
+						👁️ {displayState.audience?.length ?? 0}
+					</div>
 				</div>
 
 				{/* Bottom: presets (read-only) */}

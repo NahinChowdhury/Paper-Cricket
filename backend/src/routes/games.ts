@@ -71,5 +71,18 @@ export const initializeGamesRouter = (
 		res.json(response);
 	});
 
+	// GET /games/:gameId - return game state for the game
+	gamesRouter.get("/:gameId", (req, res) => {
+		const gameId = req.params.gameId;
+
+		const gameState = gameStateManager.getGameState(gameId);
+		if (!gameState) {
+			res.status(404).json({ error: "Game not found" });
+			return;
+		}
+
+		res.json(gameState);
+	});
+
 	return gamesRouter;
 };

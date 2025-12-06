@@ -1,18 +1,19 @@
 import React, { useRef, useEffect, useState, useCallback } from "react";
-import { useSocket } from "../contexts/SocketContext";
-import { useGame } from "../contexts/GameContext";
-import LiveScorecard from "../components/LiveScorecard";
-import FielderPresets from "../components/FielderPresets";
-import PowerUpCircles from "../components/PowerUpCircles";
-import { DraggableList } from "../components/DraggableList";
+import { useSocket } from "../../contexts/SocketContext";
+import { useGame } from "../../contexts/GameContext";
+import LiveScorecard from "../../components/LiveScorecard";
+import FielderPresets from "../../components/FielderPresets";
+import PowerUpCircles from "../../components/PowerUpCircles";
+import { DraggableList } from "../../components/DraggableList";
 import {
 	GameState,
 	PowerUpStatus,
 	batsmanPowerUpNames,
 	fielderPowerUpNames,
-} from "../types";
-import { buildPowerUpStatusMap } from "../utils/helperFunctions";
-import "./views-common.css";
+} from "../../types";
+import { buildPowerUpStatusMap } from "../../utils/helperFunctions";
+import bgImage from "../../assets/Game Background.png";
+import "../views-common.css";
 
 // Color mapping for different outcomes
 const colorsMap: Record<string, string> = {
@@ -442,9 +443,9 @@ const FielderView: React.FC = () => {
 					}}
 				>
 					<div
+						className="view-subtitle"
 						style={{
 							fontSize: "clamp(11px, 1.2vmin, 14px)",
-							color: "#333",
 							fontWeight: 600,
 							marginBottom: 6,
 						}}
@@ -480,61 +481,58 @@ const FielderView: React.FC = () => {
 				</div>
 
 				{/* Canvas wrapper - fixed center */}
-				<div>
-					<div
+				<div
+					style={{
+						width: "clamp(220px, 36vmin, 420px)",
+						height: "clamp(220px, 36vmin, 420px)",
+						display: "flex",
+						alignItems: "center",
+						justifyContent: "center",
+					}}
+				>
+					<canvas
+						ref={canvasRef}
+						width={400}
+						height={400}
 						style={{
-							width: "clamp(220px, 36vmin, 420px)",
-							height: "clamp(220px, 36vmin, 420px)",
-							display: "flex",
-							alignItems: "center",
-							justifyContent: "center",
+							width: "100%",
+							height: "100%",
+							border: "2px solid #ddd",
+							borderRadius: "50%",
+							boxSizing: "border-box",
+							cursor: isFieldingTurn
+								? frozenHandsPowerUpUsed
+									? "not-allowed"
+									: isDragging
+										? "grabbing"
+										: "grab"
+								: "not-allowed",
+							opacity: isFieldingTurn ? 1 : 0.8,
+							transition: "opacity 0.3s ease",
+							touchAction: "none",
+							userSelect: "none",
 						}}
-					>
-						<canvas
-							ref={canvasRef}
-							width={400}
-							height={400}
-							style={{
-								width: "100%",
-								height: "100%",
-								border: "2px solid #ddd",
-								borderRadius: "50%",
-								boxSizing: "border-box",
-								cursor: isFieldingTurn
-									? frozenHandsPowerUpUsed
-										? "not-allowed"
-										: isDragging
-											? "grabbing"
-											: "grab"
-									: "not-allowed",
-								opacity: isFieldingTurn ? 1 : 0.5,
-								transition: "opacity 0.3s ease",
-								touchAction: "none",
-								userSelect: "none",
-								background: "white",
-							}}
-							onMouseDown={handleMouseDown}
-							onMouseMove={handleMouseMove}
-							onMouseUp={handleMouseUp}
-							onMouseLeave={handleMouseUp}
-							onTouchStart={(e) =>
-								handleMouseDown(e.touches[0] as any)
-							}
-							onTouchMove={(e) =>
-								handleMouseMove(e.touches[0] as any)
-							}
-							onTouchEnd={handleMouseUp}
-						/>
+						onMouseDown={handleMouseDown}
+						onMouseMove={handleMouseMove}
+						onMouseUp={handleMouseUp}
+						onMouseLeave={handleMouseUp}
+						onTouchStart={(e) =>
+							handleMouseDown(e.touches[0] as any)
+						}
+						onTouchMove={(e) =>
+							handleMouseMove(e.touches[0] as any)
+						}
+						onTouchEnd={handleMouseUp}
+					/>
 
-						{recapState.isRecapping && (
-							<div className="recap-banner">
-								Batter chose{" "}
-								<span className="recap-choice">
-									{recapState.recapChoice ?? "?"}
-								</span>
-							</div>
-						)}
-					</div>
+					{recapState.isRecapping && (
+						<div className="recap-banner">
+							Batter chose{" "}
+							<span className="recap-choice">
+								{recapState.recapChoice ?? "?"}
+							</span>
+						</div>
+					)}
 				</div>
 
 				{/* Submit button centered */}
@@ -555,12 +553,23 @@ const FielderView: React.FC = () => {
 					style={{
 						justifySelf: "end",
 						gridRow: "1",
-						width: "fit-content",
+						display: "flex",
+						flexDirection: "column",
+						alignItems: "end",
 					}}
 				>
 					<button onClick={handleSurrender} className="surrender-btn">
 						Surrender
 					</button>
+					<div
+						style={{
+							textAlign: "center",
+							fontSize: "14px",
+							color: "#ccc",
+						}}
+					>
+						👁️ {displayState.audience?.length ?? 0}
+					</div>
 				</div>
 
 				{/* Middle: DraggableList when active */}
@@ -581,7 +590,7 @@ const FielderView: React.FC = () => {
 							)) && (
 							<div
 								style={{
-									backgroundColor: "white",
+									backgroundColor: "rgba(255,255,255,0.5)",
 									padding: "10px",
 									borderRadius: "8px",
 									boxShadow: "0 2px 6px rgba(0,0,0,0.08)",

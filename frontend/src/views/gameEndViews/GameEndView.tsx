@@ -1,6 +1,6 @@
 import React from "react";
-import { useGame } from "../contexts/GameContext";
-import { usePlayerId } from "../hooks/usePlayerId";
+import { useGame } from "../../contexts/GameContext";
+import { usePlayerId } from "../../hooks/usePlayerId";
 import { useNavigate } from "react-router-dom";
 
 const GameEndView: React.FC = () => {
@@ -81,7 +81,6 @@ const GameEndView: React.FC = () => {
 	return (
 		<div
 			style={{
-				height: "100vh",
 				display: "flex",
 				flexDirection: "column",
 				alignItems: "center",
@@ -90,6 +89,7 @@ const GameEndView: React.FC = () => {
 				color: "#fff",
 				fontFamily: "sans-serif",
 				textAlign: "center",
+				minHeight: "100vh",
 			}}
 		>
 			<h1 style={{ fontSize: "2rem", marginBottom: "10px" }}>

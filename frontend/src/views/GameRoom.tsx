@@ -3,9 +3,9 @@ import { useParams } from "react-router-dom";
 import { useSocket } from "../contexts/SocketContext";
 import { GameProvider, useGame } from "../contexts/GameContext";
 import PreGameJoiningView from "./PreGameJoiningView";
-import PlayerView from "./PlayerView";
-import AudienceView from "./AudienceView";
-import GameEndView from "./GameEndView";
+import PlayerView from "./activeGameViews/PlayerView";
+import AudienceView from "./activeGameViews/AudienceView";
+import GameEndView from "./gameEndViews/GameEndView";
 import ErrorOverlay from "../components/ErrorOverlay";
 import { usePlayerId } from "../hooks/usePlayerId";
 

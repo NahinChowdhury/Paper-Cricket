@@ -133,4 +133,16 @@ TODO:
 - Improve the toss UI and surrender UI 
 - Add a copy link to game button somewhere in the game UI
 - Add names for players instead of just UUIDs. Make their names editable in the toss stage.
-- Show audience count to the left of surrender/disconnect buttons
+
+
+## 5th December, 2025
+Improved visuals for everything. Vertical background is still messed up. Need to fix the over to prevent horizontal overflow
+Replaced the power up names with icons
+Showing audience count under the surrender/disconnect buttons
+
+TODO:
+- Make a UI for the vertical view. It will have its unique view.
+- Clicking on a live scorecard should open a modal which gives us a delivery by delivery stat for each innings so far. Stuff like ball number, filder power up and batter power up used, run scored. I envision it to be one of those multi modals. you click on one tab and the stats of that tab opens
+- Improve the toss UI and surrender UI even more
+- Add a copy link to game button somewhere in the game UI
+- Add server side logic to prevent Third Man from adding more than one extra wicket in the presets

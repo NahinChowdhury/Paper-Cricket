@@ -1,6 +1,8 @@
 import React, { useMemo } from "react";
-import { useSocket } from "../contexts/SocketContext";
-import { useGame } from "../contexts/GameContext";
+import { useSocket } from "../../contexts/SocketContext";
+import { useGame } from "../../contexts/GameContext";
+import pregameBackground from "../../assets/Pregame Background.png";
+import "../../views/views-common.css";
 
 const PreGameDecisionMakerView: React.FC = () => {
 	const { socket } = useSocket();
@@ -74,9 +76,11 @@ const PreGameDecisionMakerView: React.FC = () => {
 				justifyContent: "center",
 				height: "100vh",
 				textAlign: "center",
-				backgroundColor: "#fafafa",
+				background: `url(${pregameBackground}) no-repeat center center fixed`,
+				backgroundSize: "cover",
 				fontFamily: "sans-serif",
 				position: "relative",
+				color: "#d1cfcfff",
 			}}
 		>
 			{/* 🔹 Surrender Button (top-right corner) */}
@@ -98,17 +102,21 @@ const PreGameDecisionMakerView: React.FC = () => {
 				Surrender
 			</button>
 
-			<h2 style={{ marginBottom: "10px" }}>{config.title}</h2>
-			<p style={{ marginBottom: "20px" }}>{config.subtitle}</p>
+			<h2 className="pregame-h2" style={{ marginBottom: "10px" }}>
+				{config.title}
+			</h2>
+			<p className="pregame-p" style={{ marginBottom: "20px" }}>
+				{config.subtitle}
+			</p>
 
 			<div style={{ display: "flex", gap: "20px" }}>
 				{config.options.map((opt) => (
 					<button
 						key={opt.value}
 						onClick={() => handleChoice(opt.value)}
+						className="pregame-button"
 						style={{
 							padding: "15px 30px",
-							fontSize: "18px",
 							backgroundColor: opt.color,
 							color: opt.label === "Tails" ? "white" : "black",
 							border: "none",

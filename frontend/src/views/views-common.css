@@ -7,7 +7,8 @@
 		"left-top center-top right-top"
 		"left-middle center-middle right-middle"
 		"left-bottom center-bottom right-bottom";
-	height: 100vh;
+	min-height: 100vh;
+	min-width: 100vw;
 	gap: 12px;
 	box-sizing: border-box;
 	color: #111;
@@ -23,6 +24,10 @@
 		sans-serif;
 	font-size: var(--view-base);
 	position: relative;
+	background: url("../assets/Game Background.png");
+	background-size: cover;
+	background-position: center;
+	overflow: auto;
 }
 
 /* Left / right columns: top / middle / bottom */
@@ -77,11 +82,12 @@
 	margin: 0 0 6px 0;
 	font-size: clamp(16px, 2.5vmin, 24px);
 	font-weight: 700;
+	color: white;
 }
 .view-subtitle {
 	margin: 0;
 	font-size: clamp(12px, 1.6vmin, 18px);
-	color: #333;
+	color: #ccc;
 }
 
 /* Buttons */
@@ -106,9 +112,7 @@
 /* Recap banner */
 .recap-banner {
 	position: absolute;
-	top: 50%;
-	left: 50%;
-	transform: translate(-50%, -50%);
+	/* transform: translate(-50%, -50%); */
 	color: #fff;
 	font-weight: 700;
 	background: rgba(0, 0, 0, 0.6);
@@ -140,6 +144,20 @@
 	max-width: 100%;
 	height: auto;
 	display: block;
+}
+
+/* Responsive text for pregame views */
+.pregame-h2 {
+	font-size: clamp(1.5rem, 4vw, 2.5rem);
+}
+.pregame-p {
+	font-size: clamp(1rem, 2.5vw, 1.5rem);
+}
+.pregame-small {
+	font-size: clamp(0.9rem, 2vw, 1.2rem);
+}
+.pregame-button {
+	font-size: clamp(14px, 2vw, 20px);
 }
 
 /* Minimal small-screen tweaks */
