@@ -1,67 +1,54 @@
 import { v4 as uuidv4 } from "uuid";
-import { Player, GameRoom } from "./types";
+import { User, GameRoom } from "./types";
+import { createError } from "./errors/AppError";
 
 export class RoomManager {
 	private rooms: Map<string, GameRoom> = new Map();
 	private playerRooms: Map<string, string> = new Map(); // playerId -> roomId // ensures one player can be playing one game at a time
 
 	// Create a new room
-	createRoom(playerId: string, roomId?: string): Player {
-		const finalRoomId = roomId || uuidv4();
-
-		const player: Player = {
-			id: playerId,
-			roomId: finalRoomId,
-			connected: true,
-			isRoomCreator: true,
-		};
-
+	// Does not add the creating player to the room's user list
+	// That is done when 'join_room' event is received from frontend
+	createRoom(playerId: string, roomId: string): void {
 		const room: GameRoom = {
-			id: finalRoomId,
-			players: [player],
-			maxPlayers: 2,
+			id: roomId,
+			users: [],
 			created: new Date(),
 			roomCreator: playerId,
 		};
 
-		this.rooms.set(finalRoomId, room);
-		this.playerRooms.set(playerId, finalRoomId);
-
-		return player;
+		this.rooms.set(roomId, room);
 	}
 
 	// Add player to existing room
-	addPlayerToRoom(playerId: string, roomId: string): Player {
+	addPlayerToRoom(playerId: string, roomId: string): User {
 		const room: GameRoom | undefined = this.rooms.get(roomId);
 		if (!room) {
-			throw new Error("Room not found");
+			throw createError("ROOM_NOT_FOUND", "Room not found");
 		}
 
-		// get player from socketId if already exists
-		const existingPlayer: Player | undefined = room.players.find(
+		// get user from socketId if already exists
+		const existingUser: User | undefined = room.users.find(
 			(p) => p.id === playerId,
 		);
 
-		if (existingPlayer) {
-			return existingPlayer;
+		if (existingUser) {
+			return existingUser;
 		}
 
-		if (room.players.length >= room.maxPlayers) {
-			throw new Error("Room is full");
-		}
-
-		// otherwise create new player
-		const player: Player = {
+		// otherwise create new user
+		const user: User = {
 			id: playerId,
 			roomId: roomId,
 			connected: true,
-			isRoomCreator: false,
+			isRoomCreator: room.roomCreator === playerId,
+			isPlaying: false,
 		};
 
-		room.players.push(player);
-		this.playerRooms.set(playerId, roomId);
+		room.users.push(user);
+		this.playerRooms.set(playerId, roomId); // override any previous room mapping
 
-		return player;
+		return user;
 	}
 
 	// Get room by ID
@@ -69,13 +56,18 @@ export class RoomManager {
 		return this.rooms.get(roomId);
 	}
 
-	// Get player by socket ID
-	getPlayerByPlayerId(playerId: string): Player | undefined {
+	// Get all rooms
+	getRooms(): GameRoom[] {
+		return Array.from(this.rooms.values());
+	}
+
+	// Get user by socket ID
+	getUserByPlayerId(playerId: string): User | undefined {
 		const roomId = this.playerRooms.get(playerId);
 		if (!roomId) return undefined;
 
 		const room = this.rooms.get(roomId);
-		return room?.players.find((p) => p.id === playerId);
+		return room?.users.find((p) => p.id === playerId);
 	}
 
 	// Remove player from room
@@ -85,14 +77,15 @@ export class RoomManager {
 
 		const room = this.rooms.get(roomId);
 		if (room) {
-			room.players = room.players.filter((p) => p.id !== playerId);
+			room.users = room.users.filter((p) => p.id !== playerId);
 
 			// Clean up empty rooms
-			if (room.players.length === 0) {
+			if (room.users.length === 0) {
 				this.rooms.delete(roomId);
 			}
 		}
 
+		// Remove player from playerRooms mapping
 		this.playerRooms.delete(playerId);
 	}
 
@@ -100,7 +93,7 @@ export class RoomManager {
 	deleteRoom(roomId: string): void {
 		const room = this.rooms.get(roomId);
 		if (room) {
-			room.players.forEach((player) => {
+			room.users.forEach((player) => {
 				this.playerRooms.delete(player.id);
 			});
 			this.rooms.delete(roomId);
@@ -110,5 +103,9 @@ export class RoomManager {
 	// Get all active rooms (for debugging)
 	getAllRooms(): GameRoom[] {
 		return Array.from(this.rooms.values());
+	}
+
+	getRoomByPlayerId(playerId: string): string | undefined {
+		return this.playerRooms.get(playerId);
 	}
 }

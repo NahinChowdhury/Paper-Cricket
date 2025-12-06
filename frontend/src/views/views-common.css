@@ -1,0 +1,176 @@
+/* Shared view layout and core helpers */
+.view-root {
+	display: grid;
+	grid-template-columns: 25% 1fr 25%;
+	grid-template-rows: auto 1fr auto;
+	grid-template-areas:
+		"left-top center-top right-top"
+		"left-middle center-middle right-middle"
+		"left-bottom center-bottom right-bottom";
+	min-height: 100vh;
+	min-width: 100vw;
+	gap: 12px;
+	box-sizing: border-box;
+	color: #111;
+	--view-base: clamp(12px, 1.6vmin, 18px);
+	font-family:
+		"Inter",
+		system-ui,
+		-apple-system,
+		"Segoe UI",
+		Roboto,
+		"Helvetica Neue",
+		Arial,
+		sans-serif;
+	font-size: var(--view-base);
+	position: relative;
+	background: url("../assets/Game Background.png");
+	background-size: cover;
+	background-position: center;
+	overflow: auto;
+}
+
+/* Left / right columns: top / middle / bottom */
+.left-col,
+.right-col {
+	display: grid;
+	grid-template-rows: auto 1fr auto;
+	gap: 12px;
+	padding: 12px;
+	box-sizing: border-box;
+	align-items: start;
+}
+.left-col {
+	grid-column: 1 / 2;
+	grid-row: 1 / 4;
+}
+.right-col {
+	grid-column: 3 / 4;
+	grid-row: 1 / 4;
+}
+
+/* Center column: header (top), canvas (middle), actions (bottom) */
+.center-col {
+	display: grid;
+	grid-column: 2 / 3;
+	grid-row: 1 / 4;
+	grid-template-rows: auto 1fr auto;
+	justify-items: center;
+	align-items: center;
+	gap: 18px;
+	padding: 12px;
+	box-sizing: border-box;
+}
+
+/* Middle content inside the center column */
+.center-content {
+	grid-row: 2;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+	width: 100%;
+	box-sizing: border-box;
+}
+
+/* Header / titles */
+.view-header {
+	text-align: center;
+}
+.view-title {
+	margin: 0 0 6px 0;
+	font-size: clamp(16px, 2.5vmin, 24px);
+	font-weight: 700;
+	color: white;
+}
+.view-subtitle {
+	margin: 0;
+	font-size: clamp(12px, 1.6vmin, 18px);
+	color: #ccc;
+}
+
+/* Buttons */
+.surrender-btn,
+.submit-btn {
+	padding: 0.6rem 0.9rem;
+	border-radius: 6px;
+	border: none;
+	cursor: pointer;
+	font-weight: 600;
+	font-size: clamp(12px, 1.4vmin, 16px);
+}
+.surrender-btn {
+	background: #e53935;
+	color: #fff;
+}
+.submit-btn {
+	background: #4caf50;
+	color: #fff;
+}
+
+/* Recap banner */
+.recap-banner {
+	position: absolute;
+	/* transform: translate(-50%, -50%); */
+	color: #fff;
+	font-weight: 700;
+	background: rgba(0, 0, 0, 0.6);
+	padding: 8px 12px;
+	border-radius: 8px;
+	font-size: clamp(14px, 2.2vmin, 20px);
+	text-shadow: 0 0 8px rgba(0, 0, 0, 0.7);
+}
+.recap-choice {
+	color: #ffd166;
+}
+
+/* Small helpers */
+.powerups-label {
+	font-size: clamp(11px, 1.2vmin, 14px);
+	color: #333;
+	font-weight: 600;
+}
+.presets-container {
+	display: flex;
+	gap: 10px;
+	overflow-x: auto;
+	align-items: center;
+	padding: 6px 4px;
+}
+
+/* Canvas responsiveness */
+.view-root canvas {
+	max-width: 100%;
+	height: auto;
+	display: block;
+}
+
+/* Responsive text for pregame views */
+.pregame-h2 {
+	font-size: clamp(1.5rem, 4vw, 2.5rem);
+}
+.pregame-p {
+	font-size: clamp(1rem, 2.5vw, 1.5rem);
+}
+.pregame-small {
+	font-size: clamp(0.9rem, 2vw, 1.2rem);
+}
+.pregame-button {
+	font-size: clamp(14px, 2vw, 20px);
+}
+
+/* Minimal small-screen tweaks */
+@media (max-width: 520px) {
+	.view-title {
+		font-size: clamp(14px, 3.4vmin, 20px);
+	}
+	.view-subtitle {
+		font-size: clamp(11px, 2.4vmin, 16px);
+	}
+	.surrender-btn,
+	.submit-btn {
+		font-size: 12px;
+		padding: 0.45rem 0.7rem;
+	}
+}

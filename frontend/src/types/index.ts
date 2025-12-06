@@ -1,29 +1,4 @@
-// Basic type definitions for the multiplayer game
-
-export const presetValues: string[] = [
-	"0",
-	"1",
-	"2",
-	"4",
-	"6",
-	"W",
-	"NB",
-	"WD",
-];
-
-export enum SocketEmissionMode {
-	TO_SELF, // socket.emit("event_name", data);
-	TO_OTHERS_IN_ROOM, // socket.to(roomId).emit("event_name", data);
-	TO_ALL_IN_ROOM, // io.to(roomId).emit("event_name", data);
-	TO_NONE,
-}
-
-export interface GameRoom {
-	id: string; // room ID
-	users: User[]; // users who joined the room as player/spectator/stand-by for now
-	created: Date; // creation time
-	roomCreator: string; // ID of the room creator
-}
+export type PowerUpStatus = "used" | "unused" | "active";
 
 export interface User {
 	id: string;

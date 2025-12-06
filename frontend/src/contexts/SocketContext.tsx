@@ -1,134 +1,110 @@
+// src/contexts/SocketContext.tsx
 import React, {
 	createContext,
 	useContext,
 	useEffect,
-	useRef,
 	useState,
 	ReactNode,
 } from "react";
 import { io, Socket } from "socket.io-client";
-import { usePlayerId } from "../hooks/usePlayerId";
+import { ServerEvents, ClientEvents } from "../types";
 
-export interface Player {
-	id: string;
-	roomId: string;
-	connected: boolean;
-	isRoomCreator: boolean;
-}
-
-export interface GameState {
-	players: string[]; // list of player IDs. Max 2
-	currentBall: number; // current turn number
-	currentBallRotation: number | undefined; // current ball rotation
-	currentBallBatsmanChoice: string | undefined; // current ball batsman choice
-	playerBowling: string; // player ID of who is bowling
-	originalTotalBalls: number; // Will not change during the game
-	totalBalls: number; // Fixed to 6 right now. Can change if Wide or No Ball is bowled
-	totalWickets: number; // Fixed to 2 right now
-	inningsOneRuns: number; // runs scored in innings one
-	inningsTwoRuns: number; // runs scored in innings two
-	inningsOneWicketCurrentCount: number; // wickets fallen so far in innings one
-	inningsTwoWicketCurrentCount: number; // wickets fallen so far in innings two
-	gamePhase: "waiting" | "setting field" | "batting" | "finished"; // game state
-	innings: number; // Can be 2 max
-	deliveryHistory: DeliveryRecord[]; // list of turn records
-}
-
-export interface DeliveryRecord {
-	ballNumber: number;
-	innings: number;
-	rotation: number;
-	batsmanChoice: string; // batsman choice is the run for that ball
-	timestamp: Date;
-	runsSoFar: number; // runs scored in current innings so far
-}
-
-// Events that clients send TO the server
-export interface ClientEvents {
-	create_room: (playerId: string) => void;
-	join_room: (roomId: string, playerId: string) => void;
-	player_joined: (player: Player) => void;
-	rotate_pie: (data: {
-		roomId: string;
-		playerId: string;
-		rotation: number;
-	}) => void; // will be redundant soon
-	field_set: (playerId: string, roomId: string, rotation: number) => void;
-	shot_played: (playerId: string, roomId: string, choice: string) => void;
-}
-
-// Events that the server sends TO clients
-export interface ServerEvents {
-	player_joined: (gameState: GameState, player: Player) => void;
-	room_not_found: () => void;
-	room_full: () => void;
-	game_started: (gameState: GameState) => void;
-	rotation_update: (gameState: GameState, rotation: number) => void;
-	game_ended: (gameState: GameState) => void;
-	player_left: (playerId: string) => void; // players cant willingliy leave yet
-	room_created: (roomId: string) => void;
-	play_shot: (gameState: GameState) => void;
-	set_field: (gameState: GameState) => void;
-}
-
-export interface SocketContextType {
+interface SocketContextType {
 	socket: Socket<ServerEvents, ClientEvents> | null;
 	isConnected: boolean;
+	error: string | null;
+	setError: (msg: string | null) => void;
+	redirectPath: string | null;
+	setRedirectPath: (path: string | null) => void;
 }
 
 const SocketContext = createContext<SocketContextType>({
 	socket: null,
 	isConnected: false,
+	error: null,
+	setError: () => {},
+	redirectPath: null,
+	setRedirectPath: () => {},
 });
 
 export const SocketProvider: React.FC<{ children: ReactNode }> = ({
 	children,
 }) => {
-	const socketRef = useRef<Socket<ServerEvents, ClientEvents> | null>(null);
+	const [socket, setSocket] = useState<Socket<
+		ServerEvents,
+		ClientEvents
+	> | null>(null);
 	const [isConnected, setIsConnected] = useState(false);
-	const { playerId } = usePlayerId();
-
-	const backendURL =
-		import.meta.env.VITE_BACKEND_URL || "http://localhost:3001"; // fallback
-
-	if (!socketRef.current) {
-		socketRef.current = io(backendURL, {
-			transports: ["websocket", "polling"],
-			query: playerId
-				? {
-						playerId,
-					}
-				: undefined, // Send persistent player ID to server
-		});
-	}
+	const [error, setError] = useState<string | null>(null);
+	const [redirectPath, setRedirectPath] = useState<string | null>(null);
 
 	useEffect(() => {
-		const socket = socketRef.current!;
-		socket.on("connect", () => {
-			console.log(
-				"Connected to server - Socket ID:",
-				socket.id,
-				"Player ID:",
-				playerId,
-			);
+		const serverUrl =
+			import.meta.env.VITE_BACKEND_URL || "http://localhost:3002"; // intentional set to 3002 which is incorrect to catch bugs
+		const s = io(serverUrl);
+
+		s.on("connect", () => {
+			console.log("✅ Connected to socket server");
 			setIsConnected(true);
+			setError(null);
 		});
-		socket.on("disconnect", () => {
-			console.log("Disconnected from server");
+
+		s.on("disconnect", () => {
+			console.warn("❌ Disconnected from server");
 			setIsConnected(false);
 		});
 
-		// 👇 don’t close on unmount unless you really want to
+		// 🌐 Global error handlers
+		s.on("server_error", (err) => {
+			console.error("⚠️ Server error:", err);
+			setError(err.message || "Unexpected server error.");
+			if (["FORBIDDEN", "UNAUTHORIZED"].includes(err.code)) {
+				setRedirectPath("/forbidden");
+			} else {
+				setRedirectPath("/");
+			}
+		});
+
+		s.on("room_not_found", () => {
+			setError("The requested room could not be found.");
+			setRedirectPath("/");
+		});
+
+		s.on("room_full", () => {
+			setError("This room is already full. Please try another one.");
+			setRedirectPath("/");
+		});
+
+		s.on("cannot_create_game", () => {
+			setError("Unable to create a new game. Please try again later.");
+			setRedirectPath("/");
+		});
+
+		s.on("cannot_join_game", () => {
+			setError("You cannot join this game at the moment.");
+			setRedirectPath("/");
+		});
+
+		s.on("user_left", () => {
+			// no need to do anything. We handle it in AudienceView directly
+		});
+
+		setSocket(s);
 		return () => {
-			// socket.close();
+			s.off();
+			s.disconnect();
 		};
 	}, []);
 
 	return (
 		<SocketContext.Provider
 			value={{
-				socket: socketRef.current,
+				socket,
 				isConnected,
+				error,
+				setError,
+				redirectPath,
+				setRedirectPath,
 			}}
 		>
 			{children}
@@ -136,6 +112,4 @@ export const SocketProvider: React.FC<{ children: ReactNode }> = ({
 	);
 };
 
-export const useSocket = () => {
-	return useContext(SocketContext);
-};
+export const useSocket = () => useContext(SocketContext);
