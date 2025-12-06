@@ -24,7 +24,7 @@
 		sans-serif;
 	font-size: var(--view-base);
 	position: relative;
-	background: url("../assets/Game Background.png");
+	background: url("../assets/Game Background.webp");
 	background-size: cover;
 	background-position: center;
 	overflow: auto;

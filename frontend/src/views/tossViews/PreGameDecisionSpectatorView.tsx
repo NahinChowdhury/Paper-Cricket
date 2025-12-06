@@ -2,7 +2,7 @@ import React, { useMemo } from "react";
 import { useSocket } from "../../contexts/SocketContext";
 import { useGame } from "../../contexts/GameContext";
 import "../../views/views-common.css";
-import pregameBackground from "../../assets/PreGame Background.png";
+import pregameBackground from "../../assets/PreGame Background.webp";
 
 const PreGameDecisionSpectatorView: React.FC = () => {
 	const { socket } = useSocket();

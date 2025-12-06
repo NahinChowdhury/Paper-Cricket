@@ -12,7 +12,6 @@ import {
 	fielderPowerUpNames,
 } from "../../types";
 import { buildPowerUpStatusMap } from "../../utils/helperFunctions";
-import bgImage from "../../assets/Game Background.png";
 import "../views-common.css";
 
 // Color mapping for different outcomes

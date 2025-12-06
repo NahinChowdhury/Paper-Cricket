@@ -5,7 +5,7 @@ import { useParams } from "react-router-dom";
 import { usePlayerId } from "../hooks/usePlayerId";
 import { apiClient } from "../api/client";
 import { GameState } from "../types";
-import pregameBackground from "../assets/PreGame Background.png";
+import pregameBackground from "../assets/PreGame Background.webp";
 import "./views-common.css";
 
 const PreGameJoiningView: React.FC = () => {

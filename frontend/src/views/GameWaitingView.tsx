@@ -3,7 +3,7 @@ import { useSocket } from "../contexts/SocketContext";
 import { useGame } from "../contexts/GameContext";
 import { usePlayerId } from "../hooks/usePlayerId";
 import "../views/views-common.css";
-import pregameBackground from "../assets/PreGame Background.png";
+import pregameBackground from "../assets/PreGame Background.webp";
 
 const GameWaitingView: React.FC = () => {
 	const { socket, isConnected } = useSocket();
